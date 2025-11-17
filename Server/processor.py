@@ -1,27 +1,27 @@
-# processor.py (No seu PC Windows)
+#processor.py (Código que corre no PC windows para processar os dados e publicar alertas MQTT)
 import paho.mqtt.client as mqtt
 import json
 import time
 
-# --- CONFIGURAÇÃO MQTT ---
-MQTT_BROKER = "127.0.0.1"  # Broker (Mosquitto) está no próprio PC
-MQTT_PORT = 1883
-TOPIC_TELEMETRY = "motopi/telemetria/ahrs"
-TOPIC_ALERTA = "motopi/alerta/emergencia"
+#---CONFIGURAÇÃO MQTT---
+MQTT_BROKER = "127.0.0.1"  # Broker (Mosquitto) está no próprio PC (localhost)
+MQTT_PORT = 1883    #Porta MQTT
+TOPIC_TELEMETRY = "motopi/telemetria/ahrs" #Tópico onde os dados de telemetria são publicados (vindos do PI)
+TOPIC_ALERTA = "motopi/alerta/emergencia" #Tópico onde os alertas de queda são publicados
 
-# --- VARIÁVEIS DE DETEÇÃO DE QUEDA ---
-ROLL_LIMIT = 65.0    # Ângulo de Roll (inclinação) em graus.
-DURATION_LIMIT = 2.0 # Segundos que o Roll deve ser mantido (sustentado)
+#---VARIÁVEIS DE DETEÇÃO DE QUEDA---
+ROLL_LIMIT = 65.0    #Ângulo de Roll (inclinação) em graus.
+DURATION_LIMIT = 2.0 #Segundos que o Roll deve ser mantido
 
-FALL_DETECTED = False # Estado: A queda foi confirmada e o alerta enviado?
-fall_start_time = 0   # Timestamp do início da contagem
-is_counting = False   # Estado: Estamos atualmente a contar o tempo de Roll > ROLL_LIMIT?
+FALL_DETECTED = False #Booleano que define se a queda foi confirmada e o alerta enviado
+fall_start_time = 0   #Timestamp do início da contagem
+is_counting = False   #Booleano que define se estamos a contar o tempo de Roll > ROLL_LIMIT
 
-# Função que corre quando recebe uma mensagem
+#Função que corre quando recebe uma mensagem
 def on_message(client, userdata, msg):
     global FALL_DETECTED, fall_start_time, is_counting
     
-    # 1. Desserializar os dados
+    #Desserialize os dados
     try:
         data = json.loads(msg.payload.decode())
         roll = abs(data['roll'])
@@ -31,46 +31,46 @@ def on_message(client, userdata, msg):
 
     current_time = time.time()
     
-    # 1. ESTADO: Ângulo Acima do Limite (Começa ou Continua a Contar)
+    #ESTADO: Ângulo Acima do Limite (Começa ou Continua a Contar)
     if roll >= ROLL_LIMIT and not FALL_DETECTED:
         
-        # A) INÍCIO DA CONTAGEM: Se não está a contar
+        #INÍCIO DA CONTAGEM -> Se não está a contar
         if not is_counting:
             fall_start_time = current_time
-            is_counting = True # Marca que a contagem começou
-            print(f"[{ts_ms}] 🟡 ALERTA! Inclinação extrema ({roll:.2f}º). Início da contagem de queda...")
+            is_counting = True #Marca que a contagem começou
+            print(f"[{ts_ms}] - ALERTA! Inclinação extrema ({roll:.2f}º). Início da contagem de queda...")
         
-        # B) CONTINUAÇÃO DA CONTAGEM: Se a duração foi atingida
+        #CONTINUAÇÃO DA CONTAGEM: Se a duração foi atingida (mais que 2 segundos)
         elif (current_time - fall_start_time) >= DURATION_LIMIT:
             
-            # --- CONFIRMAÇÃO DE QUEDA ---
+            #---CONFIRMAÇÃO DE QUEDA---
             FALL_DETECTED = True
-            is_counting = False # A contagem para quando a queda é confirmada
+            is_counting = False #A contagem para quando a queda é confirmada
             fall_start_time = 0 
 
-            alert_message = f"🚨 ALERTA DE QUEDA CONFIRMADO! Roll: {roll:.2f}º sustentado por mais de {DURATION_LIMIT}s."
+            alert_message = f"ALERTA DE QUEDA CONFIRMADO! Roll: {roll:.2f}º sustentado por mais de {DURATION_LIMIT}s."
             
             print("\n" + "!"*50)
             print(alert_message)
             client.publish(TOPIC_ALERTA, alert_message)
             print("!"*50 + "\n")
             
-    # 2. ESTADO: Ângulo Abaixo do Limite ou Interrupção
-    # Condição de reset: Se o roll descer para menos do limite E o sistema estava a contar/em alerta
+    #ESTADO: Ângulo Abaixo do Limite ou Interrupção
+    #Faz reset se o roll descer para menos do limite enquanto o sistema estava a contar/em alerta
     elif roll < ROLL_LIMIT and (FALL_DETECTED or is_counting):
         
-        # O Roll caiu abaixo do limite, mas não vamos dar reset imediato para lidar com ruído
-        # Só damos reset total se for muito baixo (ex: < 55º), ou se a flutuação persistir
-        if roll < (ROLL_LIMIT - 10) or (is_counting and (current_time - fall_start_time) > 0.5 and roll < ROLL_LIMIT):
+        #O Roll caiu abaixo do limite, mas não vamos dar reset imediato para lidar com ruído
+        #Só damos reset total se for muito baixo (< 35), ou se a flutuação persistir
+        if roll < (ROLL_LIMIT - 30) or (is_counting and (current_time - fall_start_time) > 0.5 and roll < ROLL_LIMIT):
              
             if FALL_DETECTED:
-                print("✅ ALERTA CANCELADO. Mota levantada/em movimento.")
+                print("ALERTA CANCELADO. Mota levantada/em movimento.")
                  
             FALL_DETECTED = False
             is_counting = False
             fall_start_time = 0
         
-# Função de inicialização
+#Função de inicialização
 def main():
     client = mqtt.Client(client_id="MotoPi_Processor")
     client.on_message = on_message
