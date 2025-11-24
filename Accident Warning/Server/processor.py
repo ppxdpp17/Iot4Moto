@@ -1,92 +1,75 @@
-#processor.py (Código que corre no PC windows para processar os dados e publicar alertas MQTT)
 import paho.mqtt.client as mqtt
 import json
+import csv
 import time
+import os
+from pathlib import Path
 
-#---CONFIGURAÇÃO MQTT---
-MQTT_BROKER = "127.0.0.1"  # Broker (Mosquitto) está no próprio PC (localhost)
-MQTT_PORT = 1883    #Porta MQTT
-TOPIC_TELEMETRY = "motopi/telemetria/ahrs" #Tópico onde os dados de telemetria são publicados (vindos do PI)
-TOPIC_ALERTA = "motopi/alerta/emergencia" #Tópico onde os alertas de queda são publicados
+# --- CONFIGURAÇÃO ---
+MQTT_BROKER = "127.0.0.1"
+MQTT_PORT = 1883
+CLIENT_ID = "Server_IMU_BlackBox"
 
-#---VARIÁVEIS DE DETEÇÃO DE QUEDA---
-ROLL_LIMIT = 65.0    #Ângulo de Roll (inclinação) em graus.
-DURATION_LIMIT = 2.0 #Segundos que o Roll deve ser mantido
+# Tópicos do IMU
+TOPIC_TELEMETRY = "motopi/telemetria/ahrs"
+TOPIC_ALERT = "motopi/alerta/emergencia"
 
-FALL_DETECTED = False #Booleano que define se a queda foi confirmada e o alerta enviado
-fall_start_time = 0   #Timestamp do início da contagem
-is_counting = False   #Booleano que define se estamos a contar o tempo de Roll > ROLL_LIMIT
+# Configuração de Log
+DATA_DIR = Path("logs_acidentes")
+DATA_DIR.mkdir(exist_ok=True)
+LOG_FILE = DATA_DIR / f"blackbox_imu_{int(time.time())}.csv"
 
-#Função que corre quando recebe uma mensagem
+# Inicializar ficheiro CSV
+if not LOG_FILE.exists():
+    with LOG_FILE.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Timestamp", "Tópico", "Roll", "Pitch", "SVM (G-Force)", "Mensagem"])
+
+print(f"--- SERVIDOR CAIXA NEGRA IMU ---")
+print(f"A gravar dados em: {LOG_FILE}")
+
+def on_connect(client, userdata, flags, rc):
+    print("Conectado ao Broker. A escutar IMU...")
+    client.subscribe([(TOPIC_TELEMETRY, 0), (TOPIC_ALERT, 2)])
+
 def on_message(client, userdata, msg):
-    global FALL_DETECTED, fall_start_time, is_counting
-    
-    #Desserialize os dados
     try:
-        data = json.loads(msg.payload.decode())
-        roll = abs(data['roll'])
-        ts_ms = data['timestamp']
-    except json.JSONDecodeError:
-        return
+        topic = msg.topic
+        payload_str = msg.payload.decode()
+        current_time = time.strftime('%H:%M:%S', time.localtime())
+        
+        # Dados para gravar
+        row = [current_time, topic, "", "", "", payload_str]
 
-    current_time = time.time()
-    
-    #ESTADO: Ângulo Acima do Limite (Começa ou Continua a Contar)
-    if roll >= ROLL_LIMIT and not FALL_DETECTED:
-        
-        #INÍCIO DA CONTAGEM -> Se não está a contar
-        if not is_counting:
-            fall_start_time = current_time
-            is_counting = True #Marca que a contagem começou
-            print(f"[{ts_ms}] - ALERTA! Inclinação extrema ({roll:.2f}º). Início da contagem de queda...")
-        
-        #CONTINUAÇÃO DA CONTAGEM: Se a duração foi atingida (mais que 2 segundos)
-        elif (current_time - fall_start_time) >= DURATION_LIMIT:
+        if topic == TOPIC_TELEMETRY:
+            # Desmontar o JSON da telemetria para colunas bonitas
+            data = json.loads(payload_str)
+            row[2] = data.get('roll', 0)
+            row[3] = data.get('pitch', 0)
+            row[4] = data.get('svm', 0)
+            # Não imprimimos telemetria na consola para não poluir, só gravamos
             
-            #---CONFIRMAÇÃO DE QUEDA---
-            FALL_DETECTED = True
-            is_counting = False #A contagem para quando a queda é confirmada
-            fall_start_time = 0 
+        elif topic == TOPIC_ALERT:
+            # ALERTA CRÍTICO
+            print("\n" + "!"*40)
+            print(f"🚨 ALERTA RECEBIDO NO SERVIDOR: {payload_str}")
+            print("!"*40 + "\n")
 
-            alert_message = f"ALERTA DE QUEDA CONFIRMADO! Roll: {roll:.2f}º sustentado por mais de {DURATION_LIMIT}s."
-            
-            print("\n" + "!"*50)
-            print(alert_message)
-            client.publish(TOPIC_ALERTA, alert_message)
-            print("!"*50 + "\n")
-            
-    #ESTADO: Ângulo Abaixo do Limite ou Interrupção
-    #Faz reset se o roll descer para menos do limite enquanto o sistema estava a contar/em alerta
-    elif roll < ROLL_LIMIT and (FALL_DETECTED or is_counting):
-        
-        #O Roll caiu abaixo do limite, mas não vamos dar reset imediato para lidar com ruído
-        #Só damos reset total se for muito baixo (< 35), ou se a flutuação persistir
-        if roll < (ROLL_LIMIT - 30) or (is_counting and (current_time - fall_start_time) > 0.5 and roll < ROLL_LIMIT):
-             
-            if FALL_DETECTED:
-                print("ALERTA CANCELADO. Mota levantada/em movimento.")
-                 
-            FALL_DETECTED = False
-            is_counting = False
-            fall_start_time = 0
-        
-#Função de inicialização
-def main():
-    client = mqtt.Client(client_id="MotoPi_Processor")
-    client.on_message = on_message
-    
-    try:
-        print(f"A iniciar Servidor de Processamento. A conectar ao Broker em: {MQTT_BROKER}:{MQTT_PORT}")
-        client.connect(MQTT_BROKER, MQTT_PORT, 60)
-        client.subscribe(TOPIC_TELEMETRY)
-        print(f"A Sub-escrever ao tópico de telemetria: {TOPIC_TELEMETRY}")
-        
-        client.loop_forever() 
-        
-    except KeyboardInterrupt:
-        print("\nServidor de Processamento encerrado.")
+        # Gravar no CSV
+        with LOG_FILE.open("a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
     except Exception as e:
-        print(f"Erro no processador: {e}")
+        print(f"Erro ao processar: {e}")
 
-if __name__ == "__main__":
-    main()
+# Setup MQTT
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, CLIENT_ID)
+client.on_connect = on_connect
+client.on_message = on_message
+
+try:
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_forever()
+except KeyboardInterrupt:
+    print("\nServidor Encerrado.")
