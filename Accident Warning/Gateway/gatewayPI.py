@@ -6,7 +6,7 @@ import json
 import paho.mqtt.client as mqtt
 
 # --- CONFIGURAÇÃO MQTT ---
-MQTT_BROKER = "172.20.0.131"  # IP DO SEU PC (SERVIDOR)
+MQTT_BROKER = "172.20.0.130"  # IP DO SEU PC (SERVIDOR)
 MQTT_PORT = 1883
 TOPIC_TELEMETRY = "motopi/telemetria/ahrs"
 TOPIC_ALERTA = "motopi/alerta/emergencia" # Tópico direto de alerta

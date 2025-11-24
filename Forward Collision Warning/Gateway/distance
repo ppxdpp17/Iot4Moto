@@ -1,80 +1,149 @@
-# fcw_sensor.py - Raspberry Pi
+# fcw_sensor.py  (Raspberry Pi)
+# Requisitos: paho-mqtt, RPi.GPIO
+# Ex.: sudo apt install python3-paho-mqtt
+# Run: python3 fcw_sensor.py
+
 import RPi.GPIO as GPIO
 import time
 import json
 import paho.mqtt.client as mqtt
+from collections import deque
 
 # --- CONFIGURAÇÃO ---
-# Ajusta o IP para o do teu PC Windows
-MQTT_BROKER = "10.10.9.216"
+MQTT_BROKER = "10.10.9.216"   # IP do PC broker
 MQTT_PORT = 1883
 TOPIC_PUB = "fcw/radar"
+CLIENT_ID = "Moto_Sensor_FCW"
+WILL_TOPIC = "system/status/A"
+WILL_PAYLOAD = json.dumps({"device_id": CLIENT_ID, "status": "offline", "ts_ms": int(time.time()*1000)})
 
-# Pinos GPIO (BCM)
+# GPIO (BCM)
 TRIG = 23
 ECHO = 24
 
-# --- SETUP ---
+# Sensor / filtro
+MEDIAN_WINDOW = 5
+MAX_RANGE_M = 3.0    # 3m
+MIN_RANGE_M = 0.02   # 2cm
+SAMPLE_PERIOD_WHEN_OBSTACLE = 0.05
+SAMPLE_PERIOD_IDLE = 0.5
+
+# --- SETUP GPIO ---
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
+GPIO.output(TRIG, False)
+time.sleep(0.05)
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "Moto_Sensor_FCW")
+# --- MQTT client setup ---
+client = mqtt.Client(client_id=CLIENT_ID, clean_session=False)
+client.will_set(WILL_TOPIC, WILL_PAYLOAD, qos=1, retain=True)
 
-def get_distance():
-    # Envia pulso de 10us
+def safe_connect():
+    backoff = 1
+    while True:
+        try:
+            client.connect(MQTT_BROKER, MQTT_PORT, 60)
+            client.loop_start()
+            print(f"[mqtt] Connected to {MQTT_BROKER}:{MQTT_PORT}")
+            break
+        except Exception as e:
+            print(f"[mqtt] Connection error: {e}. Retrying in {backoff}s")
+            time.sleep(backoff)
+            backoff = min(backoff*2, 30)
+
+# Utility: measure distance in meters
+def measure_distance():
+    # send 10us pulse
     GPIO.output(TRIG, True)
     time.sleep(0.00001)
     GPIO.output(TRIG, False)
 
     start_time = time.time()
-    stop_time = time.time()
-
-    # Timeout de segurança
     timeout = start_time + 0.04
 
-    # Espera pelo eco (Low -> High)
+    # wait for echo high
     while GPIO.input(ECHO) == 0:
         start_time = time.time()
-        if start_time > timeout: return -1
+        if start_time > timeout:
+            return None
 
-    # Espera pelo fim do eco (High -> Low)
+    # wait for echo low
+    stop_time = time.time()
+    timeout2 = stop_time + 0.04
     while GPIO.input(ECHO) == 1:
         stop_time = time.time()
-        if stop_time > timeout: return -1
+        if stop_time > timeout2:
+            return None
 
     elapsed = stop_time - start_time
-    distance = (elapsed * 34300) / 2 # Velocidade som 343m/s
-    return round(distance, 2)
+    distance_m = (elapsed * 343.0) / 2.0  # speed of sound ~343 m/s
+    return round(distance_m, 3)
 
-# --- LOOP PRINCIPAL ---
-try:
-    print(f"A conectar ao broker {MQTT_BROKER}...")
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_start()
-    print("Sensor FCW Ativo. A monitorizar...")
+def median_filtered(buffer_deque):
+    if not buffer_deque:
+        return None
+    sorted_vals = sorted(buffer_deque)
+    n = len(sorted_vals)
+    mid = n // 2
+    if n % 2 == 1:
+        return sorted_vals[mid]
+    else:
+        return (sorted_vals[mid-1] + sorted_vals[mid]) / 2.0
 
-    while True:
-        dist = get_distance()
+def main():
+    seq = 0
+    buf = deque(maxlen=MEDIAN_WINDOW)
+    safe_connect()
+    try:
+        print("Sensor FCW Ativo. A monitorizar...")
+        while True:
+            raw = measure_distance()
+            ts_ms = int(time.time()*1000)
+            if raw is None:
+                # sensor timeout - ignore and sleep
+                time.sleep(SAMPLE_PERIOD_IDLE)
+                continue
 
-        # Filtra erros e distâncias irrelevantes (> 200cm)
-        if 2 < dist < 30:
+            # clamp
+            if raw < MIN_RANGE_M or raw > MAX_RANGE_M:
+                # ignore spurious reading
+                time.sleep(SAMPLE_PERIOD_IDLE)
+                continue
+
+            # median buffer
+            buf.append(raw)
+            filtered = median_filtered(buf)
+
+            # publish
             payload = {
-                "ts": time.time(),
-                "dist": dist
+                "device_id": CLIENT_ID,
+                "seq": seq,
+                "ts_ms": ts_ms,
+                "dist_m": round(filtered, 3),
+                "raw_m": round(raw, 3)
             }
-            client.publish(TOPIC_PUB, json.dumps(payload), qos=0)
-            # Alta frequência de envio quando há obstáculo
-            time.sleep(0.05)
-        else:
-            # Baixa frequência quando caminho está livre
-            time.sleep(0.5)
+            # telemetry uses QoS 0 for high-rate
+            client.publish(TOPIC_PUB, json.dumps(payload, ensure_ascii=False), qos=0)
+            seq += 1
 
-except KeyboardInterrupt:
-    print("\nParado.")
-except Exception as e:
-    print(f"Erro: {e}")
-finally:
-    GPIO.cleanup()
-    client.loop_stop()
-    client.disconnect()
+            # choose period depending on obstacle presence
+            if filtered is not None and filtered < 1.5:
+                time.sleep(SAMPLE_PERIOD_WHEN_OBSTACLE)
+            else:
+                time.sleep(SAMPLE_PERIOD_IDLE)
+
+    except KeyboardInterrupt:
+        print("\nParado pelo utilizador.")
+    except Exception as e:
+        print("Erro:", e)
+    finally:
+        try:
+            client.loop_stop()
+            client.disconnect()
+        except:
+            pass
+        GPIO.cleanup()
+
+if __name__ == "__main__":
+    main()
