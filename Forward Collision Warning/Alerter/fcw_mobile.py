@@ -1,120 +1,103 @@
-# fcw_mobile.py  (Termux / Android)
-# Requisitos: pip install paho-mqtt
-# Also: pkg install termux-api
-# Run: python3 fcw_mobile.py
-
+# fcw_mobile.py (Termux / Android - FED)
 import paho.mqtt.client as mqtt
 import subprocess
-import sys
-import time
 import json
 import threading
+import sys
+import os
+import time
 
-MQTT_BROKER = "10.10.9.216"   # IP do PC broker
+# --- CONFIGURAÇÃO ---
+MQTT_BROKER = "192.168.1.130" # IP do PC Broker
 MQTT_PORT = 1883
 TOPIC_ALERT = "fcw/alerta"
-TOPIC_CLEAR = "fcw/alert_clear"   # if server publishes clear messages
 
-CLIENT_ID = "Mobile_Display"
-VIBRATE_THREAD = None
+# Controlo de Vibração Contínua
 VIBRATE_STOP = threading.Event()
+VIBRATE_THREAD = None
 
-def termux_notify(title, content, vibr_ms=1000):
-    # send simple notification
-    try:
-        subprocess.run([
-            "termux-notification",
-            "--title", title,
-            "--content", content,
-            "--id", "999",
-            "--vibrate", str(vibr_ms)
-        ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except Exception as e:
-        print("Notification error:", e)
-
-def vibrate_loop():
-    # vibrate repeatedly until VIBRATE_STOP set
+def vibrate_pattern():
+    """Vibra continuamente (loop) até ordem de paragem"""
     while not VIBRATE_STOP.is_set():
-        try:
-            subprocess.run(["termux-vibrate", "--duration", "800"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except Exception:
+        try: 
+            # Vibra 500ms
+            subprocess.run(["termux-vibrate", "-d", "500", "-f"], check=False)
+        except: 
             pass
-        # pause briefly
-        VIBRATE_STOP.wait(timeout=0.5)
+        # Pausa entre vibrações
+        VIBRATE_STOP.wait(0.5)
 
-def start_continuous_vibration():
-    global VIBRATE_THREAD, VIBRATE_STOP
-    if VIBRATE_THREAD and VIBRATE_THREAD.is_alive():
+def start_vibration():
+    """Inicia a thread de vibração se não estiver a correr"""
+    global VIBRATE_THREAD
+    if VIBRATE_THREAD and VIBRATE_THREAD.is_alive(): 
         return
     VIBRATE_STOP.clear()
-    VIBRATE_THREAD = threading.Thread(target=vibrate_loop, daemon=True)
+    VIBRATE_THREAD = threading.Thread(target=vibrate_pattern, daemon=True)
     VIBRATE_THREAD.start()
 
-def stop_continuous_vibration():
-    global VIBRATE_THREAD, VIBRATE_STOP
+def stop_vibration():
+    """Pára a vibração"""
     VIBRATE_STOP.set()
-    if VIBRATE_THREAD:
-        VIBRATE_THREAD.join(timeout=1.0)
-    VIBRATE_THREAD = None
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("Display Conectado. A aguardar alertas.")
+        print("✅ FCW Display Conectado.")
         client.subscribe(TOPIC_ALERT)
-        client.subscribe(TOPIC_CLEAR)
     else:
-        print("Erro de conexão MQTT:", rc)
+        print(f"❌ Erro conexão: {rc}")
 
 def on_message(client, userdata, msg):
-    topic = msg.topic
-    payload_raw = msg.payload.decode(errors="ignore")
-    if topic == TOPIC_CLEAR:
-        # stop vibration / clear
-        stop_continuous_vibration()
-        print("[ALERTA] clear received.")
-        return
-
-    # expect JSON alert
     try:
-        alert = json.loads(payload_raw)
-    except json.JSONDecodeError:
-        alert = {"msg": payload_raw}
+        data = json.loads(msg.payload.decode())
+        level = data.get("alert_level", "GREEN")
+        
+        os.system('clear')
+        
+        if level == "GREEN":
+            stop_vibration()
+            print("\n" + "🟩"*30)
+            print("         CAMINHO LIVRE")
+            print("🟩"*30 + "\n")
+            return
 
-    level = alert.get("alert_level", "YELLOW")
-    msg_text = alert.get("msg", "") + f" TTC={alert.get('ttc_s')}s dist={alert.get('distance_m')}m"
-    if level == "RED":
-        # red: continuous vibration + prominent notification
-        termux_notify("🛑 FCW - TRAVA!", msg_text, vibr_ms=1000)
-        start_continuous_vibration()
-    else:
-        # yellow: single vib + attention
-        termux_notify("⚠️ FCW - ATENÇÃO", msg_text, vibr_ms=800)
-        # no continuous vibration; it vibrates once with notification
+        # Dados do Alerta
+        source = data.get("source", "SENSOR")
+        dist = data.get("dist_m", 0)
+        ttc = data.get("ttc_s", 0)
+        mensagem = data.get("msg", "CUIDADO")
+        
+        # Interface Visual
+        print("\n" + "🟥"*30)
+        print(f" ⚠️  {mensagem}  ⚠️")
+        print("🟥"*30)
+        print(f"\nDistância: {dist}m")
+        print(f"Fonte: {source}") # Mostra se foi Câmara ou Ultrassom
+        print(f"TTC: {ttc}s\n")
+        print("🟥"*30 + "\n")
 
-    # print summary
-    print("\n" + "="*30)
-    print(f"ALERTA [{level}] -> {msg_text}")
-    print("="*30 + "\n")
+        # Feedback Físico (Vibração e Notificação)
+        if level == "RED":
+            start_vibration()
+            # Notificação de alta prioridade
+            subprocess.run(["termux-notification", "--title", "TRAVA!", "--content", f"{dist}m - {source}", "--priority", "high", "--id", "101"])
+        
+        elif level == "YELLOW":
+            stop_vibration()
+            subprocess.run(["termux-vibrate", "-d", "200"]) # Vibra só uma vez
 
-def main():
-    client = mqtt.Client(client_id=CLIENT_ID, clean_session=False)
-    client.on_connect = on_connect
-    client.on_message = on_message
+    except Exception as e:
+        print(f"Erro ao processar mensagem: {e}")
 
-    backoff = 1
-    while True:
-        try:
-            print(f"Conectando ao broker {MQTT_BROKER} ...")
-            client.connect(MQTT_BROKER, MQTT_PORT, 60)
-            client.loop_forever()
-        except KeyboardInterrupt:
-            print("Termux display interrompido.")
-            stop_continuous_vibration()
-            break
-        except Exception as e:
-            print(f"MQTT error: {e}. Reconnect in {backoff}s")
-            time.sleep(backoff)
-            backoff = min(backoff*2, 30)
+# --- MAIN ---
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "Termux_FCW")
+client.on_connect = on_connect
+client.on_message = on_message
 
-if __name__ == "__main__":
-    main()
+try:
+    print(f"A conectar a {MQTT_BROKER}...")
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_forever()
+except KeyboardInterrupt:
+    stop_vibration()
+    print("Sair.")
