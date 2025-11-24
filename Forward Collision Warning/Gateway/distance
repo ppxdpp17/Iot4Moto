@@ -1,149 +1,209 @@
-# fcw_sensor.py  (Raspberry Pi)
-# Requisitos: paho-mqtt, RPi.GPIO
-# Ex.: sudo apt install python3-paho-mqtt
-# Run: python3 fcw_sensor.py
-
+# fcw_fusion_pi.py (Raspberry Pi - Edge Computing & Sensor Fusion)
 import RPi.GPIO as GPIO
 import time
 import json
+import requests
 import paho.mqtt.client as mqtt
 from collections import deque
+import numpy as np
 
 # --- CONFIGURAÇÃO ---
-MQTT_BROKER = "10.10.9.216"   # IP do PC broker
+# IP do PC (onde está o Broker Mosquitto)
+MQTT_BROKER = "192.168.1.130" 
 MQTT_PORT = 1883
-TOPIC_PUB = "fcw/radar"
-CLIENT_ID = "Moto_Sensor_FCW"
-WILL_TOPIC = "system/status/A"
-WILL_PAYLOAD = json.dumps({"device_id": CLIENT_ID, "status": "offline", "ts_ms": int(time.time()*1000)})
 
-# GPIO (BCM)
+# Tópicos
+TOPIC_PUB_ALERT = "fcw/alerta"
+TOPIC_PUB_TELEMETRY = "fcw/radar"
+
+# Configuração UnitV2 (Câmara IA)
+# O IP da câmara é o IP USB default (ajustar se mudaste)
+UNITV2_API = "http://10.254.239.1/func/result"
+REAL_WIDTH_OBJ = 0.20  # Largura real do brinquedo em metros (20cm)
+FOCAL_LENGTH = 500.0   # Fator de calibração (F = (PixelWidth * Dist) / RealWidth)
+
+# Configuração Ultrassom (HC-SR04)
 TRIG = 23
 ECHO = 24
+ULTRASOUND_LIMIT_M = 2.5 # Abaixo de 2.5m, o ultrassom manda (prioridade)
 
-# Sensor / filtro
-MEDIAN_WINDOW = 5
-MAX_RANGE_M = 3.0    # 3m
-MIN_RANGE_M = 0.02   # 2cm
-SAMPLE_PERIOD_WHEN_OBSTACLE = 0.05
-SAMPLE_PERIOD_IDLE = 0.5
+# Parâmetros Física (TTC)
+HISTORY_WINDOW = 6    # Quantas amostras guardar para calcular velocidade
+MIN_SAMPLES = 3       # Mínimo para começar a calcular
+TTC_RED = 1.0         # Segundos para impacto (TRAVAR!)
+TTC_YELLOW = 3.0      # Segundos para aviso
 
-# --- SETUP GPIO ---
+# Estado Interno
+hist = deque(maxlen=HISTORY_WINDOW)
+last_alert_level = "GREEN"
+
+# --- SETUP HARDWARE ---
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 GPIO.output(TRIG, False)
-time.sleep(0.05)
+time.sleep(0.1) # Estabilizar sensor
 
-# --- MQTT client setup ---
-client = mqtt.Client(client_id=CLIENT_ID, clean_session=False)
-client.will_set(WILL_TOPIC, WILL_PAYLOAD, qos=1, retain=True)
+# --- FUNÇÕES DE LEITURA ---
 
-def safe_connect():
-    backoff = 1
-    while True:
-        try:
-            client.connect(MQTT_BROKER, MQTT_PORT, 60)
-            client.loop_start()
-            print(f"[mqtt] Connected to {MQTT_BROKER}:{MQTT_PORT}")
-            break
-        except Exception as e:
-            print(f"[mqtt] Connection error: {e}. Retrying in {backoff}s")
-            time.sleep(backoff)
-            backoff = min(backoff*2, 30)
-
-# Utility: measure distance in meters
-def measure_distance():
-    # send 10us pulse
+def get_ultrasound_dist():
+    """Lê distância do HC-SR04 em Metros com timeout de segurança"""
     GPIO.output(TRIG, True)
     time.sleep(0.00001)
     GPIO.output(TRIG, False)
-
-    start_time = time.time()
-    timeout = start_time + 0.04
-
-    # wait for echo high
+    
+    start = time.time()
+    timeout = start + 0.04 # 40ms timeout
+    
     while GPIO.input(ECHO) == 0:
-        start_time = time.time()
-        if start_time > timeout:
-            return None
-
-    # wait for echo low
-    stop_time = time.time()
-    timeout2 = stop_time + 0.04
+        start = time.time()
+        if start > timeout: return None
+        
     while GPIO.input(ECHO) == 1:
-        stop_time = time.time()
-        if stop_time > timeout2:
-            return None
+        stop = time.time()
+        if stop > timeout: return None
+        
+    # Velocidade do som 343m/s
+    dist_m = ((stop - start) * 343.0) / 2.0
+    
+    # Filtrar ruído (leituras impossíveis)
+    if 0.02 < dist_m < 4.0:
+        return dist_m
+    return None
 
-    elapsed = stop_time - start_time
-    distance_m = (elapsed * 343.0) / 2.0  # speed of sound ~343 m/s
-    return round(distance_m, 3)
-
-def median_filtered(buffer_deque):
-    if not buffer_deque:
-        return None
-    sorted_vals = sorted(buffer_deque)
-    n = len(sorted_vals)
-    mid = n // 2
-    if n % 2 == 1:
-        return sorted_vals[mid]
-    else:
-        return (sorted_vals[mid-1] + sorted_vals[mid]) / 2.0
-
-def main():
-    seq = 0
-    buf = deque(maxlen=MEDIAN_WINDOW)
-    safe_connect()
+def get_camera_dist():
+    """Lê JSON da UnitV2 e estima distância em Metros"""
     try:
-        print("Sensor FCW Ativo. A monitorizar...")
-        while True:
-            raw = measure_distance()
-            ts_ms = int(time.time()*1000)
-            if raw is None:
-                # sensor timeout - ignore and sleep
-                time.sleep(SAMPLE_PERIOD_IDLE)
-                continue
+        # Timeout muito curto (0.1s) para não bloquear o loop se a câmara falhar
+        r = requests.get(UNITV2_API, timeout=0.1) 
+        data = r.json()
+        
+        # Estrutura típica UnitV2: {'result': [{'x':..., 'w':...}]}
+        if 'result' in data and len(data['result']) > 0:
+            # Pega no objeto com maior largura (o mais próximo)
+            obj = sorted(data['result'], key=lambda x: x['w'], reverse=True)[0]
+            w_pixels = obj.get('w', 1)
+            
+            # Fórmula de Distância por Visão Monocular
+            dist_m = (REAL_WIDTH_OBJ * FOCAL_LENGTH) / w_pixels
+            return dist_m, obj.get('class', 'unknown')
+    except Exception:
+        pass # Falha silenciosa (retorna None)
+    return None, None
 
-            # clamp
-            if raw < MIN_RANGE_M or raw > MAX_RANGE_M:
-                # ignore spurious reading
-                time.sleep(SAMPLE_PERIOD_IDLE)
-                continue
+def calculate_ttc(history):
+    """Calcula TTC usando Regressão Linear sobre o histórico fundido"""
+    if len(history) < MIN_SAMPLES: return None, None
+    
+    # Converter deque para numpy array
+    data = np.array(history)
+    times = data[:, 0]
+    dists = data[:, 1]
+    
+    if np.ptp(times) == 0: return None, None
+    
+    # Regressão Linear (polyfit grau 1)
+    # Declive (slope) = Velocidade (m/s)
+    slope, _ = np.polyfit(times, dists, 1)
+    
+    vel_rel = -slope # Positivo se a distância estiver a diminuir (aproximação)
+    
+    dist_atual = dists[-1]
+    
+    # Só calculamos TTC se houver aproximação (> 10cm/s)
+    if vel_rel > 0.1:
+        ttc = dist_atual / vel_rel
+    else:
+        ttc = float('inf')
+    
+    return vel_rel, ttc
 
-            # median buffer
-            buf.append(raw)
-            filtered = median_filtered(buf)
+# --- LOOP PRINCIPAL ---
 
-            # publish
-            payload = {
-                "device_id": CLIENT_ID,
-                "seq": seq,
-                "ts_ms": ts_ms,
-                "dist_m": round(filtered, 3),
-                "raw_m": round(raw, 3)
-            }
-            # telemetry uses QoS 0 for high-rate
-            client.publish(TOPIC_PUB, json.dumps(payload, ensure_ascii=False), qos=0)
-            seq += 1
+# Compatibilidade MQTT v2.0
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "FCW_Fusion_Pi")
 
-            # choose period depending on obstacle presence
-            if filtered is not None and filtered < 1.5:
-                time.sleep(SAMPLE_PERIOD_WHEN_OBSTACLE)
-            else:
-                time.sleep(SAMPLE_PERIOD_IDLE)
+try:
+    print(f"A conectar ao Broker {MQTT_BROKER}...")
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_start()
+    print("FCW Híbrido (Câmara + Ultrassom) Ativo.")
+    
+    while True:
+        now = time.time()
+        
+        # 1. Leitura dos Sensores
+        dist_ultra = get_ultrasound_dist()
+        dist_cam, obj_class = get_camera_dist()
+        
+        # 2. Lógica de FUSÃO DE SENSORES (Decision Logic)
+        final_dist = None
+        source = "NONE"
+        
+        # Prioridade 1: Ultrassom (Alta precisão a curta distância)
+        if dist_ultra is not None and dist_ultra < ULTRASOUND_LIMIT_M:
+            final_dist = dist_ultra
+            source = "ULTRASOUND"
+            
+        # Prioridade 2: Câmara (Longo alcance ou falha do ultrassom)
+        elif dist_cam is not None:
+            final_dist = dist_cam
+            source = f"CAMERA_{obj_class}"
+        
+        # Se não houver leituras, limpa histórico e envia sinal de 'Livre'
+        if final_dist is None:
+            hist.clear()
+            if last_alert_level != "GREEN":
+                client.publish(TOPIC_PUB_ALERT, json.dumps({"alert_level": "GREEN", "msg": "Livre"}), qos=1)
+                last_alert_level = "GREEN"
+            time.sleep(0.1)
+            continue
 
-    except KeyboardInterrupt:
-        print("\nParado pelo utilizador.")
-    except Exception as e:
-        print("Erro:", e)
-    finally:
-        try:
-            client.loop_stop()
-            client.disconnect()
-        except:
-            pass
-        GPIO.cleanup()
+        # 3. Guardar no histórico e Calcular Física
+        hist.append((now, final_dist))
+        vel, ttc = calculate_ttc(hist)
+        
+        # 4. Enviar Telemetria (Para Blackbox no PC)
+        telemetry = {
+            "ts": now,
+            "dist_m": round(final_dist, 2),
+            "vel_ms": round(vel, 2) if vel else 0,
+            "ttc": round(ttc, 2) if ttc and ttc != float('inf') else 999,
+            "source": source # Importante para a tese: saber quem detetou
+        }
+        client.publish(TOPIC_PUB_TELEMETRY, json.dumps(telemetry), qos=0)
+        
+        # 5. Lógica de Alerta (Edge Computing)
+        if ttc:
+            alert_payload = None
+            current_level = "GREEN"
+            
+            if ttc < TTC_RED:
+                current_level = "RED"
+                alert_payload = {"alert_level": "RED", "msg": "TRAVA AGORA!", "ttc_s": round(ttc, 1)}
+            elif ttc < TTC_YELLOW:
+                current_level = "YELLOW"
+                alert_payload = {"alert_level": "YELLOW", "msg": "Aproximação", "ttc_s": round(ttc, 1)}
+            
+            # Publicar se nível mudou ou se é RED (insistência)
+            if alert_payload and (current_level != last_alert_level or current_level == "RED"):
+                alert_payload["dist_m"] = round(final_dist, 1)
+                alert_payload["source"] = source
+                client.publish(TOPIC_PUB_ALERT, json.dumps(alert_payload), qos=1)
+                print(f"ALERTA {current_level} ({source}): {final_dist:.1f}m | TTC: {ttc:.1f}s")
+            
+            elif current_level == "GREEN" and last_alert_level != "GREEN":
+                 client.publish(TOPIC_PUB_ALERT, json.dumps({"alert_level": "GREEN", "msg": "Livre"}), qos=1)
 
-if __name__ == "__main__":
-    main()
+            last_alert_level = current_level
+
+        # Sampling rate adaptativo
+        # Se estiver perto (<3m), lê muito rápido (20Hz). Se longe, mais devagar (5Hz)
+        time.sleep(0.05 if final_dist < 3.0 else 0.2)
+
+except KeyboardInterrupt:
+    print("Parado.")
+finally:
+    GPIO.cleanup()
+    client.loop_stop()
+    client.disconnect()
