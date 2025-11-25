@@ -1,113 +1,89 @@
-#alerta.py (Códogo que corre no Telemóvel/Termux com o intuito de ser o FED)
 import paho.mqtt.client as mqtt
 import time
 import sys
 import select
-import threading
+import os
+import json
 
-#---CONFIGURAÇÃO MQTT---
-MQTT_BROKER = "172.20.0.130"  #IP DO PC WINDOWS (Servidor que processa os dados)
-MQTT_PORT = 1883    #Porta do Broker MQTT
-TOPIC_ALERTA = "motopi/alerta/emergencia"   #Topico do MQTT
-# ------------------------------------
+# --- CONFIGURAÇÃO ---
+MQTT_BROKER = "172.20.0.130" # IP DO SERVIDOR
+MQTT_PORT = 1883
+TOPIC_FINAL = "motopi/alerta/final" # Ouve o servidor, não o Pi
+CALL_DURATION = 10
 
-#Variiáveis para alerta
-CALL_DURATION = 10 
 is_alerting = False
-start_countdown_signal = False #Sinaliza ao loop principal para iniciar a contagem
+cancelled = False
+start_signal = False
+current_msg = ""
 
-#---FUNÇÃO PRINCIPAL DA CONTAGEM---
-def handle_countdown(client):
-    global is_alerting, cancelled
-    
+def handle_countdown():
+    global is_alerting, cancelled, current_msg
     is_alerting = True
     cancelled = False
     
-    #Mensagem de Início e Instruções
-    print("\n" + "#"*50)
-    print("!!! ALERTA DE QUEDA RECEBIDO !!!")
-    print("A ligar para os serviços de emergência (Aguardar 30 segundos...)")
+    os.system('clear')
+    print("\n" + "🟥"*30)
+    print("!!! 🚨 ALERTA CRÍTICO RECEBIDO 🚨 !!!")
+    print(f"Motivo: {current_msg}")
+    print("-" * 30)
+    print(f"A LIGAR 112 EM {CALL_DURATION} SEGUNDOS.")
     print("Prima [ENTER] para CANCELAR.")
-    print("#"*50)
+    print("🟥"*30 + "\n")
 
-    #Loop de Contagem Decrescente
     try:
-        for i in range(CALL_DURATION, 0, -1): #Loop de 10 segundos
-            if cancelled:
-                break
-                
-            #select.select verifica se há dados disponíveis para leitura no sys.stdin.
+        for i in range(CALL_DURATION, 0, -1):
+            if cancelled: break
             rlist, _, _ = select.select([sys.stdin], [], [], 1.0)
-            
-            #Se houver dados para ler (utilizador premir ENTER) o programa para
             if rlist:
-                line = sys.stdin.readline().strip().lower()
-                if line == "":
-                    cancelled = True
-                    break
-            
+                sys.stdin.readline()
+                cancelled = True
+                break
             if not cancelled:
-                #O uso do \r faz com que a linha seja reescrita
-                print(f"A ligar para os serviços de emergência: {i} segundos restantes...     \r", end='', flush=True)
-            
-    except Exception as e:
-        print(f"\nErro durante a contagem: {e}")
+                print(f"📞 LIGAÇÃO EM: {i}s...     \r", end='', flush=True)
+    except:
         cancelled = True
 
-    #Resultado Final
-    print("\n" + "="*50)
+    print("\n" + "="*35)
     if cancelled:
-        print("!!! CHAMADA CANCELADA PELO UTILIZADOR !!!")
+        print("!!! ✅ CHAMADA CANCELADA PELO UTILIZADOR !!!")
     else:
-        print("!!! CHAMADA EFETUADA - SERVIÇOS DE EMERGÊNCIA ALERTADOS !!!")
-    print("="*50)
+        print("!!! 📞 A LIGAR 112... (Simulação) !!!")
+    print("="*35 + "\n")
+    is_alerting = False
 
-    is_alerting = False #Agora permite novos alertas
-
-#---FUNÇÕES MQTT---
 def on_connect(client, userdata, flags, rc):
-    print("Conectado ao Broker MQTT.")
-    client.subscribe(TOPIC_ALERTA)
-    print(f"A escutar o tópico de alerta: {TOPIC_ALERTA}")
+    print("Conectado. À espera do Servidor...")
+    client.subscribe(TOPIC_FINAL)
 
 def on_message(client, userdata, msg):
-    global is_alerting, start_countdown_signal
-    alerta = msg.payload.decode()
-    print(f"\n[INFO MQTT] Mensagem de alerta recebida: {alerta}")
-    
-    #Se não estivermos em contagem, levantamos o sinal para o loop principal
-    if not is_alerting:
-        start_countdown_signal = True
-    else:
-        print("[INFO] Ignorando novo alerta enquanto a contagem está ativa.")
+    global is_alerting, start_signal, current_msg
+    try:
+        # Agora lemos JSON
+        payload = json.loads(msg.payload.decode())
+        # Extraímos a mensagem de texto e dados se existirem
+        texto = payload.get("msg", "Alerta sem detalhes")
+        svm = payload.get("svm", "N/A")
+        
+        if not is_alerting:
+            current_msg = f"{texto} (Impacto: {svm}g)"
+            start_signal = True
+    except:
+        print("Erro ao ler alerta JSON")
 
-#---INICIO---
-client = mqtt.Client(client_id="Termux_Alerter")
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "Termux_Final")
 client.on_connect = on_connect
 client.on_message = on_message
 
-print(f"A tentar conectar-se a {MQTT_BROKER}:{MQTT_PORT}...")
-
 try:
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_start()
     
-    #Inicia o loop MQTT para escutar em uma thread separada
-    client.loop_start() 
-    
-    print("Cliente MQTT iniciado. A aguardar mensagens de alerta...")
-    
-    #---LOOP PRINCIPAL DE CONTROLO---
     while True:
-        #Se o sinal for levantado pelo on_message, iniciar a contagem.
-        if start_countdown_signal and not is_alerting:
-            start_countdown_signal = False #Desligar o sinal
-            handle_countdown(client) 
+        if start_signal and not is_alerting:
+            start_signal = False
+            handle_countdown()
+        time.sleep(0.5)
         
-        time.sleep(0.5) 
-
 except KeyboardInterrupt:
-    print("\nAplicação encerrada.")
     client.loop_stop()
     client.disconnect()
-except Exception as e:
-    print(f"Erro: {e}")
