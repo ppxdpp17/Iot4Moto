@@ -1,87 +1,93 @@
-import paho.mqtt.client as mqtt
+import requests
 import json
 import time
-import requests # Para falar com a API da UnitV2
-import math
+import paho.mqtt.client as mqtt
+from kalman_filter import KalmanFilter
 
 # --- CONFIGURAÇÃO ---
-MQTT_BROKER = "172.20.0.130" # IP DO TEU PC
-TOPIC_PUB = "percepcao/A"
+MQTT_BROKER = "172.20.0.130" # IP DO PC
+TOPIC_V2X_OBJECTS = "v2x/cruzamento/objetos"
 
-# URL da API da UnitV2 (Ajusta o IP se mudaste)
-# A UnitV2 geralmente expõe o resultado da função atual em:
-UNITV2_API_URL = "http://10.254.239.1/func/result"
-# Se não funcionar, tenta: "http://10.254.239.1/v1/func/result"
+# Câmara UnitV2
+UNITV2_URL = "http://10.254.239.1/func/result"
+REAL_WIDTH_OBJ = 0.035  # 3.5cm (Largura do carrinho)
+FOCAL_LENGTH = 457.0    # O valor que calibraste
 
-# Calibração da Distância
-# Largura real do brinquedo (metros)
-LARGURA_REAL_OBJ = 0.20 
-# Distância Focal (Calibrar: colocar objeto a 1m, ver largura em pixels. F = (P*D)/W)
-FOCAL_LENGTH = 500.0 
+# Inicializar Kalman (Começa a assumir que o carro está a 2m)
+kf = KalmanFilter(initial_value=2.0)
 
-# Posição Fixa do Veículo A (Cruzamento)
-LAT_A = 40.0000
-LON_A = 8.0000
+# Sessão HTTP
+session = requests.Session()
 
 def get_camera_data():
+    """Lê stream da UnitV2"""
     try:
-        # Pede o JSON à câmara
-        r = requests.get(UNITV2_API_URL, timeout=0.5)
-        if r.status_code == 200:
-            return r.json()
-    except Exception as e:
-        # print(f"Erro ler câmara: {e}")
-        pass
+        with session.post(UNITV2_URL, data={}, stream=True, timeout=0.5) as r:
+            if r.status_code != 200: return None
+            
+            buffer = ""
+            for chunk in r.iter_content(chunk_size=1):
+                if chunk:
+                    char = chunk.decode('utf-8', errors='ignore')
+                    buffer += char
+                    if char == '}':
+                        start_idx = buffer.rfind('{')
+                        if start_idx != -1:
+                            try:
+                                data = json.loads(buffer[start_idx:])
+                                # Suporta 'obj', 'result', ou 'rect'
+                                objs = data.get('obj', data.get('rect', data.get('result')))
+                                
+                                if isinstance(objs, dict): objs = [objs] # Normaliza lista
+                                
+                                if objs and len(objs) > 0:
+                                    # Pega no maior objeto
+                                    best = max(objs, key=lambda x: x.get('w', 0))
+                                    return best.get('w', 0)
+                            except: pass
+                        if len(buffer) > 200: break
+    except: pass
     return None
 
-def on_connect(client, userdata, flags, rc):
-    print("Veículo A (Gateway) conectado ao MQTT.")
+# --- MAIN ---
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "RSU_Camera_Pi")
+client.connect(MQTT_BROKER, 1883, 60)
+client.loop_start()
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "VeiculoA_Rpi_UnitV2")
-client.on_connect = on_connect
+print("RSU (Infraestrutura) Iniciada.")
 
 try:
-    client.connect(MQTT_BROKER, 1883, 60)
-    client.loop_start()
-    
-    print("A ler dados da UnitV2 e a publicar...")
-
     while True:
-        data = get_camera_data()
+        # 1. Ler Câmara
+        w_px = get_camera_data()
         
-        # A estrutura do JSON da UnitV2 depende do modo, mas geralmente é algo como:
-        # {'running': 'Object Detection', 'num': 1, 'result': [{'x': 100, 'y': 50, 'w': 40, 'h': 30, 'prob': 0.9, 'class': 'car'}]}
-        
-        if data and 'result' in data and len(data['result']) > 0:
-            # Pegar no maior objeto detetado
-            obj = data['result'][0] 
+        if w_px and w_px > 5:
+            # 2. Calcular Distância Bruta (Raw)
+            dist_raw = (REAL_WIDTH_OBJ * FOCAL_LENGTH) / w_px
             
-            # Filtrar por confiança (opcional)
-            if obj.get('prob', 0) > 0.3:
-                w_pixels = obj.get('w', 1)
-                
-                # 1. Calcular Distância
-                distancia = (LARGURA_REAL_OBJ * FOCAL_LENGTH) / w_pixels
-                
-                # 2. Preparar Payload V2V
-                payload = {
-                    "ts": time.time(),
-                    "lat_observador": LAT_A,
-                    "lon_observador": LON_A,
-                    "objeto_detectado": obj.get('class', 'desconhecido'),
-                    "distancia_estimada": round(distancia, 2),
-                    # Simular um ângulo baseado no 'x' da imagem (centro vs esquerda/direita)
-                    "posicao_x_imagem": obj.get('x') 
-                }
-                
-                client.publish(TOPIC_PUB, json.dumps(payload), qos=0)
-                print(f"Detetado: {payload['objeto_detectado']} a {distancia:.2f}m")
-        
-        # Alta frequência (10Hz a 20Hz é bom para V2V)
-        time.sleep(0.1)
+            # 3. Suavizar com Kalman
+            dist_smooth = kf.update(dist_raw)
+            
+            # 4. Mapear para Coordenadas do Cruzamento
+            # O carro vem de baixo (Y negativo) para o centro (0)
+            # Posição Y = -Distância
+            pos_y = -dist_smooth
+            
+            # 5. Publicar Mensagem V2X (CAM - Cooperative Awareness Message)
+            payload = {
+                "id": "VEHICLE_C",
+                "ts": time.time(),
+                "pos_x": 0.0,      # Está na via vertical
+                "pos_y": round(pos_y, 2),
+                "speed_ms": 0.0,   # Poderíamos calcular delta, mas simplificamos
+                "lane": "SOUTH_ENTRY"
+            }
+            
+            client.publish(TOPIC_V2X_OBJECTS, json.dumps(payload), qos=0)
+            print(f"📡 V2X Broadcast: Carro C em Y={pos_y:.2f}m (Raw={dist_raw:.2f}m)")
+            
+        time.sleep(0.1) # 10Hz Update Rate
 
 except KeyboardInterrupt:
     print("Parado.")
-finally:
-    client.loop_stop()
     client.disconnect()
