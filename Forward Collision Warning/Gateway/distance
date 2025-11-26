@@ -6,6 +6,8 @@ import requests
 import paho.mqtt.client as mqtt
 from collections import deque
 import numpy as np
+import sys
+import signal
 
 # --- CONFIGURAÇÃO DE REDE ---
 MQTT_BROKER = "172.20.0.130" # IP DO SERVIDOR (PC)
@@ -39,6 +41,13 @@ GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 GPIO.output(TRIG, False)
 time.sleep(0.1)
+
+def signal_handler(sig, frame):
+    print('\nCTRL+C Detetado! A sair...')
+    GPIO.cleanup()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 cam_session = requests.Session()
 
