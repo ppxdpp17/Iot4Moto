@@ -1,102 +1,87 @@
-#!/usr/bin/env python3
-"""
-termux_gps_v2v.py
-- Envia GPS (telemetria/B)
-- Recebe Alertas (alerta/B)
-- Compatível com Paho MQTT 2.0+
-"""
-import subprocess, json, time, sys, os
 import paho.mqtt.client as mqtt
+import json
+import time
+import sys
+import os
+import subprocess
 
-# -------------- CONFIG --------------
-BROKER = "172.20.0.130" # <-- CONFIRMA ESTE IP
-PORT = 1883
-DEVICE_ID = "B"
-TOPIC_PUB = "telemetria/B"
-TOPIC_SUB_ALERTA = "alerta/B"
-PUBLISH_INTERVAL = 1.0 # Mais rápido para V2V (1Hz)
-# ------------------------------------
+# --- CONFIGURAÇÃO ---
+MQTT_BROKER = "172.20.0.130"
+TOPIC_SUB = "v2x/cruzamento/objetos"
 
-def run_termux_location(provider="gps"):
-    # Tenta obter localização via CLI
+# --- SIMULAÇÃO DA PRÓPRIA MOTO (B) ---
+# Começamos a 2.5m do cruzamento (lado esquerdo)
+my_x = -2.5 
+my_speed = 0.15 # 15 cm/s (velocidade de simulação lenta)
+sim_running = True
+
+def notify_collision(dist_c):
     try:
-        cmd = ["termux-location", "-p", provider]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-        data = json.loads(proc.stdout)
-        return data if isinstance(data, dict) else data[0]
-    except:
-        return None
+        subprocess.run(["termux-vibrate", "-d", "1000", "-f"], check=False)
+        # Comando TTS (Text-to-Speech) se instalado, ou notificação
+        # subprocess.run(["termux-tts-speak", "Carro à direita!"], check=False) 
+    except: pass
 
 def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print(f"[MQTT] Conectado! A enviar GPS para {TOPIC_PUB}")
-        print(f"[MQTT] A escutar alertas em {TOPIC_SUB_ALERTA}")
-        client.subscribe(TOPIC_SUB_ALERTA)
-    else:
-        print(f"Erro conexão: {rc}")
+    print("OBU Conectada. A receber dados da Infraestrutura...")
+    client.subscribe(TOPIC_SUB)
 
 def on_message(client, userdata, msg):
-    # CALLBACK DE ALERTA
-    alerta = msg.payload.decode()
-    
-    # Visualização de Alerta
-    os.system('clear')
-    print("\n" + "!"*40)
-    print("   ⚠️  ALERTA DE COLISÃO V2V  ⚠️")
-    print("!"*40)
-    print(f"\nMSG: {alerta}")
-    print("\n" + "!"*40 + "\n")
-    
-    # Tenta vibrar o telemóvel
+    global my_x
     try:
-        subprocess.run(["termux-vibrate", "-d", "1000", "-f"])
-        # Tenta notificação no sistema
-        subprocess.run([
-            "termux-notification", 
-            "--title", "ALERTA V2V", 
-            "--content", alerta, 
-            "--priority", "high",
-            "--vibrate", "1000"
-        ])
-    except:
-        pass
-
-def main():
-    # FIX: Adicionado CallbackAPIVersion para Paho MQTT 2.0+
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, f"Termux_{DEVICE_ID}")
-    client.on_connect = on_connect
-    client.on_message = on_message
-
-    try:
-        client.connect(BROKER, PORT, 60)
-        client.loop_start() # Loop em background para receber alertas
-
-        while True:
-            # 1. Ler GPS
-            loc = run_termux_location("gps")
-            if not loc: 
-                loc = run_termux_location("network")
-
-            # 2. Enviar se válido
-            if loc and 'latitude' in loc:
-                payload = {
-                    "device_id": DEVICE_ID,
-                    "ts": time.time(),
-                    "lat": loc['latitude'],
-                    "lon": loc['longitude'],
-                    "speed": loc.get('speed', 0), # m/s
-                    "bearing": loc.get('bearing', 0)
-                }
-                client.publish(TOPIC_PUB, json.dumps(payload), qos=0)
-                # print(".", end="", flush=True) # Feedback minimalista
+        data = json.loads(msg.payload.decode())
+        
+        # Dados do Outro Veículo (C)
+        c_y = data.get("pos_y", -99)
+        
+        # --- ALGORITMO DE COLISÃO DE ROTAS ---
+        
+        # Distância de ambos ao centro (0,0)
+        dist_me_to_center = abs(my_x)
+        dist_c_to_center = abs(c_y)
+        
+        # Se ambos estiverem perto do centro (< 60cm) ao mesmo tempo
+        if dist_me_to_center < 0.60 and dist_c_to_center < 0.60:
             
-            time.sleep(PUBLISH_INTERVAL)
+            os.system('clear')
+            print("\n" + "🟥"*30)
+            print(" ⚠️  PERIGO DE COLISÃO  ⚠️")
+            print(f" -> Veículo detetado pela RSU")
+            print(f" -> Vindo da DIREITA (Sul)")
+            print(f" -> A {dist_c_to_center*100:.0f}cm do impacto")
+            print("🟥"*30 + "\n")
+            
+            notify_collision(dist_c_to_center)
+            
+        else:
+            # Feedback visual de aproximação
+            print(f"Eu(X): {my_x:.2f}m  <-->  Ele(Y): {c_y:.2f}m")
 
-    except KeyboardInterrupt:
-        print("\nParado.")
-    finally:
-        client.loop_stop()
-        client.disconnect()
+    except Exception as e:
+        print(e)
 
-if __name__ == "__main__":
-    main()
+# --- MAIN ---
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "OBU_Smartphone")
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect(MQTT_BROKER, 1883, 60)
+client.loop_start()
+
+print("A simular condução em direção ao cruzamento...")
+
+try:
+    while True:
+        # Simulação de Física: A mota avança no tempo
+        if my_x < 0.0:
+            my_x += my_speed * 0.1 # Avança a cada 100ms
+        else:
+            # Se passou o cruzamento, reinicia a simulação para testares outra vez
+            print("--- Cruzamento Passado. A reiniciar simulação ---")
+            time.sleep(2)
+            my_x = -2.5
+            
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("Sair.")
+    client.disconnect()
