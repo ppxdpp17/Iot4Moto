@@ -1,35 +1,94 @@
-# fcw_server.py (Logger Limpo)
+# fcw_server.py (PC Windows - Blackbox & Latency Analyzer)
 import paho.mqtt.client as mqtt
 import json
 import csv
 import time
 from pathlib import Path
 
-MQTT_BROKER = "172.20.0.130"
-LOG_FILE = Path.cwd() / "logs_fcw" / f"log_{int(time.time())}.csv"
-LOG_FILE.parent.mkdir(exist_ok=True)
+# --- CONFIGURAÇÃO ---
+MQTT_BROKER = "127.0.0.1" # Localhost (o script corre no mesmo PC do broker)
+TOPIC_LOG = "fcw/radar"
+TOPIC_ALERT = "fcw/alerta"
 
-with LOG_FILE.open("w", newline="") as f:
-    csv.writer(f).writerow(["ts", "topic", "dist", "vel", "ttc", "alert"])
+# Setup de Logging
+DATA_DIR = Path.cwd() / "logs_fcw"
+DATA_DIR.mkdir(exist_ok=True)
+LOG_FILE = DATA_DIR / f"fusion_log_{int(time.time())}.csv"
 
-print("--- SERVER LOGGER ---")
+# Cria o ficheiro com cabeçalho (Adicionei Latência)
+file = open(LOG_FILE, "w", newline="", encoding="utf-8")
+writer = csv.writer(file)
+writer.writerow(["timestamp_server", "timestamp_pi", "latency_ms", "topic", "source", "dist_m", "vel_ms", "ttc", "alert_msg"])
+file.flush() # Garante que o cabeçalho é gravado
+
+print(f"--- FCW BLACKBOX ATIVA ---")
+print(f"Log: {LOG_FILE.name}")
+print("A aguardar telemetria...")
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("✅ Conectado ao Broker MQTT.")
+        client.subscribe([(TOPIC_LOG, 0), (TOPIC_ALERT, 1)])
+    else:
+        print(f"❌ Falha na conexão (rc={rc})")
 
 def on_message(client, userdata, msg):
     try:
-        data = json.loads(msg.payload.decode())
-        ts = time.strftime("%H:%M:%S")
+        payload = json.loads(msg.payload.decode())
+        server_ts = time.time()
         
-        if msg.topic == "fcw/radar":
-            print(f"[{ts}] RADAR: {data.get('source')} -> {data.get('dist_m')}m (Vel: {data.get('vel_ms')}m/s)")
-            # Gravar CSV...
-        elif msg.topic == "fcw/alerta":
-            lvl = data.get('alert_level')
-            if lvl != "GREEN": # Só mostra alertas reais na consola
-                print(f"[{ts}] ⚠️ ALERTA {lvl}: {data.get('msg')} (TTC: {data.get('ttc_s')}s)")
-                
-    except: pass
+        # Extrair Timestamp de origem (do Pi)
+        pi_ts = payload.get("ts", server_ts)
+        
+        # Calcular Latência (Lag da rede) em milissegundos
+        # Nota: Requer que os relógios do PC e do Pi estejam +- sincronizados para ser preciso
+        latency = (server_ts - pi_ts) * 1000 
+        
+        # Prepara linha CSV
+        # [ServerTime, PiTime, Latency, Topic, Source, Dist, Vel, TTC, AlertMsg]
+        row = [
+            f"{server_ts:.3f}", 
+            f"{pi_ts:.3f}", 
+            f"{latency:.1f}",
+            msg.topic,
+            "", "", "", "", "" # Placeholders
+        ]
+        
+        if msg.topic == TOPIC_LOG:
+            row[4] = payload.get("source", "N/A")
+            row[5] = payload.get("dist_m")
+            row[6] = payload.get("vel_ms")
+            row[7] = payload.get("ttc")
+            
+            # Feedback na consola (apenas telemetria útil)
+            print(f"📡 [{row[4]}] Dist: {row[5]}m | Vel: {row[6]}m/s | Latência: {latency:.0f}ms")
+            
+        elif msg.topic == TOPIC_ALERT:
+            alert_lvl = payload.get("alert_level")
+            if alert_lvl != "GREEN":
+                msg_txt = f"{alert_lvl} - {payload.get('msg')}"
+                row[8] = msg_txt
+                print(f"🚨 >>> ALERTA RECEBIDO: {msg_txt}")
 
-client = mqtt.Client(protocol=mqtt.MQTTv311)
-client.connect(MQTT_BROKER, 1883)
-client.subscribe([("fcw/radar", 0), ("fcw/alerta", 0)])
-client.loop_forever()
+        # Gravar e forçar escrita no disco
+        if msg.topic == TOPIC_LOG or (msg.topic == TOPIC_ALERT and payload.get("alert_level") != "GREEN"):
+            writer.writerow(row)
+            file.flush() 
+            
+    except Exception as e:
+        print(f"Erro processamento: {e}")
+
+# --- MAIN ---
+# CORREÇÃO CRÍTICA: Especificar API VERSION 1 para evitar o erro do Paho 2.0+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "Blackbox_FCW_PC")
+client.on_connect = on_connect
+client.on_message = on_message
+
+try:
+    client.connect(MQTT_BROKER, 1883, 60)
+    client.loop_forever()
+except KeyboardInterrupt:
+    print("\nBlackbox Encerrada.")
+    file.close()
+except Exception as e:
+    print(f"Erro fatal: {e}")
