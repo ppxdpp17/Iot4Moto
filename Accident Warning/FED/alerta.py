@@ -5,12 +5,13 @@ import select
 import os
 import json
 
-# --- CONFIGURAÇÃO ---
-MQTT_BROKER = "172.20.0.130" # IP DO SERVIDOR
+#---CONFIGURAÇÃO MQTT---
+MQTT_BROKER = "172.20.0.130" #IP DO SERVIDOR - PC windows
 MQTT_PORT = 1883
-TOPIC_FINAL = "motopi/alerta/final" # Ouve o servidor, não o Pi
+TOPIC_FINAL = "motopi/alerta/final" #O telemóvel ouve o servidor (não o Pi)
 CALL_DURATION = 10
 
+#Variáveis para controlar o estado do alerta
 is_alerting = False
 cancelled = False
 start_signal = False
@@ -21,16 +22,18 @@ def handle_countdown():
     is_alerting = True
     cancelled = False
     
+    #Print de alerta
     os.system('clear')
     print("\n" + "🟥"*30)
-    print("!!! 🚨 ALERTA CRÍTICO RECEBIDO 🚨 !!!")
+    print("!!! ALERTA CRÍTICO RECEBIDO !!!")
     print(f"Motivo: {current_msg}")
     print("-" * 30)
-    print(f"A LIGAR 112 EM {CALL_DURATION} SEGUNDOS.")
-    print("Prima [ENTER] para CANCELAR.")
+    print(f"A LIGAR PARA O 112 EM {CALL_DURATION} SEGUNDOS.")
+    print("Prime [ENTER] para CANCELAR.")
     print("🟥"*30 + "\n")
 
     try:
+        #Loop para contagem decrescente
         for i in range(CALL_DURATION, 0, -1):
             if cancelled: break
             rlist, _, _ = select.select([sys.stdin], [], [], 1.0)
@@ -39,15 +42,18 @@ def handle_countdown():
                 cancelled = True
                 break
             if not cancelled:
-                print(f"📞 LIGAÇÃO EM: {i}s...     \r", end='', flush=True)
+                print(f"->LIGAÇÃO EM: {i}s...     \r", end='', flush=True)
     except:
         cancelled = True
 
     print("\n" + "="*35)
+    
+    #Se o user cancelar (clica no ENTER), não simula a chamada
     if cancelled:
-        print("!!! ✅ CHAMADA CANCELADA PELO UTILIZADOR !!!")
+        print("!!!CHAMADA CANCELADA PELO UTILIZADOR!!!")
     else:
-        print("!!! 📞 A LIGAR 112... (Simulação) !!!")
+        #Caso contrário, simula a chamada
+        print("!!!A LIGAR 112...!!! (Simulação)")
     print("="*35 + "\n")
     is_alerting = False
 
@@ -70,6 +76,7 @@ def on_message(client, userdata, msg):
     except:
         print("Erro ao ler alerta JSON")
 
+#Conexão MQTT
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "Termux_Final")
 client.on_connect = on_connect
 client.on_message = on_message
