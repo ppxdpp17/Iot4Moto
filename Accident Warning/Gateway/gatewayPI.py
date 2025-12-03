@@ -4,24 +4,24 @@ import time, math
 import json
 import paho.mqtt.client as mqtt
 
-# --- CONFIGURAÇÃO ---
-MQTT_BROKER = "172.20.0.130" 
+#---CONFIGURAÇÃO MQTT---
+MQTT_BROKER = "172.20.0.130" #IP do Server (PC Windows)
 MQTT_PORT = 1883
 
-# Tópicos
-TOPIC_TELEMETRY = "motopi/telemetria" # Dados contínuos
-TOPIC_EVENT = "motopi/evento"         # Eventos de lógica (Impacto, Queda, Cancelar)
+#Tópicos
+TOPIC_TELEMETRY = "motopi/telemetria" #Dados contínuos
+TOPIC_EVENT = "motopi/evento"         #Eventos (Impacto, Queda, Cancelar)
 
-# Parâmetros
-G = 9.81
-SVM_THRESHOLD = 3.0 * G 
-ANGLE_THRESHOLD = 60.0
-WINDOW_TIME = 5.0
+#Variáveis Globais
+G = 9.81	#Força da Gravidade
+SVM_THRESHOLD = 3.0 * G 	#Threshold do Sum Vector Magnitude
+ANGLE_THRESHOLD = 60.0		#Threshold do ângulo de inclinação
+WINDOW_TIME = 5.0	#Janela de tempo
 
-PUBLISH_FREQUENCY_HZ = 50 # 50Hz é suficiente e mais leve
+PUBLISH_FREQUENCY_HZ = 50 #50Hz é suficiente e mais leve - aumentar ? 
 acc_bias, gyr_bias = None, None
-
-# Estado
+ 
+#Variáveis de Estado
 impact_detected = False
 impact_timestamp = 0
 last_svm = 0
@@ -30,6 +30,7 @@ def on_connect(client, userdata, flags, rc):
     print(f"Conectado ao Broker (rc:{rc})")
 
 def main():
+	#Configs iniciais de ligação
     global impact_detected, impact_timestamp, last_svm
     
     bus = SMBus(1)
@@ -56,33 +57,36 @@ def main():
             rows = sensor_handler.get_sensor_data(bus, acc_bias, gyr_bias)
             
             for sensor, ts, x, y, z in rows:
-                if sensor == "ACEL":
-                    last_svm = math.sqrt(x**2 + y**2 + z**2)
+	        #Monitoriza inicialmente o acelerómetro para analisar SVM
+		if sensor == "ACEL":
+                    last_svm = math.sqrt(x**2 + y**2 + z**2)	#Cálculo do Sum Vector Magnitude
                     
-                    # 1. DETEÇÃO DE IMPACTO (Gatilho Inicial)
+                    #1. -> DETEÇÃO DE IMPACTO (Trigger Inicial)
                     if last_svm > SVM_THRESHOLD and not impact_detected:
                         impact_detected = True
                         impact_timestamp = time.time()
-                        print(f"💥 IMPACTO ({last_svm/G:.1f}g). A avisar servidor...")
+                        print(f"IMPACTO ({last_svm/G:.1f}g). A avisar servidor...")
                         
-                        # Envia aviso IMEDIATO para o servidor (Caso a mota morra a seguir)
+                        #Envia aviso para o server (para o caso da mota "morrer" a seguir)
                         payload = {
                             "tipo": "IMPACTO",
                             "svm": round(last_svm, 2),
                             "ts": ts
                         }
                         client.publish(TOPIC_EVENT, json.dumps(payload), qos=1)
-
+		
+		#Monitoriza depois o AHRS
                 elif sensor == "AHRS":
                     pitch, roll, yaw = x, y, z
                     
-                    # 2. LÓGICA PÓS-IMPACTO (Confirmação de Queda)
+                    #2.LÓGICA PÓS-IMPACTO (Confirmação de Queda)
                     if impact_detected:
                         elapsed = time.time() - impact_timestamp
                         
                         if elapsed < WINDOW_TIME:
+				#Caso o ângulo de inclinação seja maior que o threshold definido, envia alerta
                             if abs(roll) > ANGLE_THRESHOLD or abs(pitch) > ANGLE_THRESHOLD:
-                                print("⤵️ QUEDA CONFIRMADA.")
+                                print("UEDA CONFIRMADA.")
                                 payload = {
                                     "tipo": "QUEDA_CONFIRMADA",
                                     "svm": round(last_svm, 2),
@@ -93,16 +97,16 @@ def main():
                                 client.publish(TOPIC_EVENT, json.dumps(payload), qos=2)
                                 
                                 impact_detected = False
-                                time.sleep(5) # Debounce
+                                time.sleep(5) #Debounce
                         else:
-                            # Tempo esgotou sem queda -> Falso Alarme (Buraco)
-                            print("✅ Falso alarme (Tempo esgotado).")
+                            #Tempo esgotou sem queda -> Falso Alarme (Buraco ou Lomba)
+                            print("Falso alarme (Tempo esgotado).")
                             payload = {"tipo": "CANCELAR", "msg": "Falso alarme (estável)."}
                             client.publish(TOPIC_EVENT, json.dumps(payload), qos=1)
                             impact_detected = False
 
-                    # 3. TELEMETRIA (Para Blackbox)
-                    # Envia apenas 1 em cada 10 frames para não entupir, ou todos se preferires
+                    #3.TELEMETRIA (Para "Blackbox")
+                    #Envia apenas 1 em cada 10 frames para não surgir bottleneck
                     if int(time.time()*100) % 10 == 0: 
                         data = {
                             "ts": ts,
@@ -112,7 +116,7 @@ def main():
                         }
                         client.publish(TOPIC_TELEMETRY, json.dumps(data), qos=0)
 
-            # Timing preciso
+            #Timing preciso
             next_t += period
             delay = next_t - time.perf_counter()
             if delay > 0: time.sleep(delay)
