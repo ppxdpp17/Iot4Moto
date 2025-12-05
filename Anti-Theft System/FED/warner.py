@@ -1,0 +1,1 @@
+#Código que irá correr no smartphone para alertar o utilizador de movimentos na moto e mostrar feed da câmara
