@@ -14,24 +14,24 @@ def send_command(cmd_type):
     if mqtt_client:
         payload = {"cmd": cmd_type, "ts": time.time()}
         mqtt_client.publish(config.TOPIC_PUB_CMD, json.dumps(payload))
-        print(f"\n ✅ Comando enviado via Cloud: {cmd_type}")
+        print(f"\nComando enviado via Cloud: {cmd_type}")
         time.sleep(1.5)
     else:
-        print("\n ❌ Erro: Sem conexão à Cloud.")
+        print("\nErro: Sem conexão à Cloud.")
         time.sleep(1)
 
 def show_menu():
     # Limpa ecrã para parecer uma App
     os.system('clear')
     print("========================================")
-    print("      A-MOVER UVMA (Mobile App)         ")
+    print("              A-MOVER UVMA              ")
     print("========================================")
     print(f"☁️  Cloud: {config.MQTT_BROKER}")
     print("----------------------------------------")
-    print("  1. 🔒  ARMAR SISTEMA (Modo Estacionamento)")
-    print("  2. 🔓  DESARMAR SISTEMA (Modo Condução)")
-    print("  3. 📹  VER CÂMARA EM DIRETO")
-    print("  4. ❌  SAIR")
+    print("  1. Ligar Modo de Estacionamento"       )
+    print("  2. Desligar Modo de Estacionamento"    )
+    print("  3. Visualizar Feed da Câmera"          )
+    print("  4. Sair"                               )
     print("----------------------------------------")
 
 # --- LOOP PRINCIPAL (UI) ---

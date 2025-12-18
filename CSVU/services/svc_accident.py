@@ -19,9 +19,9 @@ imu_driver.init_mpu(bus)
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "CSVU_Accident_Svc")
 try:
     client.connect(config.MQTT_BROKER_CLOUD, 1883, 60)
-    print(f"✅ Serviço ACIDENTE ligado à Cloud: {config.MQTT_BROKER_CLOUD}")
+    print(f"->Serviço ACIDENTE ligado à Cloud: {config.MQTT_BROKER_CLOUD}")
 except:
-    print("⚠️  Modo Offline (Cloud indisponível)")
+    print("-Modo Offline (Cloud indisponível)")
 
 client.loop_start()
 
@@ -42,13 +42,13 @@ try:
                 impact_detected = True
                 impact_ts = time.time()
                 last_svm = svm
-                print(f"💥 IMPACTO DETETADO: {svm:.1f} m/s²")
+                print(f"***IMPACTO DETETADO: {svm:.1f} m/s²***")
 
             # 2. CONFIRMAÇÃO
             if impact_detected:
                 if (time.time() - impact_ts) < 5.0: # Janela de 5s
                     if abs(data['roll']) > config.ANGLE_THRESHOLD:
-                        print("🚨 QUEDA CONFIRMADA! A enviar alerta...")
+                        print("!!!QUEDA CONFIRMADA! A enviar alerta...!!!")
                         
                         payload = {
                             "type": "ACCIDENT",

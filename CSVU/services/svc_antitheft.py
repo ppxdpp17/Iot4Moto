@@ -17,7 +17,7 @@ last_g_force = 1.0
 
 # --- MQTT CALLBACKS ---
 def on_connect(client, userdata, flags, rc):
-    print("✅ Serviço ANTI-ROUBO ligado à Cloud.")
+    print("->Serviço ANTI-ROUBO ligado à Cloud.")
     client.subscribe(config.TOPIC_CMD_SECURITY)
 
 def on_message(client, userdata, msg):
@@ -28,10 +28,10 @@ def on_message(client, userdata, msg):
         
         if cmd == "ARM":
             sistema_armado = True
-            print("🔒 SISTEMA ARMADO")
+            print("SISTEMA ARMADO!")
         elif cmd == "DISARM":
             sistema_armado = False
-            print("🔓 SISTEMA DESARMADO")
+            print("SISTEMA DESARMADO!")
     except: pass
 
 # --- SETUP ---
@@ -46,9 +46,9 @@ try:
     client.connect(config.MQTT_BROKER_CLOUD, 1883, 60)
     client.loop_start()
 except:
-    print("⚠️ Erro conexão Cloud")
+    print("Erro conexão Cloud")
 
-print("👮 Serviço Anti-Roubo Ativo (Aguardando Comando...)")
+print("->Serviço Anti-Roubo Ativo (Aguardando Comando...)")
 
 try:
     while True:
@@ -63,7 +63,7 @@ try:
                 delta = abs(curr_g - last_g_force)
                 
                 if delta > config.THEFT_SENSITIVITY:
-                    print(f"⚠️ MOVIMENTO: {delta:.2f}g")
+                    print(f"!!!MOVIMENTO: {delta:.2f}g!!!")
                     alert = {
                         "alert": "SECURITY",
                         "type": "THEFT",

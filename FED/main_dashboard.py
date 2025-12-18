@@ -57,9 +57,9 @@ class DashboardApp:
             
             if tipo == "ACCIDENT": # Colisão Iminente
                 self.root.configure(bg=config.ALERT_COLOR_RED)
-                self.lbl_alert.config(text=f"!!! TRAVAR AGORA !!!\n{dist}m", bg=config.ALERT_COLOR_RED, fg="white")
+                self.lbl_alert.config(text=f"!!!TRAVAR AGORA!!!\n{dist}m", bg=config.ALERT_COLOR_RED, fg="white")
             elif tipo == "WARNING":
-                self.lbl_alert.config(text=f"⚠️ APROXIMAÇÃO ({dist}m)", fg=config.ALERT_COLOR_YELLOW, bg=config.BG_COLOR)
+                self.lbl_alert.config(text=f"->APROXIMAÇÃO ({dist}m!!!)", fg=config.ALERT_COLOR_YELLOW, bg=config.BG_COLOR)
                 self.root.configure(bg=config.BG_COLOR)
             else:
                 self.lbl_alert.config(text="", bg=config.BG_COLOR)
@@ -68,7 +68,7 @@ class DashboardApp:
         elif "accident" in topic:
             # Deteção de Queda (Accident Warning)
             if data.get("type") == "ACCIDENT":
-                self.lbl_alert.config(text="🚨 QUEDA DETETADA 🚨\nSOS ENVIADO", fg="white", bg="red")
+                self.lbl_alert.config(text="QUEDA DETETADA \nSOS ENVIADO", fg="white", bg="red")
                 self.root.configure(bg="red")
             elif data.get("type") == "CANCEL":
                 self.lbl_alert.config(text="SISTEMA NORMAL", fg=config.ALERT_COLOR_GREEN, bg=config.BG_COLOR)

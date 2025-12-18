@@ -24,7 +24,7 @@ client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "CSVU_FCW_Svc")
 try:
     client.connect(config.MQTT_BROKER_LOCAL, config.MQTT_PORT, 60)
     client.loop_start()
-    print("✅ Serviço FCW ligado ao FED (Local).")
+    print("-Serviço FCW ligado ao FED (Local).")
 except: print("Erro Broker Local")
 
 def get_camera_dist():

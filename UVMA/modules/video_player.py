@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
 def open_feed():
-    print(f"\n >>> A abrir stream de vídeo seguro...")
+    print(f"\n >>> A abrir stream de vídeo...")
     print(f" >>> URL: {config.VIDEO_STREAM_URL}")
     try:
         # Comando Termux para abrir URL na app padrão do Android

@@ -39,9 +39,9 @@ def handle_countdown(seconds, msg_text):
     global alert_in_progress
     
     os.system('clear')
-    print("\n" + "🟥"*34)
-    print(" 🚨 DETEÇÃO DE ACIDENTE GRAVE 🚨")
-    print("🟥"*34)
+    print("\n" + "*"*34)
+    print(" ---DETEÇÃO DE ACIDENTE GRAVE--- ")
+    print("*"*34)
     print(f"\nDetalhes: {msg_text}")
     print("-" * 34)
     print(f"CHAMADA AUTOMÁTICA 112 EM {seconds}s")
@@ -53,7 +53,7 @@ def handle_countdown(seconds, msg_text):
     # Loop da Contagem
     for i in range(seconds, 0, -1):
         # Mostra o tempo restante sem mudar de linha (\r)
-        print(f"⏳ A ligar em {i} segundos...  ", end='\r', flush=True)
+        print(f"    -A ligar em {i} segundos...  ", end='\r', flush=True)
         
         # Espera 1 segundo por input do teclado
         # select([sys.stdin], [], [], 1.0) devolve true se alguém carregou numa tecla
@@ -68,10 +68,10 @@ def handle_countdown(seconds, msg_text):
     print("\n" + "="*34)
     
     if cancelled:
-        print("❌ ALERTA CANCELADO PELO UTILIZADOR.")
+        print("ALERTA CANCELADO PELO UTILIZADOR.")
         trigger_android_notification("AMOVER", "SOS Cancelado pelo utilizador.")
     else:
-        print("📞 A LIGAR PARA O 112... (Simulação)")
+        print("-A LIGAR PARA O 112... (Simulação)!")
         # Simula a chamada no Android
         trigger_android_notification("112", "A LIGAR PARA EMERGÊNCIA...", critical=True)
         try:
@@ -89,9 +89,9 @@ def handle_theft_alert(msg_text):
     global alert_in_progress
     
     os.system('clear')
-    print("\n" + "🟨"*30)
-    print(" 🕵️ ALERTA DE SEGURANÇA (ROUBO)")
-    print("🟨"*30)
+    print("\n" + "~"*30)
+    print(" ---ALERTA DE SEGURANÇA (ROUBO)--- ")
+    print("~"*30)
     print(f"\n{msg_text}")
     print("\nRecomendação: Verifique a câmara imediatamente.")
     print("-" * 30)
