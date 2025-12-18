@@ -8,6 +8,7 @@ def setup_gpio(trig, echo):
     GPIO.setup(echo, GPIO.IN)
     GPIO.output(trig, False)
 
+#Lê a distância em metros a usar o HC-SR04
 def read_distance(trig, echo):
     """Lê distância em Metros"""
     try:

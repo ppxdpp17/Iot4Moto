@@ -21,5 +21,5 @@ def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    print("📹 Servidor de Vídeo a correr na porta 5000")
+    print("->Servidor de Vídeo a correr na porta 5000")
     app.run(host='0.0.0.0', port=5000, threaded=True)

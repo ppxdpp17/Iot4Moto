@@ -14,8 +14,8 @@ import config
 # --- VARIÁVEIS DE ESTADO (Evitar sobreposição) ---
 alert_in_progress = False
 
+#Envia notificação para o Android
 def trigger_android_notification(title, body, critical=False):
-    """Envia notificação para a barra de topo do Android"""
     try:
         duration = "2000" if critical else "500"
         subprocess.run(["termux-vibrate", "-d", duration, "-f"], check=False)
@@ -45,7 +45,7 @@ def handle_countdown(seconds, msg_text):
     print(f"\nDetalhes: {msg_text}")
     print("-" * 34)
     print(f"CHAMADA AUTOMÁTICA 112 EM {seconds}s")
-    print(">>> Pressione [ENTER] para CANCELAR <<<")
+    print(">>> Pressiona [ENTER] para CANCELAR <<<")
     print("-" * 34 + "\n")
 
     cancelled = False
@@ -78,14 +78,14 @@ def handle_countdown(seconds, msg_text):
             # Comando para iniciar chamada (pede permissão no Android 1ª vez)
             subprocess.run(["termux-telephony-call", "112"], check=False)
         except:
-            print("(Permissão de chamada não concedida no Termux)")
+            print("(Permissão de chamada não concedida)")
 
     print("="*34 + "\n")
     time.sleep(3) # Pausa para ler
     alert_in_progress = False # Liberta o sistema para novos alertas
 
+#Gere o alerta de roubo (sem contagem)
 def handle_theft_alert(msg_text):
-    """Gere o alerta de roubo (sem contagem 112, mas com bloqueio)"""
     global alert_in_progress
     
     os.system('clear')
@@ -93,7 +93,7 @@ def handle_theft_alert(msg_text):
     print(" ---ALERTA DE SEGURANÇA (ROUBO)--- ")
     print("~"*30)
     print(f"\n{msg_text}")
-    print("\nRecomendação: Verifique a câmara imediatamente.")
+    print("\nVerifica a câmara imediatamente.")
     print("-" * 30)
     
     trigger_android_notification("ALERTA ROUBO", msg_text)

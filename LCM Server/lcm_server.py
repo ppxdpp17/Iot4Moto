@@ -18,8 +18,8 @@ def on_public_connect(client, userdata, flags, rc):
     # Ouve comandos da App (Armar/Desarmar)
     client.subscribe(config.TOPIC_APP_CMD_IN)
 
+#Recebe comando da App e envia para a Mota
 def on_public_message(client, userdata, msg):
-    """Recebe comando da App e manda para a Mota"""
     try:
         print(f"[APP -> LCM] Comando recebido via Cloud")
         # Reencaminha para a rede local (Mota)
@@ -38,8 +38,8 @@ def on_local_connect(client, userdata, flags, rc):
     # Ouve tudo o que a mota disser
     client.subscribe(config.TOPIC_MOTO_IN)
 
+#Recebe dados da Mota e envia para a App
 def on_local_message(client, userdata, msg):
-    """Recebe dados da Mota e manda para a App"""
     # Evita loops (ignora mensagens de comando que ele próprio enviou)
     if "cmd" in msg.topic: return 
 
@@ -47,11 +47,11 @@ def on_local_message(client, userdata, msg):
         payload_str = msg.payload.decode()
         data = json.loads(payload_str)
         
-        print(f"📥 [MOTO] Recebido: {data.get('type')} | Msg: {data.get('msg')}")
+        print(f"[MOTA] Recebido: {data.get('type')} | Msg: {data.get('msg')}")
         
         # Filtra alertas importantes (Acidente, Roubo, Segurança)
         if data.get("type") in ["ACCIDENT", "THEFT", "SECURITY"]:
-            print("     [LCM -> APP] Reencaminhando alerta via 4G...")
+            print("     [LCM -> APP] A reencaminhar alerta via 4G...")
             
             # Cria o pacote para a App
             app_payload = {

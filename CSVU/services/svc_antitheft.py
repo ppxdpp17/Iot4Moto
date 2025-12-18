@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from lib import imu_driver
 
-# --- ESTADO ---
+#---ESTADO---
 sistema_armado = False
 last_g_force = 1.0
 
@@ -48,16 +48,16 @@ try:
 except:
     print("Erro conexão Cloud")
 
-print("->Serviço Anti-Roubo Ativo (Aguardando Comando...)")
+print("->Serviço Anti-Roubo Ativo (À espera de comando via UVMA...)")
 
 try:
     while True:
-        # Só lê sensor se estiver armado para poupar recursos
+        # Só lê sensor se estiver armado (para poupar recursos)
         if sistema_armado:
             data = imu_driver.read_raw_data(bus)
             if data:
-                # Calcula Magnitude G (aprox 1.0 em repouso)
-                # O driver devolve SVM em m/s2, convertemos para G
+                #Calcula Magnitude G (aprox 1.0 em repouso)
+                #O driver devolve SVM em m/s2, faz-se a conversão para G
                 curr_g = data['svm'] / 9.81
                 
                 delta = abs(curr_g - last_g_force)

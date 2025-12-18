@@ -6,16 +6,16 @@ import time
 import paho.mqtt.client as mqtt
 from smbus import SMBus
 
-# Importar módulos da pasta pai
+#Importar módulos
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from lib import imu_driver
 
-# --- SETUP ---
+#---SETUP---
 bus = SMBus(1)
 imu_driver.init_mpu(bus)
 
-# Cliente Cloud (Simula envio para LCM -> App)
+#Cliente Cloud (Simula envio para LCM -> App)
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "CSVU_Accident_Svc")
 try:
     client.connect(config.MQTT_BROKER_CLOUD, 1883, 60)
@@ -25,7 +25,7 @@ except:
 
 client.loop_start()
 
-# Estado
+#Estado
 impact_detected = False
 impact_ts = 0
 last_svm = 0

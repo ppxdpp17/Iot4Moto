@@ -9,8 +9,8 @@ from modules import alert_manager, video_player
 # 1. Iniciar Serviço de Alertas em Background
 mqtt_client = alert_manager.start_listening()
 
+#Envia comandos para a Mota via Cloud
 def send_command(cmd_type):
-    """Envia comandos para a Mota via Cloud"""
     if mqtt_client:
         payload = {"cmd": cmd_type, "ts": time.time()}
         mqtt_client.publish(config.TOPIC_PUB_CMD, json.dumps(payload))
@@ -38,7 +38,7 @@ def show_menu():
 try:
     while True:
         show_menu()
-        opt = input("Selecione Opção: ")
+        opt = input("Seleciona uma Opção: ")
         
         if opt == "1":
             send_command("ARM")
@@ -46,7 +46,7 @@ try:
             send_command("DISARM")
         elif opt == "3":
             video_player.open_feed()
-            input("\n[Pressione Enter para voltar ao menu...]")
+            input("\n[Pressiona Enter para voltar ao menu...]")
         elif opt == "4":
             print("\nA fechar aplicação...")
             break

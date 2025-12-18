@@ -16,10 +16,10 @@ from lib import ultrasonic_driver
 ultrasonic_driver.setup_gpio(config.TRIG_PIN, config.ECHO_PIN)
 cam_session = requests.Session()
 
-# Histórico para cálculo de velocidade
+#Histórico para cálculo de velocidade
 history = deque(maxlen=6)
 
-# MQTT Local (Para o FED via Cabo)
+#MQTT Local (Para o FED via Cabo Ethernet)
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "CSVU_FCW_Svc")
 try:
     client.connect(config.MQTT_BROKER_LOCAL, config.MQTT_PORT, 60)
@@ -27,14 +27,11 @@ try:
     print("-Serviço FCW ligado ao FED (Local).")
 except: print("Erro Broker Local")
 
+#Função para color tracking de UnitV2
 def get_camera_dist():
-    """Lê Color Tracking da UnitV2"""
     try:
         with cam_session.post(config.UNITV2_URL, data={}, stream=True, timeout=0.2) as r:
             if r.status_code != 200: return None
-            # (Lógica simplificada de leitura byte-a-byte que já testámos)
-            # ... assume que funciona e devolve metros ...
-            # Para brevidade, inserindo a lógica compacta:
             buf = ""
             for chunk in r.iter_content(chunk_size=1):
                 buf += chunk.decode('utf-8', errors='ignore')
@@ -48,7 +45,7 @@ def get_camera_dist():
     except: pass
     return None
 
-print("🚗 FCW (Fusão de Sensores) Iniciado.")
+print("FCW (HC-SR04 + UnitV2) Iniciado.")
 
 try:
     while True:
