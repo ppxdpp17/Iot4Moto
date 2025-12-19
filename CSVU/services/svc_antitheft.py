@@ -1,4 +1,3 @@
-# /home/pi/amover_project/services/svc_antitheft.py
 import sys
 import os
 import json
@@ -15,26 +14,30 @@ from lib import imu_driver
 sistema_armado = False
 last_g_force = 1.0
 
-# --- MQTT CALLBACKS ---
+#Conexão MQTT
 def on_connect(client, userdata, flags, rc):
     print("->Serviço ANTI-ROUBO ligado à Cloud.")
     client.subscribe(config.TOPIC_CMD_SECURITY)
 
+#Receção de mensagens MQTT  
 def on_message(client, userdata, msg):
     global sistema_armado
     try:
         payload = json.loads(msg.payload.decode())
         cmd = payload.get("cmd")
         
+        #Quando recebe "ARM", ativa o sistema de anti-roubo
         if cmd == "ARM":
             sistema_armado = True
             print("SISTEMA ARMADO!")
+        #Quando recebe "DISARM", desativa o sistema de anti-roubo
         elif cmd == "DISARM":
             sistema_armado = False
             print("SISTEMA DESARMADO!")
     except: pass
 
-# --- SETUP ---
+
+#---SETUP MQTT---
 bus = SMBus(1)
 imu_driver.init_mpu(bus)
 
@@ -46,13 +49,13 @@ try:
     client.connect(config.MQTT_BROKER_CLOUD, 1883, 60)
     client.loop_start()
 except:
-    print("Erro conexão Cloud")
+    print("Erro conexão MQTT")
 
 print("->Serviço Anti-Roubo Ativo (À espera de comando via UVMA...)")
 
 try:
     while True:
-        # Só lê sensor se estiver armado (para poupar recursos)
+        #Só lê sensor se estiver armado (para poupar recursos)
         if sistema_armado:
             data = imu_driver.read_raw_data(bus)
             if data:
@@ -60,8 +63,10 @@ try:
                 #O driver devolve SVM em m/s2, faz-se a conversão para G
                 curr_g = data['svm'] / 9.81
                 
+                #Calcula variação desde a última leitura
                 delta = abs(curr_g - last_g_force)
                 
+                #Se a variação exceder o limiar, envia alerta de roubo
                 if delta > config.THEFT_SENSITIVITY:
                     print(f"!!!MOVIMENTO: {delta:.2f}g!!!")
                     alert = {
@@ -70,8 +75,10 @@ try:
                         "msg": "MOVIMENTO NÃO AUTORIZADO!",
                         "val": f"{delta:.2f}g"
                     }
+
+                    #Publica alerta via MQTT
                     client.publish(config.TOPIC_ALERT_THEFT, json.dumps(alert), qos=1)
-                    time.sleep(5) # Debounce
+                    time.sleep(5) #Debounce para evitar spam de alertas
                 
                 last_g_force = curr_g
                 
