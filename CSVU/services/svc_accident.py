@@ -1,4 +1,3 @@
-# /home/pi/amover_project/services/svc_accident.py
 import sys
 import os
 import json
