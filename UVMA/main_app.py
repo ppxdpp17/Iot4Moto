@@ -1,4 +1,3 @@
-# ~/amover_uvma/main_app.py
 import time
 import os
 import json
@@ -6,7 +5,7 @@ import sys
 import config
 from modules import alert_manager, video_player
 
-# 1. Iniciar Serviço de Alertas em Background
+#Iniciar Serviço de Alertas em Background
 mqtt_client = alert_manager.start_listening()
 
 #Envia comandos para a Mota via Cloud
@@ -21,7 +20,7 @@ def send_command(cmd_type):
         time.sleep(1)
 
 def show_menu():
-    # Limpa ecrã para parecer uma App
+    #"UI" da app móvel
     os.system('clear')
     print("========================================")
     print("              A-MOVER UVMA              ")
@@ -34,7 +33,7 @@ def show_menu():
     print("  4. Sair"                               )
     print("----------------------------------------")
 
-# --- LOOP PRINCIPAL (UI) ---
+#---LOOP PRINCIPAL (interação)---
 try:
     while True:
         show_menu()
