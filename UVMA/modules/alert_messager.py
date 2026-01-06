@@ -121,7 +121,7 @@ def on_message(client, userdata, msg):
         
         if alert_type == "CRITICAL": #Acidente
             trigger_android_notification("ACIDENTE!", "Contagem iniciada...", critical=True)
-            handle_countdown(10, msg_text) #10 Segundos
+            handle_countdown(5, msg_text) #5 Segundos
             
         elif alert_type == "SECURITY": #Roubo
             handle_theft_alert(msg_text)

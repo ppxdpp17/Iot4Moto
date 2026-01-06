@@ -1,27 +1,38 @@
-from flask import Flask, Response
-import requests
 import sys
 import os
+import requests
+from flask import Flask, Response, stream_with_context, request
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
+#Configurações
+UNITV2_URL = "http://10.254.239.1/video_feed"
+SECRET_KEY = "!ppxdpp123!" #Security Key
 
-#Usa Flask para fazer de server para a stream de vídeo
 app = Flask(__name__)
 
-#Vai enviando o vídeo continuamente em chunks
-def generate_frames():
+def get_stream():
     try:
-        r = requests.get(config.UNITV2_STREAM, stream=True, timeout=5)
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk: yield chunk
-    except: pass
+        req = requests.get(UNITV2_URL, stream=True, timeout=3)
+        return Response(stream_with_context(req.iter_content(chunk_size=1024)), 
+                        content_type=req.headers['content-type'])
+    except Exception as e:
+        print(f"ERRO CAMARA: {e}")
+        return f"Erro: {e}", 503
 
-#Protocolo MJPEG para streaming
+@app.route('/')
 @app.route('/video')
+@app.route('/video_feed')
 def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')    #A resposta é uma sequência rápida de frames
+    #---BLOCO DE SEGURANÇA---
+    # Verifica se o link tem key
+    token_recebido = request.args.get('key')
+
+    if token_recebido != SECRET_KEY:
+        print(f"!!! ACESSO NEGADO: Alguém tentou entrar sem chave !!!")
+        return "ACESSO NEGADO (Chave Invalida)", 403
+    # --------------------------
+
+    print(f"-> Acesso autorizado. A ligar à câmara...")
+    return get_stream()
 
 if __name__ == '__main__':
-    print("->Servidor de Vídeo a correr na porta 5000")
-    app.run(host='0.0.0.0', port=5000, threaded=True)   #Para permitir conexões de outros clientes (não só local)
+    app.run(host='0.0.0.0', port=5000, threaded=True)
