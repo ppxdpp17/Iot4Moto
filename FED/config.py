@@ -2,7 +2,7 @@
 
 #---CONEXÃO ETHERNET (Privada)---
 #IP do CSVU na interface de cabo (eth0, neste caso)
-MQTT_BROKER_IP = "192.168.50.1" 
+MQTT_BROKER_IP = "127.0.0.1" 
 MQTT_PORT = 1883
 
 #---TÓPICOS SUBSCRITOS---
