@@ -2,9 +2,9 @@ from flask import Flask, Response
 import requests
 import sys
 import os
-import config
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import config
 
 #Usa Flask para fazer de server para a stream de vídeo
 app = Flask(__name__)

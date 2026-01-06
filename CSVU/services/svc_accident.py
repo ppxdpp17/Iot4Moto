@@ -4,11 +4,12 @@ import json
 import time
 import paho.mqtt.client as mqtt
 from smbus import SMBus
-import config
-from lib import imu_driver
 
 #Importar módulos
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import config
+from lib import imu_driver
+
 
 #---SETUP---
 bus = SMBus(1)

@@ -6,11 +6,12 @@ import requests
 import numpy as np
 import paho.mqtt.client as mqtt
 from collections import deque
-import config
-from lib import ultrasonic_driver
 
 #Importar módulos
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import config
+from lib import ultrasonic_driver
 
 #---SETUP GPIO---
 ultrasonic_driver.setup_gpio(config.TRIG_PIN, config.ECHO_PIN)
