@@ -1,12 +1,12 @@
 #FICHEIRO DE CONFIGURAÇÃO GLOBAL DA CSVU
 
 #---REDE ETHERNET (Privada - Cabo CSVU <-> FED)---
-MQTT_BROKER_LOCAL = "127.0.0.1"  #O Broker corre no próprio CSVU
+MQTT_BROKER_LOCAL = "172.20.0.130"  #O Broker corre no próprio CSVU
 MQTT_PORT = 1883
 
 #---REDE WI-FI (Pública - CSVU <-> App)---
 #Usa um Broker Público (hive) para garantir que funciona via 4G/Internet
-MQTT_BROKER_CLOUD = "broker.hivemq.com" 
+MQTT_BROKER_CLOUD = "172.20.0.130" 
 
 # ---TÓPICOS MQTT---
 #Prefixos
