@@ -5,30 +5,31 @@ import time
 import paho.mqtt.client as mqtt
 from smbus import SMBus
 
-#Importar módulos
+# --- SETUP CAMINHOS ---
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from lib import imu_driver
 
-
-#---SETUP---
+# --- SETUP HARDWARE ---
 bus = SMBus(1)
 imu_driver.init_mpu(bus)
 
-#Cliente MQTT (LCM -> App)
+# --- SETUP MQTT ---
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "CSVU_Accident_Svc")
 try:
     client.connect(config.MQTT_BROKER_CLOUD, 1883, 60)
-    print(f"->Serviço ACIDENTE ligado à Cloud: {config.MQTT_BROKER_CLOUD}")
-except:
-    print("-Modo Offline (Cloud indisponível)")
+    print(f"-> Serviço ACIDENTE ligado: {config.MQTT_BROKER_CLOUD}")
+except Exception as e:
+    print(f"- Modo Offline: {e}")
 
 client.loop_start()
 
-#Estados
+# --- VARIAVEIS DE ESTADO ---
 impact_detected = False
 impact_ts = 0
 last_svm = 0
+
+print(">>> A monitorizar sensor... (Abana o sensor!)")
 
 try:
     while True:
@@ -37,39 +38,40 @@ try:
         if data:
             svm = data['svm']
 
+            # DEBUG: Mostra leitura a cada segundo para veres se o sensor funciona
             if int(time.time() * 10) % 10 == 0: 
                 print(f"Leitura Atual: {svm/9.81:.2f} G")
             
-            #Monitoriza o SVG, e se ultrapassar o limite definido (3g), inicia o processo de deteção de acidente
+            # 1. DETEÇÃO DE IMPACTO (Mudámos para > 1.2G para ser sensível)
             if svm > config.SVM_THRESHOLD and not impact_detected:
                 impact_detected = True
                 impact_ts = time.time()
                 last_svm = svm
-                print(f"***IMPACTO DETETADO: {svm:.1f} m/s²***")
+                print(f"*** IMPACTO DETETADO: {svm:.1f} m/s² ***")
 
-            #Verifica se um impacto foi uma queda ou apenas um solavanco
+            # 2. VALIDAÇÃO DE QUEDA (Janela de 5s)
             if impact_detected:
-                if (time.time() - impact_ts) < 5.0: #Janela de 5s
-                    #Se o ângulo de roll exceder o limiar, confirma queda
+                # Se passaram menos de 5s desde o impacto
+                if (time.time() - impact_ts) < 5.0:
+                    # Verifica inclinação (Roll)
                     if abs(data['roll']) > config.ANGLE_THRESHOLD:
-                        print("!!!QUEDA CONFIRMADA! A enviar alerta...!!!")
+                        print("!!! QUEDA CONFIRMADA! A enviar alerta... !!!")
                         
                         payload = {
                             "type": "ACCIDENT",
-                            "msg": "QUEDA DETETADA! A contactar 112...",
+                            "msg": "QUEDA DETETADA!",
                             "svm": round(last_svm, 2),
-                            "gps": "38.716, -9.139" # Simulado
+                            "gps": "38.716, -9.139"
                         }
 
-                        #Publica para a App via MQTT
                         client.publish(config.TOPIC_ALERT_ACCIDENT, json.dumps(payload), qos=2)
                         
                         impact_detected = False
-                        time.sleep(5)
+                        time.sleep(5) # Pausa para não enviar spam
                 else:
-                    impact_detected = False #Timeout
-                    
-        time.sleep(0.05) #20Hz - para não sobrecarregar o Raspberry
+                    impact_detected = False # Passaram 5s, foi só um buraco na estrada
+
+        time.sleep(0.05) # 20Hz
 
 except KeyboardInterrupt:
     bus.close()
