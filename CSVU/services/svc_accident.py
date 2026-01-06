@@ -36,6 +36,9 @@ try:
         
         if data:
             svm = data['svm']
+
+            if int(time.time() * 10) % 10 == 0: 
+                print(f"Leitura Atual: {svm/9.81:.2f} G")
             
             #Monitoriza o SVG, e se ultrapassar o limite definido (3g), inicia o processo de deteção de acidente
             if svm > config.SVM_THRESHOLD and not impact_detected:
