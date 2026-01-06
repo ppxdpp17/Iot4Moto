@@ -12,7 +12,9 @@ TOPIC_SUB_ALERTS = "pedro_thesis/moto/app"
 #Envia comandos para a Mota (Armar/Desarmar)
 TOPIC_PUB_CMD = "pedro_thesis/moto/cmd/security"
 
-#---VÍDEO (ACESSO REMOTO)---
-#Casa (mesmo Wi-Fi): "http://192.168.1.XXX:5000/video"
-NGROK = "https://37tN1Gt7z5Y1y18QVZLcJ2XIODr_7td813kXMFrjdnM1kfQiw.app/video?key=!ppxdpp123!"
-VIDEO_STREAM_URL = "http://192.168.1.217:5000/video"    #IP da CSVU
+#---VÍDEO (ACESSO REMOTO HÍBRIDO)---
+#Link Local (Rápido, Wi-Fi de casa)
+VIDEO_URL_LOCAL = "http://192.168.1.217:5000/video?key=!ppxdpp123!"
+
+#Link Ngrok (Lento, 4G/Rua) - ATUALIZAR CADA VEZ QUE INICIA O NGROK (usar o link dado pelo comando "ngrok http 5000" no terminal do raspberry)
+VIDEO_URL_GLOBAL = "https://xxxx-xxxx.ngrok-free.app/video?key=!ppxdpp123!"

@@ -6,14 +6,32 @@ import os
 import time
 import select
 import config
+import requests
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 alert_in_progress = False   #Variável para evitar múltiplos alertas simultâneos
 
+#Função para decidir o link de vídeo a usar
+def get_smart_video_url():
+    try:
+        #Tenta "tocar" na porta 5000 do Raspberry Pi
+        #O timeout é curto (1s) para ser quase instantâneo
+        requests.get("http://192.168.1.217:5000", timeout=1)
+        print(" -> [REDE] Wi-Fi Casa detetado. Usando Link LOCAL.")
+        #Se conseguir, está em casa e usa o link local
+        return config.VIDEO_URL_LOCAL
+    except:
+        #Se falhar, está fora de casa e usa o link global
+        print(" -> [REDE] Fora de casa. Usando Link GLOBAL (Ngrok).")
+        return config.VIDEO_URL_GLOBAL
+
 #Função para enviar notificação para o Android
 def trigger_android_notification(title, body, critical=False):
     try:
+        # 1. Decide qual o link a usar AGORA
+        final_url = get_smart_video_url()
+
         #Vibra de acordo com o nível de criticidade
         duration = "2000" if critical else "500"
         subprocess.run(["termux-vibrate", "-d", duration, "-f"], check=False)
@@ -26,7 +44,8 @@ def trigger_android_notification(title, body, critical=False):
             "--content", body,
             "--priority", priority,
             "--id", "amover_alert",
-            "--action", f"termux-open-url {config.VIDEO_STREAM_URL}"
+            # 2. Usa o link decidido acima
+            "--action", f"termux-open-url '{final_url}'"
         ], check=False)
         
         #Leitura em voz alta (TTS) se crítico
