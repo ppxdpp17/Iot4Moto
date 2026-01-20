@@ -25,7 +25,7 @@ def show_menu():
     print("========================================")
     print("              A-MOVER UVMA              ")
     print("========================================")
-    print(f"☁️  Cloud: {config.MQTT_BROKER}")
+    print(f"    Cloud: {config.MQTT_BROKER}        ")
     print("----------------------------------------")
     print("  1. Ligar Modo de Estacionamento"       )
     print("  2. Desligar Modo de Estacionamento"    )

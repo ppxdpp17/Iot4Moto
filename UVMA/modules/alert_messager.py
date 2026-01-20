@@ -14,17 +14,8 @@ alert_in_progress = False   #Variável para evitar múltiplos alertas simultâne
 
 #Função para decidir o link de vídeo a usar
 def get_smart_video_url():
-    try:
-        #Tenta "tocar" na porta 5000 do Raspberry Pi
-        #O timeout é curto (1s) para ser quase instantâneo
-        requests.get("http://192.168.1.217:5000", timeout=1)
-        print(" -> [REDE] Wi-Fi Casa detetado. Usando Link LOCAL.")
-        #Se conseguir, está em casa e usa o link local
-        return config.VIDEO_URL_LOCAL
-    except:
-        #Se falhar, está fora de casa e usa o link global
-        print(" -> [REDE] Fora de casa. Usando Link GLOBAL (Ngrok).")
-        return config.VIDEO_URL_GLOBAL
+    return config.VIDEO_URL_LOCAL
+
 
 #Função para enviar notificação para o Android
 def trigger_android_notification(title, body, critical=False):

@@ -1,38 +1,27 @@
-import sys
-import os
 import requests
-from flask import Flask, Response, stream_with_context, request
+from flask import Flask, Response
 
-#Configurações
-UNITV2_URL = "http://10.254.239.1/video_feed"
-SECRET_KEY = "!ppxdpp123!" #Security Key
+# Garante que este é o URL que a UnitV2 usa para o stream MJPEG
+UNITV2_STREAM_URL = "http://10.254.239.1/video_feed"
+SECRET_KEY = "!ppxdpp123!"
 
 app = Flask(__name__)
 
-def get_stream():
-    try:
-        req = requests.get(UNITV2_URL, stream=True, timeout=3)
-        return Response(stream_with_context(req.iter_content(chunk_size=1024)), 
-                        content_type=req.headers['content-type'])
-    except Exception as e:
-        print(f"ERRO CAMARA: {e}")
-        return f"Erro: {e}", 503
-
-@app.route('/')
 @app.route('/video')
-@app.route('/video_feed')
 def video_feed():
-    #---BLOCO DE SEGURANÇA---
-    # Verifica se o link tem key
-    token_recebido = request.args.get('key')
+    # Validação da chave
+    if request.args.get('key') != SECRET_KEY:
+        return "Acesso Negado", 403
 
-    if token_recebido != SECRET_KEY:
-        print(f"!!! ACESSO NEGADO: Alguém tentou entrar sem chave !!!")
-        return "ACESSO NEGADO (Chave Invalida)", 403
-    # --------------------------
+    def generate():
+        # Timeout longo para o stream não cair
+        r = requests.get(UNITV2_STREAM_URL, stream=True, timeout=10)
+        # Passa os dados diretamente da câmara para o telemóvel
+        for chunk in r.iter_content(chunk_size=8192):
+            yield chunk
 
-    print(f"-> Acesso autorizado. A ligar à câmara...")
-    return get_stream()
+    return Response(generate(), content_type='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    # host 0.0.0.0 é obrigatório para ser visto pelo telemóvel
+    app.run(host='0.0.0.0', port=5000, threaded=True, debug=False)
