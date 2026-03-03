@@ -115,7 +115,7 @@ namespace CAN
         }
         
         public void EnviarVelocidade(int speed) => 
-            EnviarDadosSimulados(0x200, new byte[] { (byte)(speed & 0xFF), (byte)((speed >> 8) & 0xFF) });
+            EnviarDadosSimulados(0x200, new byte[] { (byte)(speed & 0xFF), (byte)((speed >> 8) & 0xFF), (byte)SimulationState.Battery, (byte)(SimulationState.Brake ? 1 : 0) });
 
         public void EnviarBateria(int battery) => 
             EnviarDadosSimulados(0x201, new byte[] { (byte)battery });

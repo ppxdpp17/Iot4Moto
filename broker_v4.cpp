@@ -1,20 +1,20 @@
 /***************************************************************
  * broker.cpp
  * Exemplo de "lógica de broker" em C++,
- * usando Paho MQTT C++ e nlohmann/json.
+ * utilizando Paho MQTT C++ e nlohmann/json.
  *
  * Para compilar (assumindo que Paho C++ e nlohmann/json
  * estão instalados em /usr/local):
  *
- *   g++ -std=c++17 main.cpp -o mqtt_logic \
+ *   g++ -std=c++17 main.cpp -o mqtt_v4 \
  *       -I/usr/local/include -L/usr/local/lib \
  *       -lpaho-mqttpp3 -lpaho-mqtt3as
  *
- * Execute primeiro o broker Mosquitto:
+ * Executar primeiro o broker Mosquitto:
  *   sudo systemctl start mosquitto
  *
- * Depois execute:
- *   ./mqtt_logic
+ * Depois executar:
+ *   ./mqtt_v4
  *
  ***************************************************************/
 
@@ -55,12 +55,17 @@ void* can_reader(void* arg) {
     while (read(s, &frame, sizeof(frame)) > 0) {
         uint32_t id = frame.can_id & CAN_SFF_MASK;
 
-        if (id == 0x200) { //VELOCIDADE (2 Bytes)
+        if (id == 0x200) { 
+            //Byte 0 e 1: Velocidade (uint16)
             uint16_t speed = frame.data[0] | (frame.data[1] << 8);
+            //Byte 2: Bateria (uint8)
+            uint8_t battery = frame.data[2];
+            //Byte 3: Travão (bool)
+            std::string brake = (frame.data[3] == 1) ? "true" : "false";
+
             client->publish("moto/speed", std::to_string(speed));
-        } 
-        else if (id == 0x201) { //BATERIA
-            client->publish("moto/battery", std::to_string((int)frame.data[0]), 0, true);        
+            client->publish("moto/battery", std::to_string((int)battery), 0, true);
+            client->publish("moto/brake", brake);
         }
         else if (id == 0x202) { //GEAR
             std::string gear = (frame.data[0] == 1) ? "F" : (frame.data[0] == 2) ? "R" : (frame.data[0] == 3) ? "P" : "N";
@@ -98,7 +103,7 @@ void* can_reader(void* arg) {
 
 int main() {
     const std::string address = "tcp://127.0.0.1:1884";
-    const std::string clientId = "CppBroker_V2";
+    const std::string clientId = "CppBroker_V4";
 
     std::cout << "Iniciando Motor C++ V3 (VOID Edition)" << std::endl;
     mqtt::async_client client(address, clientId);
