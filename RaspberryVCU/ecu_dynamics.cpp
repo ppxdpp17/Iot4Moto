@@ -57,7 +57,7 @@ int main() {
     float roll = 0, pitch = 0;
     short ax, ay, az, gx, gy, gz;
 
-    //std::cout << "[ECU_DYNAMICS] Raspberry Pi 5 a processar IMU..." << std::endl;
+    std::cout << "ECU a escutar IMU..." << std::endl;
 
     while (true) {
         imu.read_raw(ax, ay, az, gx, gy, gz);

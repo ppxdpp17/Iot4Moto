@@ -41,7 +41,7 @@ public:
         frame.can_dlc = 1;
         frame.data[0] = 0xFF; //Código de alarme
         write(can_sock, &frame, sizeof(struct can_frame));
-        //std::cout << "[SENTINEL] !!! MOVIMENTO DETETADO - ALERTA ENVIADO !!!" << std::endl;
+        std::cout << "[SENTINEL] !!! MOVIMENTO DETETADO - ALERTA ENVIADO !!!" << std::endl;
     }
 
     void monitor() {

@@ -46,7 +46,7 @@ void* can_reader(void* arg) {
     addr.can_ifindex = ifr.ifr_ifindex;
     bind(s, (struct sockaddr*)&addr, sizeof(addr));
     
-    std::cout << "[CAN] A ler dados reais do Raspberry em can0...\n";
+    std::cout << "[CAN] A ler dados do Raspberry em can0...\n";
 
 
     struct can_frame frame{};
@@ -113,7 +113,7 @@ int main() {
     const std::string address = "tcp://127.0.0.1:1884";
     const std::string clientId = "CppBroker_V4";
 
-    std::cout << "Iniciando Motor C++ V3 (VOID Edition)" << std::endl;
+    std::cout << "A Iniciar Motor C++ V4" << std::endl;
     mqtt::async_client client(address, clientId);
     mqtt::connect_options connOpts;
     connOpts.set_clean_session(true);
