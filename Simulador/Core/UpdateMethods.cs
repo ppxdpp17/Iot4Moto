@@ -35,7 +35,7 @@ namespace Simulador.Core
 
         private static int DashboardStartRow = 0;
 
-        public UpdateMethods(MqttService mqttService, LoggingService loggingService, Dashboard dashboard, Auxiliares auxiliares, Routes routes. CAN.CanService canService)
+        public UpdateMethods(MqttService mqttService, LoggingService loggingService, Dashboard dashboard, Auxiliares auxiliares, Routes routes, CAN.CanService canService)
         {
             _mqttService = mqttService;
             _loggingService = loggingService;

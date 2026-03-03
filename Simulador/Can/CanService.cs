@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IXXAT;
 using Simulador.Services;
+using Simulador.Core;
 using static IXXAT.SimplyCAN;
 
 namespace CAN

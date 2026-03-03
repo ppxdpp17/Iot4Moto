@@ -81,17 +81,17 @@ namespace Simulador
 
             Console.WriteLine("Starting MQTT client in the console...");
 
-            var host = Environment.GetEnvironmentVariable("MQTT_HOST");
-
+            var host = Environment.GetEnvironmentVariable("MQTT_HOST") ?? "localhost";
             var portStr = Environment.GetEnvironmentVariable("MQTT_PORT");
             var port    = int.TryParse(portStr, out var p) ? p : 1884;
+
+            var mqttService = new MqttService(host, port, "Simulator"); // board broker
 
             // Initialize services
             var canService = new CAN.CanService(mqttService);
 
             var loggingService = new LoggingService();
             //var mqttService = new MqttService("172.20.0.201", 1884, "Simulator");
-            var mqttService = new MqttService(host, port, "Simulator"); // board broker
             var dashboard = new Dashboard(mqttService, loggingService);
             var auxiliar = new Auxiliares(mqttService, loggingService, dashboard, canService); 
             var sensorService = new SensorService(sensorMappings, mqttService, loggingService, canService);
