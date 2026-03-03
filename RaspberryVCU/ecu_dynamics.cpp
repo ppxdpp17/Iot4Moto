@@ -1,3 +1,7 @@
+//Correr:
+//g++ -O3 ecu_dynamics.cpp -o ecu_dynamics
+//    ./ecu_dynamics
+
 #include <iostream>
 #include <fcntl.h>
 #include <unistd.h>

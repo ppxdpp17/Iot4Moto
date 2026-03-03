@@ -36,7 +36,7 @@
 
 using json = nlohmann::json;
 
-// Thread que lê o CAN físico vindo do Raspberry
+//Thread que lê o CAN físico vindo do Raspberry
 void* can_reader(void* arg) {
     auto* client = static_cast<mqtt::async_client*>(arg);
     int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
@@ -73,7 +73,7 @@ void* can_reader(void* arg) {
         }
         else if (id == 0x203) { //DRIVE MODE
             std::string mode = (frame.data[0] == 1) ? "ECO" : (frame.data[0] == 2) ? "SPORT" : "STD";
-            client->publish("moto/drive_mode", mode); // Tópico exato da App
+            client->publish("moto/drive_mode", mode);
         }
         else if (id == 0x204) { //LUZES (Bitmask)
             uint8_t mask = frame.data[0];
@@ -89,13 +89,23 @@ void* can_reader(void* arg) {
         else if (id == 0x207) { //TEMPERATURE
             client->publish("moto/temperature", std::to_string((int)frame.data[0]));
         }
-        else if (id == 0x400) {
-            std::cout << "\a";
-            std::cout << "!!ALERTA DE MOVIMENTO NA MOTA!!" << std::endl;
-            client->publish("moto/alarm", "ALERTA_MOVIMENTO");
-        }else if (id == 0x208) { // AUTONOMIA (Range)
+        else if (id == 0x208) { //AUTONOMIA (Range)
             uint16_t range = frame.data[0]; 
             client->publish("moto/range", std::to_string(range), 0, true);
+        }
+        else if (id == 0x300) { 
+            //Recuperar o int16 (multiplicado por 100 no RPi)
+            int16_t roll_raw = frame.data[0] | (frame.data[1] << 8);
+            float roll = roll_raw / 100.0f;
+
+            //Publicar com precisão de 2 casas decimais para a Web
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(2) << roll;
+            client->publish("moto/roll", ss.str());
+        }
+        else if (id == 0x400) {
+            std::cout << "\a!!ALERTA DE MOVIMENTO NA MOTA!!" << std::endl;
+            client->publish("moto/alarm", "ALERTA_MOVIMENTO");
         }
     }
     return nullptr;
