@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Moto IoT - Telemetria</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; }
+        .container { margin-top: 50px; }
+        #bike-container {
+            width: 300px; height: 300px; margin: 0 auto;
+            border: 2px solid #444; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, #333 0%, #1a1a1a 100%);
+        }
+        #bike-img {
+            width: 200px;
+            transition: transform 0.1s linear; /* Suaviza a inclinação */
+        }
+        .data-box { font-size: 24px; margin-top: 20px; color: #00ff00; }
+    </style>
+</head>
+<body>
+
+    <h1>IoT Motorcycle Dynamics</h1>
+    
+    <div class="container">
+        <div id="bike-container">
+            <img id="bike-img" src="https://upload.wikimedia.org/wikipedia/commons/d/d9/Icon_Motorcycle.svg" alt="Moto">
+        </div>
+        
+        <div class="data-box">
+            Inclinação (Roll): <span id="roll-val">0.00</span>°
+        </div>
+        <div id="status" style="font-size: 12px; color: gray;">A ligar ao Broker...</div>
+    </div>
+
+    <script>
+        // Configurações - Substitui pelo IP real da tua Concerto Board
+        const BROKER_IP = "192.168.1.XXX"; 
+        const PORT = 9001;
+        const CLIENT_ID = "Web_Dashboard_" + Math.random().toString(16).substr(2, 8);
+
+        const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
+
+        client.onConnectionLost = (responseObject) => {
+            document.getElementById("status").innerText = "Ligação Perdida: " + responseObject.errorMessage;
+        };
+
+        client.onMessageArrived = (message) => {
+            if (message.destinationName === "moto/roll") {
+                let angle = parseFloat(message.payloadString);
+                document.getElementById("roll-val").innerText = angle.toFixed(2);
+                
+                // Aplica a rotação à imagem
+                // Nota: O Roll do MPU6050 costuma ser negativo para um lado e positivo para outro
+                document.getElementById("bike-img").style.transform = `rotate(${angle}deg)`;
+            }
+        };
+
+        client.connect({
+            onSuccess: () => {
+                document.getElementById("status").innerText = "Ligado via WebSocket";
+                client.subscribe("moto/roll");
+            },
+            useSSL: false
+        });
+    </script>
+</body>
+</html>
