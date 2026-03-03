@@ -5,13 +5,11 @@
  *
  * Para compilar (assumindo que Paho C++ e nlohmann/json
  * estão instalados em /usr/local):
+ * 
+ *  Executar primeiro o broker Mosquitto:
+ *      sudo systemctl start mosquitto
  *
- *   g++ -std=c++17 main.cpp -o mqtt_v4 \
- *       -I/usr/local/include -L/usr/local/lib \
- *       -lpaho-mqttpp3 -lpaho-mqtt3as
- *
- * Executar primeiro o broker Mosquitto:
- *   sudo systemctl start mosquitto
+ *      g++ -std=c++17 broker_v4.cpp -o mqtt_v4 -I/usr/local/include -L/usr/local/lib -lpaho-mqttpp3 -lpaho-mqtt3as -lpthread
  *
  * Depois executar:
  *   ./mqtt_v4
