@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IXXAT;
 using Simulador.Services;
-using Simulador.Core;
+using Simulador.Core; // OBRIGATÓRIO para encontrar o SimulationState
 using static IXXAT.SimplyCAN;
 
 namespace CAN
@@ -14,6 +14,7 @@ namespace CAN
         private static char[] mserial_port = "/dev/ttyACM0\0".ToCharArray();
         private static ushort mbitrate = 500;
         private readonly MqttService _mqttService;
+        private readonly object _canLock = new object();
 
         public CanService(MqttService mqttService)
         {
@@ -22,10 +23,11 @@ namespace CAN
 
         private void ErrorExit()
         {
-            Console.WriteLine("Erro: " + simply_get_last_error());
+            Console.WriteLine("[CAN] Erro Crítico: " + simply_get_last_error());
             simply_close();
         }
 
+        // --- RECEÇÃO DE DADOS ---
         private async Task InterpretarMensagem(can_msg_t msg)
         {
             if (msg.dlc < 4) return;
@@ -34,8 +36,9 @@ namespace CAN
             int distancia = msg.payload[1] + (msg.payload[2] << 8);
             string lado = msg.payload[3] == 1 ? "Direita" : "Esquerda";
 
-            uint tipoSensor = msg.ident & 0xFF;  // Mask to obtain only the sensor type
+            uint tipoSensor = msg.ident & 0xFF; 
             int prioridade = (int)((msg.ident & 0xF00) >> 8);
+            
             string algoritmo = tipoSensor switch
             {
                 0x00 => "FrontalCollision",
@@ -46,21 +49,9 @@ namespace CAN
             };
 
             string perigo = status == 1 ? "PERIGO" : "Seguro";
+            var payload = new { status = perigo, distancia, lado, prioridade };
 
-            Console.WriteLine($"[CAN] {algoritmo} | Priority: {prioridade} | Status: {perigo} | Distance: {distancia} cm | Side: {lado}");
-
-            var payload = new
-            {
-                status = perigo,
-                distancia,
-                lado,
-                prioridade
-            };
-
-            string topic = $"sim/can/{algoritmo}";
-            string json = JsonSerializer.Serialize(payload);
-
-            await _mqttService.PublishAsync(topic, json);
+            await _mqttService.PublishAsync($"sim/can/{algoritmo}", JsonSerializer.Serialize(payload));
         }
 
         public async Task StartAsync(CancellationToken token)
@@ -71,7 +62,10 @@ namespace CAN
                 return;
             }
 
-            Console.WriteLine("[CAN] CAN connection started.");
+            Console.WriteLine("[CAN] Ligação iniciada em /dev/ttyACM0.");
+
+            // Inicia o Heartbeat em background
+            _ = StartHeartbeatAsync(token);
 
             await Task.Run(async () =>
             {
@@ -79,44 +73,40 @@ namespace CAN
                 while (!token.IsCancellationRequested)
                 {
                     sbyte res = simply_receive(ref rx);
-                    if (res == 1)
-                        await InterpretarMensagem(rx);
-                    else if (res == -1)
-                        ErrorExit();
-
+                    if (res == 1) await InterpretarMensagem(rx);
+                    else if (res == -1) ErrorExit();
                     Thread.Sleep(1);
                 }
             }, token);
 
             simply_stop_can();
             simply_close();
-            Console.WriteLine("[CAN] CAN connection stopped.");
         }
-        
-        //Método de envio de dados
+
+        // --- ENVIO DE DADOS ---
         public bool EnviarDadosSimulados(uint id, byte[] data)
         {
-            if (data.Length > 8) throw new ArgumentException("CAN payload max 8 bytes");
+            if (data.Length > 8) return false;
 
-            can_msg_t txMsg = new can_msg_t
+            lock (_canLock) // Evita colisões no envio
             {
-                ident = id,
-                dlc = (byte)data.Length,
-                payload = new byte[8]
-            };
-            Array.Copy(data, txMsg.payload, data.Length);
+                can_msg_t txMsg = new can_msg_t
+                {
+                    ident = id,
+                    dlc = (byte)data.Length,
+                    payload = new byte[8]
+                };
+                Array.Copy(data, txMsg.payload, data.Length);
 
-            bool success = simply_send(ref txMsg);
-            
-            if (!success)
-            {
-                Console.WriteLine($"[CAN] Erro ao enviar ID 0x{id:X}: {simply_get_last_error()}");
+                bool success = simply_send(ref txMsg);
+                if (!success) Console.WriteLine($"[CAN] Falha ID 0x{id:X}");
+                return success;
             }
-            return success;
         }
-        
+
+        // Métodos de atalho para envio
         public void EnviarVelocidade(int speed) => 
-            EnviarDadosSimulados(0x200, new byte[] { (byte)(speed & 0xFF), (byte)((speed >> 8) & 0xFF), (byte)SimulationState.Battery, (byte)(SimulationState.Brake ? 1 : 0) });
+            EnviarDadosSimulados(0x200, new byte[] { (byte)(speed & 0xFF), (byte)((speed >> 8) & 0xFF) });
 
         public void EnviarBateria(int battery) => 
             EnviarDadosSimulados(0x201, new byte[] { (byte)battery });
@@ -139,5 +129,41 @@ namespace CAN
 
         public void EnviarBrake(bool brake) => 
             EnviarDadosSimulados(0x205, new byte[] { (byte)(brake ? 1 : 0) });
+
+        public void EnviarAbs(bool state) => 
+            EnviarDadosSimulados(0x206, new byte[] { (byte)(state ? 1 : 0) });
+
+        public void EnviarTemperatura(int temp) => 
+            EnviarDadosSimulados(0x207, new byte[] { (byte)temp });
+
+        public void EnviarAutonomia(double autonomy) {
+            int range = (int)Math.Round(autonomy);
+            EnviarDadosSimulados(0x208, new byte[] { (byte)(range & 0xFF), (byte)((range >> 8) & 0xFF) });
+        }
+
+        // --- O MOTOR DO SIMULADOR (HEARTBEAT) ---
+        public async Task StartHeartbeatAsync(CancellationToken ct)
+        {
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100)); // 10Hz
+
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                // Envia dados de alta frequência (Velocidade)
+                EnviarVelocidade(SimulationState.Speed);
+
+                // Envia dados de baixa frequência (500ms)
+                if (DateTime.Now.Millisecond % 500 < 100)
+                {
+                    EnviarBateria(SimulationState.Battery);
+                    EnviarAutonomia(SimulationState.Autonomy);
+                    EnviarGear(SimulationState.Gear);
+                    EnviarModo(SimulationState.DriveMode);
+                    EnviarLuzes();
+                    EnviarAbs(SimulationState.Abs);
+                    EnviarTemperatura(SimulationState.Temperature);
+                    EnviarBrake(SimulationState.Brake);
+                }
+            }
+        }
     }
 }
