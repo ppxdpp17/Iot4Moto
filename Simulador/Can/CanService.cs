@@ -144,25 +144,34 @@ namespace CAN
         // --- O MOTOR DO SIMULADOR (HEARTBEAT) ---
         public async Task StartHeartbeatAsync(CancellationToken ct)
         {
-            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100)); // 10Hz
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100)); // Base de 100ms
+            int tickCount = 0;
 
             while (await timer.WaitForNextTickAsync(ct))
             {
-                // Envia dados de alta frequência (Velocidade)
+                // --- 100ms (Sempre) ---
                 EnviarVelocidade(SimulationState.Speed);
 
-                // Envia dados de baixa frequência (500ms)
-                if (DateTime.Now.Millisecond % 500 < 100)
+                // --- 200ms (A cada 2 ticks) ---
+                if (tickCount % 200 == 0)
                 {
-                    EnviarBateria(SimulationState.Battery);
-                    EnviarAutonomia(SimulationState.Autonomy);
                     EnviarGear(SimulationState.Gear);
                     EnviarModo(SimulationState.DriveMode);
-                    EnviarLuzes();
+                    EnviarLuzes(); // Já inclui Piscas e DangerLights
                     EnviarAbs(SimulationState.Abs);
-                    EnviarTemperatura(SimulationState.Temperature);
                     EnviarBrake(SimulationState.Brake);
                 }
+
+                // --- 500ms (A cada 5 ticks) ---
+                if (tickCount % 500 == 0)
+                {
+                    EnviarBateria(SimulationState.Battery);
+                    EnviarTemperatura(SimulationState.Temperature);
+                    EnviarAutonomia(SimulationState.Autonomy);
+                }
+
+                // Incrementa e reinicia a cada segundo para evitar overflow (embora irrelevante aqui)
+                tickCount = (tickCount + 100) % 1000;
             }
         }
     }
