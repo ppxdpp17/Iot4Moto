@@ -54,16 +54,11 @@ void* can_reader(void* arg) {
         uint32_t id = frame.can_id & CAN_SFF_MASK;
 
         if (id == 0x200) { 
-            //Byte 0 e 1: Velocidade (uint16)
             uint16_t speed = frame.data[0] | (frame.data[1] << 8);
-            //Byte 2: Bateria (uint8)
-            uint8_t battery = frame.data[2];
-            //Byte 3: Travão (bool)
-            std::string brake = (frame.data[3] == 1) ? "true" : "false";
-
             client->publish("moto/speed", std::to_string(speed));
-            client->publish("moto/battery", std::to_string((int)battery), 0, true);
-            client->publish("moto/brake", brake);
+        }
+        else if (id == 0x201) {
+            client->publish("moto/battery", std::to_string((int)frame.data[0]), 0, true);
         }
         else if (id == 0x202) { //GEAR
             std::string gear = (frame.data[0] == 1) ? "F" : (frame.data[0] == 2) ? "R" : (frame.data[0] == 3) ? "P" : "N";
@@ -81,6 +76,9 @@ void* can_reader(void* arg) {
             client->publish("moto/indicator_right", (mask & 0x08) ? "true" : "false");
             client->publish("moto/danger-lights",   (mask & 0x10) ? "true" : "false");
         }
+        else if (id == 0x205) {
+            client->publish("moto/brake", (frame.data[0] == 1) ? "true" : "false");
+        }
         else if (id == 0x206) { //ABS
             client->publish("moto/abs", (frame.data[0] == 1) ? "true" : "false");
         }
@@ -96,7 +94,7 @@ void* can_reader(void* arg) {
             int16_t roll_raw = frame.data[0] | (frame.data[1] << 8);
             float roll = roll_raw / 100.0f;
 
-            //Publicar com precisão de 2 casas decimais para a Web
+            //Publicar com precisÃ£o de 2 casas decimais para a Web
             std::stringstream ss;
             ss << std::fixed << std::setprecision(2) << roll;
             client->publish("moto/roll", ss.str());
@@ -104,6 +102,17 @@ void* can_reader(void* arg) {
         else if (id == 0x400) {
             std::cout << "\a!!ALERTA DE MOVIMENTO NA MOTA!!" << std::endl;
             client->publish("moto/alarm", "ALERTA_MOVIMENTO");
+        }
+        else if (id == 0x209) {
+            uint32_t km = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
+            client->publish("moto/total_kilometers", std::to_string(km), 0, true);
+        }
+        else if (id == 0x210) {
+            uint8_t horas = frame.data[0];
+            uint8_t minutos = frame.data[1];
+            char timeBuffer[6];
+            snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d", horas, minutos);
+            client->publish("moto/time", std::string(timeBuffer), 0, true);
         }
     }
     return nullptr;

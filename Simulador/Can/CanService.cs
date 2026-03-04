@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IXXAT;
 using Simulador.Services;
-using Simulador.Core; // OBRIGATÓRIO para encontrar o SimulationState
+using Simulador.Core;
 using static IXXAT.SimplyCAN;
 
 namespace CAN
@@ -72,9 +72,15 @@ namespace CAN
                 can_msg_t rx = new can_msg_t();
                 while (!token.IsCancellationRequested)
                 {
-                    sbyte res = simply_receive(ref rx);
+                    sbyte res;
+                    lock (_canLock) //Bloqueia a API enquanto lê para não chocar com o envio
+                    {
+                        res = simply_receive(ref rx);
+                    }
+                    
                     if (res == 1) await InterpretarMensagem(rx);
                     else if (res == -1) ErrorExit();
+                    
                     Thread.Sleep(1);
                 }
             }, token);
@@ -98,8 +104,26 @@ namespace CAN
                 };
                 Array.Copy(data, txMsg.payload, data.Length);
 
-                bool success = simply_send(ref txMsg);
-                if (!success) Console.WriteLine($"[CAN] Falha ID 0x{id:X}");
+                int tentativas = 3;
+                bool success = false;
+
+                while (tentativas > 0 && !success)
+                {
+                    success = simply_send(ref txMsg);
+                    if (!success)
+                    {
+                        // O buffer de hardware está cheio. Dá 2ms para ele despejar dados no cabo.
+                        Thread.Sleep(2);
+                        tentativas--;
+                    }
+                }
+
+                if (!success) 
+                {
+                    // Lê o erro real para o limpar da memória do dispositivo
+                    short erro = simply_get_last_error(); 
+                    Console.WriteLine($"[CAN] Falha ID 0x{id:X}. Erro interno: {erro}");
+                }
                 return success;
             }
         }
@@ -139,6 +163,15 @@ namespace CAN
         public void EnviarAutonomia(double autonomy) {
             int range = (int)Math.Round(autonomy);
             EnviarDadosSimulados(0x208, new byte[] { (byte)(range & 0xFF), (byte)((range >> 8) & 0xFF) });
+        }
+
+        public void EnviarTotalKilometers(int km) {
+            byte[] data = BitConverter.GetBytes(km); 
+            EnviarDadosSimulados(0x209, data);
+        }
+
+        public void EnviarTempo(int horas, int minutos) {
+            EnviarDadosSimulados(0x210, new byte[] { (byte)horas, (byte)minutos });
         }
 
         // --- O MOTOR DO SIMULADOR (HEARTBEAT) ---
