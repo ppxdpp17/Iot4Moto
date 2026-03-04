@@ -83,7 +83,7 @@ namespace Simulador
 
             var host = Environment.GetEnvironmentVariable("MQTT_HOST") ?? "localhost";
             var portStr = Environment.GetEnvironmentVariable("MQTT_PORT");
-            var port    = int.TryParse(portStr, out var p) ? p : 1884;
+            var port    = int.TryParse(portStr, out var p) ? p : 1883;
 
             var mqttService = new MqttService(host, port, "Simulator"); // board broker
 

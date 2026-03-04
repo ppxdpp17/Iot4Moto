@@ -28,7 +28,7 @@ Exemplo de `.env`:
 ```ini
 # Configuração MQTT
 MQTT_HOST=172.20.0.203  # Endereço do broker MQTT
-MQTT_PORT=1884          # Porta do broker MQTT
+MQTT_PORT=1883          # Porta do broker MQTT
 
 # Configuração PostgreSQL
 PG_HOST=172.20.0.201
