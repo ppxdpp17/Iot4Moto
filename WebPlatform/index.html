@@ -30,18 +30,18 @@
     
     <div class="container">
         <div id="bike-container">
-            <img id="bike-img" src="mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
+            <img id="bike-img" src="/WebPlatform/Images/mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
         </div>
         
         <div class="data-box">
             Roll: <span id="roll-val">0.00</span>°
+            Motor: <span id="moto-state" style="color: #ff4444;">OFF</span>
         </div>
         <div id="status">A ligar ao Broker...</div>
         <div id="log"></div>
     </div>
 
     <script>
-        // Tenta usar o IP que o teu PC consegue alcançar (192.168.1.10 ou 172.20.0.203)
         const BROKER_IP = "172.20.0.203"; 
         const PORT = 9001;
         const CLIENT_ID = "Web_Dash_" + Math.random().toString(16).substr(2, 5);
@@ -62,10 +62,17 @@
             if (message.destinationName === "moto/roll") {
                 let angle = parseFloat(message.payloadString);
                 document.getElementById("roll-val").innerText = angle.toFixed(2);
-                
-                // Aplica a rotação. Se a mota inclinar para o lado errado, 
-                // muda para rotate(${-angle}deg)
                 document.getElementById("bike-img").style.transform = `rotate(${angle}deg)`;
+            }
+            else if (message.destinationName === "sim/motorcycle") {
+                const stateSpan = document.getElementById("moto-state");
+                if (message.payloadString === "on") {
+                    stateSpan.innerText = "ON";
+                    stateSpan.style.color = "#00ff00"; // Verde
+                } else {
+                    stateSpan.innerText = "OFF";
+                    stateSpan.style.color = "#ff4444"; // Vermelho
+                }
             }
         };
 
@@ -75,6 +82,7 @@
                 document.getElementById("status").style.color = "#00ff00";
                 addLog("Subscrito ao tópico moto/roll");
                 client.subscribe("moto/roll");
+                client.subscribe("sim/motorcycle");
             },
             onFailure: (err) => {
                 document.getElementById("status").innerText = "❌ Falha na Ligação";
@@ -83,13 +91,6 @@
             useSSL: false,
             timeout: 3
         };
-
-        try {
-            addLog(`A tentar ligar a ${BROKER_IP}:${PORT}...`);
-            client.connect(connectOptions);
-        } catch (e) {
-            addLog(e.message, true);
-        }
     </script>
 </body>
 </html>

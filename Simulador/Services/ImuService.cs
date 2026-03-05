@@ -58,16 +58,16 @@ namespace Simulador.Services
                     double az_g = az / 16384.0;
                     double svm = Math.Sqrt(ax_g * ax_g + ay_g * ay_g + az_g * az_g);
 
+                    // Envia Roll pelo CAN para o Dashboard Web
+                    int rollInt = (int)(roll * 100);
+                    byte[] canData = new byte[2];
+                    canData[0] = (byte)(rollInt & 0xFF);
+                    canData[1] = (byte)((rollInt >> 8) & 0xFF);
+                    _canService.EnviarDadosSimulados(0x300, canData);
+
                     // 3. Máquina de Estados (Mota Ligada vs Desligada)
                     if (SimulationState.IsMotorcycleOn)
                     {
-                        // Envia Roll pelo CAN para o Dashboard Web
-                        int rollInt = (int)(roll * 100);
-                        byte[] canData = new byte[2];
-                        canData[0] = (byte)(rollInt & 0xFF);
-                        canData[1] = (byte)((rollInt >> 8) & 0xFF);
-                        _canService.EnviarDadosSimulados(0x300, canData);
-
                         // Queda (Ex: SVM > 2.5G)
                         if (svm > 2.5 && !SimulationState.FallDetected)
                         {
