@@ -95,7 +95,7 @@ namespace Simulador.Services
                         // Cooldown não bloqueante
                             _ = Task.Run(async () => {
                                 await Task.Delay(5000);
-                                SimulationState.FallDetected = false;
+                                SimulationState.TheftAlarmActive = false;
                             });
                     }
 

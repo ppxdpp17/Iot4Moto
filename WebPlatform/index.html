@@ -68,10 +68,10 @@
                 const stateSpan = document.getElementById("moto-state");
                 if (message.payloadString === "on") {
                     stateSpan.innerText = "ON";
-                    stateSpan.style.color = "#00ff00"; // Verde
+                    stateSpan.style.color = "#00ff00"; //Verde
                 } else {
                     stateSpan.innerText = "OFF";
-                    stateSpan.style.color = "#ff4444"; // Vermelho
+                    stateSpan.style.color = "#ff4444"; //Vermelho
                 }
             }
         };
@@ -91,6 +91,12 @@
             useSSL: false,
             timeout: 3
         };
+
+        try {
+            client.connect(connectOptions);
+        } catch (e) {
+            addLog(e.message, true);
+        }
     </script>
 </body>
 </html>
