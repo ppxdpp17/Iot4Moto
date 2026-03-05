@@ -103,6 +103,9 @@ namespace Simulador
             var routes = new Routes(mqttService, loggingService, sensorService, dashboard, null, null, auxiliar);
             var backgroundUpdated = new BackgroundUpdated(mqttService, loggingService, sensorService, _cancellationTokenSource, startAndUpdate, dashboard, updateMethods, routes);
 
+            //Novos relacionados à sensorização e IoT
+            var imuService = new ImuService(mqttService, canService);
+
 
             startAndUpdate.SetAux(auxiliar);
             updateMethods.SetRoutes(routes);
@@ -180,6 +183,8 @@ namespace Simulador
 
             _ = canService.StartAsync(_cancellationTokenSource.Token);
 
+            //Arranque do sistema do IMU
+            _ = Task.Run(() => imuService.StartAsync(_cancellationTokenSource.Token));
 
             // >>> New task: SIMULATE ROUTE (more realistic logic)
             _ = routes.UpdateRouteAsync(sensorService);

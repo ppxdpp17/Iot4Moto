@@ -36,6 +36,9 @@ namespace Simulador.Core
             SimulationState.IsMotorcycleOn = true;
             Console.WriteLine("Motorcycle started.");
 
+            SimulationState.FallDetected = false;
+            SimulationState.TheftAlarmActive = false;
+
             await _mqttService.PublishAsync("sim/motorcycle", "on");
             await _mqttService.PublishAsync("sim/collision", "false");
             SimulationState.Lights = true;

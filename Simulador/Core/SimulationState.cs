@@ -21,6 +21,12 @@ namespace Simulador.Core
         public static double Latitude { get; set; } = 41.287556;
         public static double Longitude { get; set; } = -7.739556;
         public static bool Brake { get; set; } = false;
+        
+        //Novos relacionados à sensorização e IoT
+        public static double Roll { get; set; } = 0.0;
+        public static double Pitch { get; set; } = 0.0;
+        public static bool FallDetected { get; set; } = false;
+        public static bool TheftAlarmActive { get; set; } = false;
 
     }
 }
