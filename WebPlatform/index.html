@@ -5,46 +5,57 @@
     <title>Dashboard Moto IoT - Telemetria</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; text-align: center; }
         .container { margin-top: 50px; }
         #bike-container {
-            width: 300px; height: 300px; margin: 0 auto;
-            border: 2px solid #444; border-radius: 50%;
+            width: 320px; height: 320px; margin: 0 auto;
+            border: 4px solid #333; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle, #333 0%, #1a1a1a 100%);
+            background: radial-gradient(circle, #222 0%, #121212 100%);
+            box-shadow: 0 0 20px rgba(0,255,0,0.1);
         }
         #bike-img {
-            width: 200px;
-            transition: transform 0.1s linear; /* Suaviza a inclinação */
+            width: 220px;
+            /* Se a imagem falhar, isto ajuda a ver que algo está a rodar */
+            transition: transform 0.05s linear; 
         }
-        .data-box { font-size: 24px; margin-top: 20px; color: #00ff00; }
+        .data-box { font-size: 28px; margin-top: 25px; color: #00ff00; font-weight: bold; }
+        #log { font-size: 12px; color: #888; margin-top: 20px; font-family: monospace; }
+        .alert { color: #ff4444; }
     </style>
 </head>
 <body>
 
-    <h1>IoT Motorcycle Dynamics</h1>
+    <h1>Motorcycle Intelligent System</h1>
     
     <div class="container">
         <div id="bike-container">
-            <img id="bike-img" src="C:\Users\Pedro\Desktop\Pedro\Prática\WebPlatform\Images\mota.png" alt="Moto">
+            <img id="bike-img" src="mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
         </div>
         
         <div class="data-box">
-            Inclinação (Roll): <span id="roll-val">0.00</span>°
+            Roll: <span id="roll-val">0.00</span>°
         </div>
-        <div id="status" style="font-size: 12px; color: gray;">A ligar ao Broker...</div>
+        <div id="status">A ligar ao Broker...</div>
+        <div id="log"></div>
     </div>
 
     <script>
-        // Configurações - Substitui pelo IP real da tua Concerto Board
+        // Tenta usar o IP que o teu PC consegue alcançar (192.168.1.10 ou 172.20.0.203)
         const BROKER_IP = "172.20.0.203"; 
         const PORT = 9001;
-        const CLIENT_ID = "Web_Dashboard_" + Math.random().toString(16).substr(2, 8);
+        const CLIENT_ID = "Web_Dash_" + Math.random().toString(16).substr(2, 5);
+
+        function addLog(msg, isError = false) {
+            const logDiv = document.getElementById("log");
+            logDiv.innerHTML = `<span class="${isError ? 'alert' : ''}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + logDiv.innerHTML;
+        }
 
         const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
 
         client.onConnectionLost = (responseObject) => {
-            document.getElementById("status").innerText = "Ligação Perdida: " + responseObject.errorMessage;
+            document.getElementById("status").innerText = "❌ Ligação Perdida";
+            addLog(responseObject.errorMessage, true);
         };
 
         client.onMessageArrived = (message) => {
@@ -52,19 +63,33 @@
                 let angle = parseFloat(message.payloadString);
                 document.getElementById("roll-val").innerText = angle.toFixed(2);
                 
-                // Aplica a rotação à imagem
-                // Nota: O Roll do MPU6050 costuma ser negativo para um lado e positivo para outro
+                // Aplica a rotação. Se a mota inclinar para o lado errado, 
+                // muda para rotate(${-angle}deg)
                 document.getElementById("bike-img").style.transform = `rotate(${angle}deg)`;
             }
         };
 
-        client.connect({
+        const connectOptions = {
             onSuccess: () => {
-                document.getElementById("status").innerText = "Ligado via WebSocket";
+                document.getElementById("status").innerText = "✅ Ligado via WebSocket";
+                document.getElementById("status").style.color = "#00ff00";
+                addLog("Subscrito ao tópico moto/roll");
                 client.subscribe("moto/roll");
             },
-            useSSL: false
-        });
+            onFailure: (err) => {
+                document.getElementById("status").innerText = "❌ Falha na Ligação";
+                addLog("Erro: " + err.errorMessage, true);
+            },
+            useSSL: false,
+            timeout: 3
+        };
+
+        try {
+            addLog(`A tentar ligar a ${BROKER_IP}:${PORT}...`);
+            client.connect(connectOptions);
+        } catch (e) {
+            addLog(e.message, true);
+        }
     </script>
 </body>
 </html>
