@@ -74,6 +74,12 @@ namespace Simulador.Services
                             SimulationState.FallDetected = true;
                             await _mqttService.PublishAsync("moto/alarm", "FALL");
                             Program.WriteMessage("\n!!! ALERTA: Queda Detetada !!!");
+
+                            // Cooldown não bloqueante
+                            _ = Task.Run(async () => {
+                                await Task.Delay(5000);
+                                SimulationState.FallDetected = false;
+                            });
                         }
                     }
                     else
@@ -85,6 +91,12 @@ namespace Simulador.Services
                             await _mqttService.PublishAsync("moto/alarm", "THEFT");
                             Program.WriteMessage("\n!!! ALERTA: Tentativa de Furto !!!");
                         }
+
+                        // Cooldown não bloqueante
+                            _ = Task.Run(async () => {
+                                await Task.Delay(5000);
+                                SimulationState.FallDetected = false;
+                            });
                     }
 
                     await Task.Delay(10, token); // Loop de 10ms (100Hz)
