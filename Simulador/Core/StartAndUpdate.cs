@@ -39,7 +39,7 @@ namespace Simulador.Core
             SimulationState.FallDetected = false;
             SimulationState.TheftAlarmActive = false;
 
-            await _mqttService.PublishAsync("sim/motorcycle", "on");
+            await _mqttService.PublishAsync("sim/motorcycle", "on", true);
             await _mqttService.PublishAsync("sim/collision", "false");
             SimulationState.Lights = true;
             Console.WriteLine("Lights turned on automatically.");
@@ -66,7 +66,7 @@ namespace Simulador.Core
             SimulationState.IsMotorcycleOn = false;
             Console.WriteLine("Motorcycle turned off.");
 
-            await _mqttService.PublishAsync("sim/motorcycle", "off");
+            await _mqttService.PublishAsync("sim/motorcycle", "off", true);
             SimulationState.Lights = false;
             Console.WriteLine("Lights turned off automatically.");
             await _mqttService.PublishAsync("sim/lights", "false");

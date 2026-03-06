@@ -41,7 +41,7 @@ namespace Simulador.Services
             }
         }
 
-        public async Task PublishAsync(string topic, string payload)
+        public async Task PublishAsync(string topic, string payload, bool retain = false)
         {
             if (_mqttClient.IsConnected)
             {
@@ -49,6 +49,7 @@ namespace Simulador.Services
                     .WithTopic(topic)
                     .WithPayload(payload)
                     .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                    .WithRetainFlag(retain)
                     .Build();
 
                 await _mqttClient.PublishAsync(message);

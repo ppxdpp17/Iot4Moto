@@ -173,7 +173,7 @@ class MainInterface1Activity : AppCompatActivity() {
             )
         }
 
-        if (type == "FALL") {
+        if (type.trim() == "FALL") {
             alarmOverlay.setBackgroundColor(android.graphics.Color.BLUE)
             alarmText.text = "SOS"
             alarmText.textSize = 120f
@@ -574,7 +574,7 @@ class MainInterface2Activity : AppCompatActivity() {
             )
         }
 
-        if (type == "FALL") {
+        if (type.trim() == "FALL") {
             alarmOverlay.setBackgroundColor(android.graphics.Color.BLUE)
             alarmText.text = "SOS"
             alarmText.textSize = 120f
