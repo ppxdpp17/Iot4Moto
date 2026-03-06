@@ -131,7 +131,7 @@ void* can_reader(void* arg) {
 }
 
 int main() {
-    const std::string address = "tcp://127.0.0.1:1884";
+    const std::string address = "tcp://127.0.0.1:1883";
     const std::string clientId = "CppBroker_V4";
 
     std::cout << "A Iniciar Motor C++ V4" << std::endl;

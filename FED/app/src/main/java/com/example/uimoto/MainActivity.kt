@@ -159,8 +159,36 @@ class MainInterface1Activity : AppCompatActivity() {
         setupMqttClient()                                       // funcao que configura o mqttClient
     }
 
-    private fun showAlarm(alarmType1: String) {
+    private fun showAlarm(type: String) {
+        // Limpa o que estiver no overlay (para não sobrepor ao ecrã vermelho original do XML)
+        alarmOverlay.removeAllViews()
+
+        // Cria um texto dinâmico para preencher o ecrã
+        val alarmText = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = android.view.Gravity.CENTER
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        if (type == "FALL") {
+            alarmOverlay.setBackgroundColor(android.graphics.Color.BLUE)
+            alarmText.text = "SOS"
+            alarmText.textSize = 120f
+        } else {
+            // Assume THEFT por defeito
+            alarmOverlay.setBackgroundColor(android.graphics.Color.RED)
+            alarmText.text = "!"
+            alarmText.textSize = 150f
+        }
+
+        // Adiciona o texto ao ecrã e mostra-o
+        alarmOverlay.addView(alarmText)
         alarmOverlay.visibility = View.VISIBLE
+
+        // Oculta ao fim de 5 segundos
         Handler(Looper.getMainLooper()).postDelayed({
             alarmOverlay.visibility = View.GONE
         }, 5000)

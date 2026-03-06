@@ -235,7 +235,7 @@ namespace CAN
                 //Intervalo de 1s porque não precisa de atualizar com grande velocidade
                 if (tickCount % 1000 == 0)
                 {
-                    EnviarGPS(SimulationState.latitude, SimulationState.longitude);
+                    EnviarGPS(SimulationState.Latitude, SimulationState.Longitude);
                 }
 
                 // Incrementa e reinicia a cada segundo para evitar overflow (embora irrelevante aqui)
