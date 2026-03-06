@@ -90,13 +90,14 @@ namespace Simulador.Services
                             SimulationState.TheftAlarmActive = true;
                             await _mqttService.PublishAsync("moto/alarm", "THEFT");
                             Program.WriteMessage("\n!!! ALERTA: Tentativa de Furto !!!");
-                        }
 
-                        // Cooldown não bloqueante
+                            // Cooldown não bloqueante
                             _ = Task.Run(async () => {
                                 await Task.Delay(5000);
                                 SimulationState.TheftAlarmActive = false;
                             });
+                        }
+                        
                     }
 
                     await Task.Delay(10, token); // Loop de 10ms (100Hz)
