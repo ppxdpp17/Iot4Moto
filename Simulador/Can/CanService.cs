@@ -174,6 +174,35 @@ namespace CAN
             EnviarDadosSimulados(0x210, new byte[] { (byte)horas, (byte)minutos });
         }
 
+
+
+
+        //SIMULADOR A GERAR DADOS DE GPS (ESTÁTICOS) - MAIS TARDE RETIRAR ISTO, JÁ QUE OS DADOS GPS
+        //SERÃO "GERADOS" DIRETAMENTE NA CSVU ATRAVÉS DO MODEM
+        public void EnviarGPS(double latitude, double longitude)
+        {
+            int latInt = (int)Math.Round(latitude * 1000000);
+            int lonInt = (int)Math.Round(longitude * 1000000);
+
+            byte[] data = new byte[8];
+            // Latitude (4 bytes, Little Endian)
+            data[0] = (byte)(latInt & 0xFF);
+            data[1] = (byte)((latInt >> 8) & 0xFF);
+            data[2] = (byte)((latInt >> 16) & 0xFF);
+            data[3] = (byte)((latInt >> 24) & 0xFF);
+            
+            // Longitude (4 bytes, Little Endian)
+            data[4] = (byte)(lonInt & 0xFF);
+            data[5] = (byte)((lonInt >> 8) & 0xFF);
+            data[6] = (byte)((lonInt >> 16) & 0xFF);
+            data[7] = (byte)((lonInt >> 24) & 0xFF);
+
+            EnviarDadosSimulados(0x301, data);
+        }
+
+
+
+
         // --- O MOTOR DO SIMULADOR (HEARTBEAT) ---
         public async Task StartHeartbeatAsync(CancellationToken ct)
         {
@@ -201,6 +230,12 @@ namespace CAN
                     EnviarBateria(SimulationState.Battery);
                     EnviarTemperatura(SimulationState.Temperature);
                     EnviarAutonomia(SimulationState.Autonomy);
+                }
+
+                //Intervalo de 1s porque não precisa de atualizar com grande velocidade
+                if (tickCount % 1000 == 0)
+                {
+                    EnviarGPS(SimulationState.latitude, SimulationState.longitude);
                 }
 
                 // Incrementa e reinicia a cada segundo para evitar overflow (embora irrelevante aqui)
