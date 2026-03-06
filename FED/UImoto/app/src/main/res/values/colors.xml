@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="green">#00FF7F</color>
+    <color name="greenSemiTransparent">#8000FF7F</color>
+    <color name="orange">#EB5E13</color>
+    <color name="red">#FF1100</color>
+    <color name="redSemiTransparent">#80FF1100</color>
+    <color name="darkGreen">#338A04</color>
+    <color name="backgroundColor">#0E0F24</color>
+    <color name="blackTransparent">#CC000000</color>
+    <color name="backgroundColorSemiTransparent">#800E0F24</color>
+    <color name="lightBlue">#47BDFA</color>
+    <color name="grayDefault">#67686A</color>
+    <color name="defaultLightGray">#6F7072</color>
+    <color name="lightGray">#CCCCCC</color>
+    <color name="darkGray">#757581</color>
+    <color name="barBackground">#929095</color>
+    <color name="darkBlue">#0000ff</color>
+    <color name="highlightColor">#464749</color>
+    <color name="yellow">#F8E305</color>
+</resources>

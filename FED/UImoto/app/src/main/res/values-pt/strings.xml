@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gear_drive">F</string>
+    <string name="gear_rear">T</string>
+    <string name="gear_park">P</string>
+    <string name="gear_neutral">N</string>
+    <string name="sensor_collision">PERIGO! Colisão a 10m!</string>
+    <string name="driveMode_eco">Eco</string>
+    <string name="driveMode_standard">Normal</string>
+    <string name="driveMode_sport">Desportivo</string>
+    <string name="cellphone_label">CHAMADAS</string>
+    <string name="music_label">MÚSICA</string>
+    <string name="settings_label">DEFINIÇÕES</string>
+    <string name="brightness">Brilho</string>
+    <string name="color">Cor</string>
+    <string name="language">Idioma</string>
+    <string name="left">Esquerda</string>
+    <string name="right">Direita</string>
+    <string name="blindspot_warning">⚠️ ALERTA! Movimento detetado no teu ponto cego do lado %1$s a %2$s metros de distância.</string>
+    <string name="pedestrian_warning">🚶 AVISO! Um pedestre foi detetado do teu lado %1$s a %2$s metros de distância.</string>
+    <string name="rear_collision_warning">🔴 PERIGO! Um veículo aproxima-se de forma perigosa da tua traseira a %1$s metros de distância.</string>
+    <string name="frontal_collision_warning">⛔ PERIGO! Potencial colisão frontal detetada a %1$s metros de distância.</string>
+    <string name="unknown_side">Lado desconhecido</string>
+    <string name="unknown_distance">Distância desconhecida</string>
+</resources>

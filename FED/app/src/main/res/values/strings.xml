@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">UI moto</string>
+    <string name="title_activity_gpsactivity">GPSActivity</string>
+</resources>

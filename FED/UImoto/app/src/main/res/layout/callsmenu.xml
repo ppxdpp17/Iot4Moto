@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
+    android:fadingEdge="horizontal|vertical"
+    android:fadingEdgeLength="5sp"
+    tools:context=".CallsActivity">
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="380dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20sp"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:text="13 : 34 PM"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp" />
+
+        <ImageView
+            android:id="@+id/weatherIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="25dp"
+            app:srcCompat="@drawable/weathericon" />
+
+        <TextView
+            android:id="@+id/temperatureDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="25 ºC"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp" />
+
+        <ImageView
+            android:id="@+id/bluetooth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            app:srcCompat="@drawable/bluetooth" />
+    </LinearLayout>
+
+    <!-- THIS LAYOUT CONTAINS THE TURN INDICATORS -->
+
+    <LinearLayout
+        android:id="@+id/indicatorContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:background="@drawable/turncontainer"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintStart_toEndOf="@+id/linearLayout3"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/leftTurnSignalMusic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/leftturn" />
+
+        <ImageView
+            android:id="@+id/rightTurnSignalMusic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            app:srcCompat="@drawable/rightturn" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout5"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="@color/darkGray"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0">
+
+        <TextView
+            android:id="@+id/speedValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:fontFamily="@font/agencyfb"
+            android:text="100 KM/H"
+            android:textColor="@color/white"
+            android:textSize="60sp" />
+
+        <ImageView
+            android:id="@+id/speedometerBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            app:srcCompat="@drawable/gpsvaluebar" />
+
+        <TextView
+            android:id="@+id/batteryValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:fontFamily="@font/agencyfb"
+            android:text="85%"
+            android:textColor="@color/white"
+            android:textSize="60sp" />
+
+        <ImageView
+            android:id="@+id/batteryBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            app:srcCompat="@drawable/gpsvaluebar" />
+
+        <ImageView
+            android:id="@+id/mediums"
+            android:layout_width="73dp"
+            android:layout_height="57dp"
+            android:layout_marginEnd="20dp"
+            app:srcCompat="@drawable/mediums" />
+
+        <ImageView
+            android:id="@+id/highBeam"
+            android:layout_width="73dp"
+            android:layout_height="57dp"
+            android:layout_marginEnd="20dp"
+            app:srcCompat="@drawable/highbeam" />
+
+        <ImageView
+            android:id="@+id/abs"
+            android:layout_width="73dp"
+            android:layout_height="57dp"
+            android:layout_marginEnd="20dp"
+            app:srcCompat="@drawable/abs" />
+
+        <ImageView
+            android:id="@+id/engine"
+            android:layout_width="73dp"
+            android:layout_height="57dp"
+            android:layout_marginEnd="30dp"
+            app:srcCompat="@drawable/enginelight" />
+
+        <TextView
+            android:id="@+id/gearValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:text="D"
+            android:textColor="#FFFFFF"
+            android:textSize="60sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_marginTop="80dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout3">
+
+        <ImageView
+            android:id="@+id/callIcon"
+            android:layout_width="90dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            app:srcCompat="@drawable/callicon" />
+
+        <TextView
+            android:id="@+id/callsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:text="@string/cellphone_label"
+            android:textColor="@color/lightBlue"
+            android:textSize="40sp" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/callsRecyclerView"
+        android:layout_width="700dp"
+        android:layout_height="400dp"
+        android:layout_marginStart="44dp"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout4"
+        app:layout_constraintVertical_bias="0.349" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout9"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/callsRecyclerView">
+
+        <!-- Teclado de discagem -->
+        <LinearLayout
+            android:layout_width="289dp"
+            android:layout_height="417dp"
+            android:layout_marginBottom="48dp"
+            android:layout_weight="1.5"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="16dp"
+            app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.661"
+            app:layout_constraintStart_toEndOf="@+id/callsRecyclerView">
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Número digitado -->
+                <TextView
+                    android:id="@+id/makeCallNumber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:maxLength="9"
+                    android:text="000000000"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textSize="24sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/backspaceIcon"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/backspaceIcon"
+                    android:layout_width="34dp"
+                    android:layout_height="25dp"
+                    android:background="@drawable/deleteicon"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Grade do teclado -->
+            <GridLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:alignmentMode="alignMargins"
+                android:columnCount="3"
+                android:rowCount="4"
+                android:useDefaultMargins="true">
+
+                <!-- Botões -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button1"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:fontFamily="@font/agencyfb"
+                    android:text="1"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button2"
+                    android:layout_width="70dp"
+                    android:fontFamily="@font/agencyfb"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="2"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button3"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="3"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:fontFamily="@font/agencyfb" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button4"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="4"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button5"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="5"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button6"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="6"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button7"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="7"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button8"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="8"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button9"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="9"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/endCall"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_gravity="center"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/callslogo"
+                    app:tint="@color/red" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button0"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:background="@drawable/button_outline"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/agencyfb"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/startCall"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_gravity="center"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/callslogo"
+                    app:tint="@color/green" />
+            </GridLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="338dp"
+        android:layout_height="150dp"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="@string/sensor_collision"
+        android:textColor="@color/red"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/indicatorContainer"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.122" />
+
+    <TextView
+        android:id="@+id/currentCall"
+        android:layout_width="364dp"
+        android:layout_height="54dp"
+        android:layout_marginEnd="124dp"
+        android:text="Chamada: 916887223     02:34"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView4"
+        android:fontFamily="@font/agencyfb"
+        app:layout_constraintVertical_bias="1.0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

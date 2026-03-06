@@ -1,0 +1,9 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Estado de destaque (hovered ou focused) -->
+    <item android:state_hovered="true" android:drawable="@color/highlightColor" />
+    <item android:state_focused="true" android:drawable="@color/highlightColor" />
+    <!-- Estado pressionado -->
+    <item android:state_pressed="true" android:drawable="@color/highlightColor" />
+    <!-- Estado default (fundo transparente) -->
+    <item android:drawable="@android:color/transparent" />
+</selector>

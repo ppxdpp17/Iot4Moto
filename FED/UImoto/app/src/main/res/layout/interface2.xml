@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
+    tools:context=".MainInterface2Activity">
+
+    <!-- THIS LAYOUT CONTAINS THE TOP LAYOUTS (time_weather, indicatorContainer, dashboardIcons) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- THIS LAYOUT CONTAINS THE TIME, WEATHER AND BLUETOOTH ICONS -->
+        <LinearLayout
+            android:id="@+id/time_weather"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toStartOf="@id/indicatorContainer"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/agencyfb"
+                android:gravity="center_horizontal|center_vertical"
+                android:text="13 : 34 PM"
+                android:textColor="#FFFFFF"
+                android:textSize="40sp" />
+
+            <ImageView
+                android:id="@+id/weatherIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="30dp"
+                app:srcCompat="@drawable/weathericon" />
+
+            <TextView
+                android:id="@+id/temperatureDisplay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:fontFamily="@font/agencyfb"
+                android:gravity="center_horizontal|center_vertical"
+                android:text="25 ºC"
+                android:textColor="#FFFFFF"
+                android:textSize="40sp" />
+
+            <ImageView
+                android:id="@+id/bluetooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="30dp"
+                app:srcCompat="@drawable/bluetooth" />
+        </LinearLayout>
+
+        <!-- THIS LAYOUT CONTAINS THE TURN INDICATORS -->
+        <LinearLayout
+            android:id="@+id/indicatorContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/turncontainer"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toStartOf="@id/dashboardIcons"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toEndOf="@id/time_weather"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/leftTurnSignal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/leftturn" />
+
+            <ImageView
+                android:id="@+id/rightTurnSignal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                app:srcCompat="@drawable/rightturn" />
+        </LinearLayout>
+
+        <!-- THIS LAYOUT CONTAINS THE DASHBOARD ICONS (LIGHTS, ABS AND ENGINE) -->
+        <LinearLayout
+            android:id="@+id/dashboardIcons"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toEndOf="@id/indicatorContainer"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/mediums"
+                android:layout_width="73dp"
+                android:layout_height="57dp"
+                app:srcCompat="@drawable/mediums" />
+
+            <ImageView
+                android:id="@+id/highBeam"
+                android:layout_width="73dp"
+                android:layout_height="57dp"
+                android:layout_marginStart="20dp"
+                app:srcCompat="@drawable/highbeam" />
+
+            <ImageView
+                android:id="@+id/abs"
+                android:layout_width="73dp"
+                android:layout_height="57dp"
+                android:layout_marginStart="20dp"
+                app:srcCompat="@drawable/abs" />
+
+            <ImageView
+                android:id="@+id/engine"
+                android:layout_width="73dp"
+                android:layout_height="57dp"
+                android:layout_marginStart="20dp"
+                app:srcCompat="@drawable/enginelight" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- THIS ELEMENT REPRESENTS THE MAP IMAGE -->
+
+    <ImageView
+        android:id="@+id/speedometerOutline"
+        android:layout_width="223dp"
+        android:layout_height="527dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.106"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.487"
+        app:srcCompat="@drawable/speedometeroutline" />
+
+    <ImageView
+        android:id="@+id/speedometerFilling"
+        android:layout_width="220dp"
+        android:layout_height="508dp"
+        app:layout_constraintBottom_toBottomOf="@+id/speedometerOutline"
+        app:layout_constraintEnd_toEndOf="@+id/speedometerOutline"
+        app:layout_constraintStart_toStartOf="@+id/speedometerOutline"
+        app:layout_constraintTop_toTopOf="@+id/speedometerOutline"
+        app:srcCompat="@drawable/speedometerfillingnew" />
+
+    <ImageView
+        android:id="@+id/leftLines"
+        android:layout_width="204dp"
+        android:layout_height="534dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/speedometerOutline"
+        app:layout_constraintHorizontal_bias="0.554"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/leftsidelines" />
+
+    <ImageView
+        android:id="@+id/batteryOutline"
+        android:layout_width="223dp"
+        android:layout_height="527dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.894"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.501"
+        app:srcCompat="@drawable/batteryoutline" />
+
+    <ImageView
+        android:id="@+id/batteryFilling"
+        android:layout_width="220dp"
+        android:layout_height="508dp"
+        app:layout_constraintBottom_toBottomOf="@+id/batteryOutline"
+        app:layout_constraintEnd_toEndOf="@+id/batteryOutline"
+        app:layout_constraintStart_toStartOf="@+id/batteryOutline"
+        app:layout_constraintTop_toTopOf="@+id/batteryOutline"
+        app:srcCompat="@drawable/batteryfillingnew" />
+
+
+    <ImageView
+        android:id="@+id/rightLines"
+        android:layout_width="204dp"
+        android:layout_height="534dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.446"
+        app:layout_constraintStart_toStartOf="@+id/batteryOutline"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/rightsidelines" />
+
+    <TextView
+        android:id="@+id/zeroLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="220dp"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="0"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.818" />
+
+    <TextView
+        android:id="@+id/twentyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="144dp"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="20"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.717" />
+
+    <TextView
+        android:id="@+id/fortyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="40"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/speedometerFilling"
+        app:layout_constraintHorizontal_bias="0.250"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.612" />
+
+    <TextView
+        android:id="@+id/sixtyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="60"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/leftLines"
+        app:layout_constraintHorizontal_bias="0.112"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/eightyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="80"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/leftLines"
+        app:layout_constraintHorizontal_bias="0.333"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.374" />
+
+    <TextView
+        android:id="@+id/hundredLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="100"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/leftLines"
+        app:layout_constraintHorizontal_bias="0.623"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.266" />
+
+    <TextView
+        android:id="@+id/maxSpeedLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="120"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/leftLines"
+        app:layout_constraintHorizontal_bias="1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.152" />
+
+
+    <TextView
+        android:id="@+id/driveModeValue"
+        android:layout_width="156dp"
+        android:layout_height="68dp"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="Standard"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
+
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:layout_marginBottom="144dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mapContainer">
+
+        <ImageView
+            android:id="@+id/kmLogo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/kmlogo" />
+
+        <TextView
+            android:id="@+id/totalKm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="10000 km"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp" />
+
+        <ImageView
+            android:id="@+id/autonomyLogo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            app:srcCompat="@drawable/batterylogo" />
+
+        <TextView
+            android:id="@+id/autonomyValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="350 km"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout8"
+        android:layout_width="95dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal|center_vertical"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.214"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.486">
+
+        <TextView
+            android:id="@+id/gearBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="0sp"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="P"
+            android:textColor="#FFFFFF"
+            android:textSize="50sp" />
+
+        <TextView
+            android:id="@+id/speedBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:text="100"
+            android:textColor="#FFFFFF"
+            android:textSize="80sp" />
+
+
+        <TextView
+            android:id="@+id/kmLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:text="Km/h"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/batteryValueContainer"
+        android:layout_width="95dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal|center_vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.832"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.513">
+
+        <TextView
+            android:id="@+id/batteryDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="100"
+            android:textColor="#FFFFFF"
+            android:textSize="80sp" />
+
+        <TextView
+            android:id="@+id/percentLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="%"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/linearLayout7"
+        android:layout_width="500dp"
+        android:layout_height="100dp"
+        android:background="@drawable/containerright"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/bluetoothMenu"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@drawable/button_background"
+            app:srcCompat="@drawable/bluetooth"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <ImageButton
+            android:id="@+id/musicMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="35dp"
+            android:background="@drawable/button_background"
+            app:srcCompat="@drawable/musicnote"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <ImageButton
+            android:id="@+id/callsMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:background="@drawable/button_background"
+            app:srcCompat="@drawable/callslogo"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <ImageButton
+            android:id="@+id/settingsMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:background="@drawable/button_background"
+            app:srcCompat="@drawable/settingslogo"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <ImageButton
+            android:id="@+id/gpsMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:background="@drawable/button_background"
+            app:srcCompat="@drawable/navigationlogo"
+            tools:ignore="SpeakableTextPresentCheck" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/mapContainer"
+        android:layout_width="644dp"
+        android:layout_height="324dp"
+        android:layout_marginStart="70dp"
+        android:layout_marginBottom="30dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/mapImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:srcCompat="@drawable/map1"
+            tools:elevation="7dp" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="270dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/line"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="60dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.438"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/line" />
+
+            <ImageView
+                android:id="@+id/destinationProgress"
+                android:layout_width="wrap_content"
+                android:layout_height="51dp"
+                android:layout_marginTop="1dp"
+                android:layout_marginEnd="85dp"
+                app:layout_constraintBottom_toBottomOf="@id/line"
+                app:layout_constraintEnd_toEndOf="@id/line"
+                app:layout_constraintStart_toStartOf="@id/line"
+                app:layout_constraintTop_toTopOf="@id/line"
+                app:srcCompat="@drawable/progressbar" />
+
+            <TextView
+                android:id="@+id/destinationRange"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/agencyfb"
+                android:text="400m"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                app:layout_constraintBottom_toBottomOf="@id/line"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.095"
+                app:layout_constraintStart_toEndOf="@+id/line"
+                app:layout_constraintTop_toTopOf="@id/line" />
+
+            <ImageView
+                android:id="@+id/destination"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/line"
+                app:layout_constraintHorizontal_bias="0.847"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/destination" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/sensorText"
+        android:layout_width="500dp"
+        android:layout_height="wrap_content"
+        android:background="@color/blackTransparent"
+        android:elevation="10dp"
+        android:fontFamily="@font/agencyfb"
+        android:gravity="center_horizontal|center_vertical"
+        android:text="DANGER! Collision in 10m!"
+        android:textColor="@color/red"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/mapContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/constraintLayout2" />
+
+    <View
+        android:id="@+id/darkOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/blackTransparent"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

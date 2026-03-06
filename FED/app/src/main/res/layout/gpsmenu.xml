@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/backgroundinterface1"
+    android:fadingEdge="horizontal|vertical"
+    android:fadingEdgeLength="5sp"
+    tools:context=".GPSActivity">
+
+    <ImageView
+        android:id="@+id/turnContainerGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        app:srcCompat="@drawable/indicatorcontainer"
+        app:tint="@color/backgroundColor" />
+
+    <ImageView
+        android:id="@+id/leftTurnSignalGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/turnContainerGPS"
+        app:layout_constraintEnd_toEndOf="@+id/turnContainerGPS"
+        app:layout_constraintHorizontal_bias="0.38"
+        app:layout_constraintStart_toStartOf="@+id/turnContainerGPS"
+        app:layout_constraintTop_toTopOf="@+id/turnContainerGPS"
+        app:layout_constraintVertical_bias="0.509"
+        app:srcCompat="@drawable/leftturn" />
+
+    <ImageView
+        android:id="@+id/rightTurnSignalGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/turnContainerGPS"
+        app:layout_constraintEnd_toEndOf="@+id/turnContainerGPS"
+        app:layout_constraintHorizontal_bias="0.619"
+        app:layout_constraintStart_toStartOf="@+id/turnContainerGPS"
+        app:layout_constraintTop_toTopOf="@+id/turnContainerGPS"
+        app:layout_constraintVertical_bias="0.509"
+        app:srcCompat="@drawable/rightturn" />
+
+    <LinearLayout
+        android:layout_width="363dp"
+        android:layout_height="58dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20sp"
+        android:background="@drawable/rounded_background"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/time"
+            android:layout_width="113dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="10sp"
+            android:layout_marginEnd="20sp"
+            android:fontFamily="@font/agencyfb"
+            android:text="13 : 34 PM"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <ImageView
+            android:id="@+id/weatherIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10sp"
+            android:layout_marginEnd="20sp"
+            app:srcCompat="@drawable/weathericon" />
+
+        <TextView
+            android:id="@+id/temperatureDisplay"
+            android:layout_width="75dp"
+            android:layout_height="38dp"
+            android:layout_marginTop="10sp"
+            android:layout_marginEnd="20sp"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="25 ºC"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <ImageView
+            android:id="@+id/bluetooth"
+            android:layout_width="28dp"
+            android:layout_height="34dp"
+            android:layout_marginTop="10sp"
+            app:srcCompat="@drawable/bluetooth" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="580dp"
+        android:layout_height="124dp"
+        android:background="@drawable/rounded_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.823">
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="50dp"
+            android:layout_marginTop="10dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="400Km"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="220dp"
+            android:layout_marginTop="10dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="5h 30min"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="410dp"
+            android:layout_marginTop="10dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="17:30"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp" />
+
+        <ImageView
+            android:id="@+id/destinationIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="50dp"
+            android:layout_marginTop="60dp"
+            app:srcCompat="@drawable/destination" />
+
+        <ImageView
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="80dp"
+            android:layout_marginTop="75dp"
+            app:srcCompat="@drawable/line" />
+
+        <ImageView
+            android:id="@+id/progressBarFilling"
+            android:layout_width="311dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="45dp"
+            android:layout_marginTop="57dp"
+            app:srcCompat="@drawable/progressbar" />
+
+        <TextView
+            android:id="@+id/destinationRemaining"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="410dp"
+            android:layout_marginTop="60dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/agencyfb"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="400m"
+            android:textColor="@color/lightGray"
+            android:textSize="24sp" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="@color/darkGray"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0">
+
+
+        <TextView
+            android:id="@+id/speedValue"
+            android:layout_width="103dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10sp"
+            android:fontFamily="@font/agencyfb"
+            android:text="100 KM/H"
+            android:textColor="@color/white"
+            android:textSize="30sp" />
+
+        <ImageView
+            android:id="@+id/speedometerBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="60sp"
+            app:srcCompat="@drawable/gpsvaluebar"
+             />
+
+        <TextView
+            android:id="@+id/batteryValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10sp"
+            android:fontFamily="@font/agencyfb"
+            android:text="85%"
+            android:textColor="@color/white"
+            android:textSize="30sp" />
+
+        <ImageView
+            android:id="@+id/batteryBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/gpsvaluebar"
+            android:layout_marginEnd="60sp"
+            />
+
+        <ImageView
+            android:id="@+id/batteryTempIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/batterytemperatureicon"
+            android:layout_marginStart="30dp" />
+
+        <TextView
+            android:id="@+id/batteryTempValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10sp"
+            android:fontFamily="@font/agencyfb"
+            android:text="30º"
+            android:textColor="@color/white"
+            android:textSize="30sp"
+            android:layout_marginEnd="60sp" />
+
+        <ImageView
+            android:id="@+id/engineTempIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/batterytemperatureicon" />
+
+        <TextView
+            android:id="@+id/engineTempValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10sp"
+            android:fontFamily="@font/agencyfb"
+            android:text="99º"
+            android:textColor="@color/white"
+            android:textSize="30sp"
+            android:layout_marginEnd="30sp" />
+
+        <TextView
+            android:id="@+id/gearValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="50sp"
+            android:fontFamily="@font/agencyfb"
+            android:text="D"
+            android:textColor="@color/lightGray"
+            android:textSize="30sp"
+            android:layout_marginEnd="30dp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

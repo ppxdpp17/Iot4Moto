@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- Call Icons -->
+    <ImageView
+        android:id="@+id/callIcon"
+        android:layout_width="90dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        app:srcCompat="@drawable/callicon" />
+
+    <!-- Caller Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingStart="8dp">
+
+        <TextView
+            android:id="@+id/callerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="In The End"
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/agencyfb"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/callerNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="000 000 000"
+            android:textColor="@color/lightGray"
+            android:fontFamily="@font/agencyfb"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <!-- Call Duration -->
+    <TextView
+        android:id="@+id/callDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="3:36"
+        android:textColor="@color/lightGray"
+        android:paddingEnd="8dp"
+        android:fontFamily="@font/agencyfb"
+        android:textSize="30sp" />
+</LinearLayout>

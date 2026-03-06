@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gear_drive">D</string>
+    <string name="gear_rear">R</string>
+    <string name="gear_park">P</string>
+    <string name="gear_neutral">N</string>
+    <string name="sensor_collision">DANGER! Collision in 10m!</string>
+    <string name="driveMode_eco">Eco</string>
+    <string name="driveMode_standard">Standard</string>
+    <string name="driveMode_sport">Sport</string>
+    <string name="cellphone_label">CELL PHONE</string>
+    <string name="music_label">MUSIC</string>
+    <string name="settings_label">SETTINGS</string>
+    <string name="brightness">Brightness</string>
+    <string name="color">Color</string>
+    <string name="language">Language</string>
+    <string name="left">Left</string>
+    <string name="right">Right</string>
+    <string name="blindspot_warning">⚠️ ALERT! Movement detected in your blindspot on your %1$s side at %2$s.</string>
+    <string name="pedestrian_warning">🚶 WARNING! A pedestrian is detected on your %1$s side at %2$s.</string>
+    <string name="rear_collision_warning">🔴 DANGER! A vehicle is approaching dangerously from behind at %1$s.</string>
+    <string name="frontal_collision_warning">⛔ DANGER! A potential frontal collision detected ahead at %1$s.</string>
+    <string name="unknown_side">Unknown Side</string>
+    <string name="unknown_distance">Unknown Distance</string>
+</resources>
