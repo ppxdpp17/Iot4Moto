@@ -1,0 +1,62 @@
+[
+    {
+        "id": "Collection_20240927_141902",
+        "name": "Collection_20240927_141902",
+        "duration_sec": 701.2,
+        "distance_km": 4.56,
+        "curves": 700,
+        "start_time": "2024-09-27 14:19:02",
+        "video_file": null,
+        "data_file": "Collection_20240927_141902.json"
+    },
+    {
+        "id": "Collection_20240927_143545",
+        "name": "Collection_20240927_143545",
+        "duration_sec": 182.9,
+        "distance_km": 1.14,
+        "curves": 437,
+        "start_time": "2024-09-27 14:35:46",
+        "video_file": "../Collection_20240927_143545/sensor_data20240927_143545.mp4",
+        "data_file": "Collection_20240927_143545.json"
+    },
+    {
+        "id": "Collection_20240927_144108",
+        "name": "Collection_20240927_144108",
+        "duration_sec": 354.8,
+        "distance_km": 3.15,
+        "curves": 780,
+        "start_time": "2024-09-27 14:41:09",
+        "video_file": "../Collection_20240927_144108/sensor_data20240927_144108.mp4",
+        "data_file": "Collection_20240927_144108.json"
+    },
+    {
+        "id": "Collection_20240927_144834",
+        "name": "Collection_20240927_144834",
+        "duration_sec": 363.4,
+        "distance_km": 3.08,
+        "curves": 365,
+        "start_time": "2024-09-27 14:48:34",
+        "video_file": "../Collection_20240927_144834/sensor_data20240927_144834.mp4",
+        "data_file": "Collection_20240927_144834.json"
+    },
+    {
+        "id": "Collection_20240927_145634",
+        "name": "Collection_20240927_145634",
+        "duration_sec": 432.1,
+        "distance_km": 3.74,
+        "curves": 208,
+        "start_time": "2024-09-27 14:56:34",
+        "video_file": "../Collection_20240927_145634/sensor_data20240927_145634.mp4",
+        "data_file": "Collection_20240927_145634.json"
+    },
+    {
+        "id": "Collection_20240927_150525",
+        "name": "Collection_20240927_150525",
+        "duration_sec": 318.0,
+        "distance_km": 3.84,
+        "curves": 583,
+        "start_time": "2024-09-27 15:05:26",
+        "video_file": "../Collection_20240927_150525/sensor_data20240927_150525.mp4",
+        "data_file": "Collection_20240927_150525.json"
+    }
+]

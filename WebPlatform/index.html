@@ -33,10 +33,21 @@
 <body>
 
     <h1>Motorcycle Intelligent System</h1>
-    
+
+    <div style="margin-bottom: 20px;">
+        <button onclick="setMode('live')" style="padding: 10px; background: #00ff00; color: #000; font-weight: bold; border: none; cursor: pointer;">Em Tempo Real</button>
+        <button onclick="setMode('history')" style="padding: 10px; background: #444; color: #fff; font-weight: bold; border: none; cursor: pointer;">Rotas Passadas</button>
+    </div>
+
+    <div id="history-controls" style="display: none; margin-bottom: 20px; background: #222; padding: 20px; border-radius: 10px; width: 80%; margin: 0 auto;">
+        <select id="route-select" onchange="loadRoute()" style="padding: 10px; font-size: 16px; width: 100%; max-width: 400px;"></select>
+        <div id="route-stats" style="margin-top: 15px; color: #00ff00; font-size: 18px;"></div>
+        <video id="route-video" width="100%" max-width="600" controls style="margin-top: 20px; border: 2px solid #555; border-radius: 8px;"></video>
+    </div>
+
     <div class="container">
         <div id="bike-container">
-            <img id="bike-img" src="/WebPlatform/Images/mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
+            <img id="bike-img" src="/WebPlatform/img/mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
         </div>
         
         <div class="data-box">
@@ -86,6 +97,7 @@
         };
 
         client.onMessageArrived = (message) => {
+            if (currentMode === 'history') return;
             if (message.destinationName === "moto/roll") {
                 let angle = parseFloat(message.payloadString);
                 document.getElementById("roll-val").innerText = angle.toFixed(2);
@@ -128,6 +140,81 @@
             useSSL: false,
             timeout: 3
         };
+
+            let currentMode = 'live';
+        let routeData = [];
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('history-controls').style.display = mode === 'history' ? 'block' : 'none';
+            if (mode === 'history') fetchRoutes();
+        }
+
+        async function fetchRoutes() {
+            try {
+                // Lê o catálogo gerado pelo Python
+                const res = await fetch('./data/index.json');
+                const routes = await res.json();
+                const select = document.getElementById('route-select');
+                select.innerHTML = '<option value="">Selecione uma rota...</option>';
+                window.routesCatalog = routes; 
+                
+                routes.forEach(r => {
+                    select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
+                });
+            } catch (e) {
+                addLog("Erro ao carregar histórico. A pasta processed_routes está na raiz do HTML?", true);
+            }
+        }
+
+        async function loadRoute() {
+            const id = document.getElementById('route-select').value;
+            if(!id) return;
+            const route = window.routesCatalog.find(r => r.id === id);
+
+            // Estatísticas sem a feature das curvas
+            document.getElementById('route-stats').innerHTML = 
+                `Início: ${route.start_time} | Duração: ${route.duration_sec}s <br> Distância: ${route.distance_km} km`;
+
+            // Lida com a presença ou ausência de vídeo
+            const videoElement = document.getElementById('route-video');
+            if (route.video_file) {
+                const videoName = route.video_file.split('/').pop();
+                videoElement.src = `./videos/${videoName}`; // Aponta para a pasta videos/
+                videoElement.style.display = 'block';
+            } else {
+                videoElement.src = "";
+                videoElement.style.display = 'none';
+            }
+
+            // Carrega o JSON da pasta 'data'
+            const res = await fetch(`./data/${route.data_file}`);
+            routeData = await res.json();
+        }
+
+        // O coração da sincronização
+        document.getElementById('route-video').addEventListener('timeupdate', (e) => {
+            if(currentMode !== 'history' || routeData.length === 0) return;
+
+            // Converter o tempo do vídeo para milissegundos
+            const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
+
+            // Procurar a frame de dados exata (ou a mais próxima)
+            const frame = routeData.find(d => d.t >= currentTimeMs);
+            
+            if(frame) {
+                // Atualiza Mota
+                document.getElementById("roll-val").innerText = frame.r.toFixed(2);
+                document.getElementById("bike-img").style.transform = `rotate(${frame.r}deg)`;
+
+                // Atualiza Mapa
+                if(frame.la && frame.lo) {
+                    currentLat = frame.la;
+                    currentLon = frame.lo;
+                    updateMap();
+                }
+            }
+        });
 
         try {
             client.connect(connectOptions);
