@@ -10,6 +10,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 
 import com.example.rideriot.PermissionManager
+import com.example.rideriot.utils.MqttManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,18 +33,39 @@ class MainActivity : AppCompatActivity() {
         permissionManager.checkAndRequest()
     }
 
+    // Adiciona estas variáveis no topo da classe, junto ao map e tvStatus:
+    private lateinit var mqttManager: MqttManager
+    private val BROKER_URL = "tcp://172.20.0.203:1883" // Verifica se a porta TCP é esta
+    private val CLIENT_ID = "AndroidApp_Moto"
+
+    // Substitui a tua função setupUI atual por esta:
     private fun setupUI() {
         map = findViewById(R.id.mapView)
         tvStatus = findViewById(R.id.tvStatus)
         val btnStart: Button = findViewById(R.id.btnStart)
         val btnStop: Button = findViewById(R.id.btnStop)
 
+        // Inicializa Mapa
         map.setMultiTouchControls(true)
         map.controller.setZoom(15.0)
-        map.controller.setCenter(GeoPoint(41.3000, -7.7400)) // Centrado em Vila Real
+        map.controller.setCenter(GeoPoint(41.3000, -7.7400))
 
-        btnStart.setOnClickListener { tvStatus.text = "Estado: ON" }
-        btnStop.setOnClickListener { tvStatus.text = "Estado: OFF" }
+        // Inicializa e Liga MQTT
+        mqttManager = MqttManager(this)
+        mqttManager.connect(BROKER_URL, CLIENT_ID) {
+            runOnUiThread { tvStatus.text = "Estado: Ligado à Mota \uD83D\uDFE2" } // Bola verde
+        }
+
+        // Eventos de Clique
+        btnStart.setOnClickListener {
+            mqttManager.publish("sim/motorcycle", "on", retain = true)
+            tvStatus.text = "Estado: ON"
+        }
+
+        btnStop.setOnClickListener {
+            mqttManager.publish("sim/motorcycle", "off", retain = true)
+            tvStatus.text = "Estado: OFF"
+        }
     }
 
     override fun onResume() {
