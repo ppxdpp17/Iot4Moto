@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_map"
+        android:icon="@drawable/selector_map"
+        android:title="Mapa" />
+    <item
+        android:id="@+id/nav_alerts"
+        android:icon="@android:drawable/ic_dialog_info"
+        android:title="Alertas" />
+    <item
+        android:id="@+id/nav_camera"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="Câmara" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="Settings" />
+</menu>
