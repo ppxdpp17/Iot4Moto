@@ -1,4 +1,4 @@
-package com.example.rideriot.ui.theme
+package com.example.rideriot.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater

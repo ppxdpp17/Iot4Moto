@@ -1,15 +1,15 @@
-package com.example.rideriot.ui.theme
+package com.example.rideriot.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.example.rideriot.R // O teu R
+import com.example.rideriot.R
 
-class CameraFragment : Fragment() {
+class AlertsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Terás de criar um fragment_map.xml mais tarde
-        return inflater.inflate(R.layout.fragment_camera, container, false)
+        return inflater.inflate(R.layout.fragment_alerts, container, false)
     }
 }
