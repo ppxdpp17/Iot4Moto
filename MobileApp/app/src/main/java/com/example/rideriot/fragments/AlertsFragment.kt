@@ -57,14 +57,23 @@ class AlertsFragment : Fragment() {
 
                 //Atualiza a UI no ecrã
                 activity?.runOnUiThread {
+                    // Traduz o código da máquina para algo útil
+                    val (titulo, descricao) = when (alertType) {
+                        "THEFT" -> "Tentativa de Roubo" to "Movimento detetado com a mota estacionada."
+                        "FALL"  -> "Queda Detetada" to "A iniciar protocolo de SOS..."
+                        "RAIN"  -> "Chuva" to "A mota está estacionada à chuva."
+                        "FCW"   -> "Travagem Brusca" to "Risco de colisão frontal detetado."
+                        else    -> "Informação" to "Evento registado: $alertType"
+                    }
+
                     val newAlert = Alert(
-                        title = "Alerta: $alertType",
-                        message = payload.trim(),
+                        title = titulo,
+                        message = descricao,
                         timestamp = currentTime,
                         type = alertType
                     )
                     adapter.addAlert(newAlert)
-                    recyclerView.scrollToPosition(0) //Força a lista a ir para o topo para mostrar sempre o alerta mais recente
+                    recyclerView.scrollToPosition(0)
                 }
             }
         }

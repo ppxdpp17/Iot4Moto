@@ -26,6 +26,13 @@ class AlertAdapter(private val alerts: MutableList<Alert>) : RecyclerView.Adapte
         holder.tvTitle.text = alert.title
         holder.tvTime.text = alert.timestamp
         holder.tvMessage.text = alert.message
+
+        //Click no card
+        holder.itemView.setOnClickListener {
+            //TODO - abrir um novo Fragment com o Mapa do momento e feed da câmara.
+            //Para já, apenas mostra um Toast a provar que funciona.
+            android.widget.Toast.makeText(holder.itemView.context, "Detalhes do alerta: ${alert.type}", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun getItemCount() = alerts.size
