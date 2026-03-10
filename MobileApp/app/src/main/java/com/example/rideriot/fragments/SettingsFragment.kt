@@ -19,6 +19,10 @@ class SettingsFragment : Fragment() {
     private lateinit var etPhone3: EditText
     private lateinit var etSosMessage: EditText
     private lateinit var btnSave: Button
+    private lateinit var swAlertFall: com.google.android.material.switchmaterial.SwitchMaterial
+    private lateinit var swAlertTheft: com.google.android.material.switchmaterial.SwitchMaterial
+    private lateinit var swAlertRain: com.google.android.material.switchmaterial.SwitchMaterial
+    private lateinit var swAlertFcw: com.google.android.material.switchmaterial.SwitchMaterial
 
     //O ficheiro das sharedpreferences onde o Android vai guardar as configurações
     private lateinit var sharedPrefs: SharedPreferences
@@ -36,6 +40,10 @@ class SettingsFragment : Fragment() {
         etPhone3 = view.findViewById(R.id.etPhone3)
         etSosMessage = view.findViewById(R.id.etSosMessage)
         btnSave = view.findViewById(R.id.btnSaveSettings)
+        swAlertFall = view.findViewById(R.id.swAlertFall)
+        swAlertTheft = view.findViewById(R.id.swAlertTheft)
+        swAlertRain = view.findViewById(R.id.swAlertRain)
+        swAlertFcw = view.findViewById(R.id.swAlertFcw)
 
         //Criar/abrir o ficheiro local de configurações
         sharedPrefs = requireActivity().getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
@@ -56,6 +64,12 @@ class SettingsFragment : Fragment() {
         //Mensagem por defeito se o utilizador ainda não tiver configurado nada
         val defaultMsg = "Tive uma queda com a mota. Preciso de ajuda nesta localização:"
         etSosMessage.setText(sharedPrefs.getString("sos_message", defaultMsg))
+
+        //Por default carrega os valores a true
+        swAlertFall.isChecked = sharedPrefs.getBoolean("alert_fall", true)
+        swAlertTheft.isChecked = sharedPrefs.getBoolean("alert_theft", true)
+        swAlertRain.isChecked = sharedPrefs.getBoolean("alert_rain", true)
+        swAlertFcw.isChecked = sharedPrefs.getBoolean("alert_fcw", true)
     }
 
     private fun saveSettings() {
@@ -66,6 +80,12 @@ class SettingsFragment : Fragment() {
         editor.putString("phone2", etPhone2.text.toString().trim())
         editor.putString("phone3", etPhone3.text.toString().trim())
         editor.putString("sos_message", etSosMessage.text.toString().trim())
+
+        //Injetar os booleanos no editor
+        editor.putBoolean("alert_fall", swAlertFall.isChecked)
+        editor.putBoolean("alert_theft", swAlertTheft.isChecked)
+        editor.putBoolean("alert_rain", swAlertRain.isChecked)
+        editor.putBoolean("alert_fcw", swAlertFcw.isChecked)
 
         //O .apply() grava de forma assíncrona (não bloqueia a app)
         editor.apply()

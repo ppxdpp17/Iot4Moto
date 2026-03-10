@@ -63,12 +63,50 @@
             android:id="@+id/etSosMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Tive um acidente de mota. Preciso de ajuda nesta localização: "
+            android:hint="Preciso de ajuda. Tive um acidente aqui: "
             android:textColor="#FFFFFF"
             android:textColorHint="#888888"
             android:inputType="textMultiLine"
             android:lines="3"
             android:backgroundTint="#555555"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Preferências de Notificação"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swAlertFall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ativar Alerta de Queda (SOS)"
+            android:textColor="#FFFFFF"/>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swAlertTheft"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ativar Alerta de Furto"
+            android:textColor="#FFFFFF"/>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swAlertRain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ativar Alerta de Chuva"
+            android:textColor="#FFFFFF"/>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swAlertFcw"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ativar FCW (Colisão Frontal)"
+            android:textColor="#FFFFFF"/>
 
         <Button
             android:id="@+id/btnSaveSettings"

@@ -11,6 +11,7 @@ import com.example.rideriot.R
 import com.example.rideriot.adapters.AlertAdapter
 import com.example.rideriot.models.Alert
 import com.example.rideriot.utils.MqttManager
+import com.example.rideriot.utils.SmsHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,6 +67,14 @@ class AlertsFragment : Fragment() {
                         else    -> "Informação" to "Evento registado: $alertType"
                     }
 
+                    //Alerta de Queda
+                    if(alertType == "FALL") {
+                        //Para já, envia o payload como GPS.
+                        //TODO: Ajustar para extrair a lat/long real do MQTT.
+                        val smsHelper = SmsHelper(requireContext())
+                        smsHelper.triggerEmergencySms(payload)
+                    }
+
                     val newAlert = Alert(
                         title = titulo,
                         message = descricao,
@@ -74,6 +83,7 @@ class AlertsFragment : Fragment() {
                     )
                     adapter.addAlert(newAlert)
                     recyclerView.scrollToPosition(0)
+
                 }
             }
         }
