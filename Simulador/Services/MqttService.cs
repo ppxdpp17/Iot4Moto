@@ -12,6 +12,9 @@ namespace Simulador.Services
         private readonly int _brokerPort;
         private readonly string _clientId;
 
+        // EVENTO PARA AVISAR O PROGRAM.CS QUE CHEGOU UMA MENSAGEM
+        public event Action<string, string>? OnMessageReceived;
+
         public MqttService(string brokerAddress, int brokerPort, string clientId)
         {
             _brokerAddress = brokerAddress;
@@ -20,6 +23,15 @@ namespace Simulador.Services
 
             var factory = new MqttFactory();
             _mqttClient = factory.CreateMqttClient();
+
+            // QUANDO RECEBE MENSAGEM DO BROKER, DISPARA O EVENTO
+            _mqttClient.ApplicationMessageReceivedAsync += e =>
+            {
+                var topic = e.ApplicationMessage.Topic;
+                var payload = System.Text.Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
+                OnMessageReceived?.Invoke(topic, payload);
+                return Task.CompletedTask;
+            };
         }
 
         public async Task ConnectAsync()
@@ -57,6 +69,15 @@ namespace Simulador.Services
             else
             {
                 Console.WriteLine("MQTT client is not connected.");
+            }
+        }
+
+        // FUNÇÃO PARA SUBSCREVER UM TÓPICO
+        public async Task SubscribeAsync(string topic)
+        {
+            if (_mqttClient.IsConnected)
+            {
+                await _mqttClient.SubscribeAsync(topic);
             }
         }
 

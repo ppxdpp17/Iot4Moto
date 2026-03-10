@@ -111,9 +111,36 @@ namespace Simulador
             updateMethods.SetRoutes(routes);
             routes.SetUpdateMethods(updateMethods);
             routes.SetBackgroundUpdated(backgroundUpdated);
+
+            //------ INÍCIO DA LÓGICA DA APP ANDROID -------
+            mqttService.OnMessageReceived += async (topic, payload) =>
+            {
+                if (topic == "sim/motorcycle")
+                {
+                    if (payload == "on" && !SimulationState.IsMotorcycleOn)
+                    {
+                        //Program.WriteMessage("[Remoto] Comando LIGAR recebido.");
+                        await startAndUpdate.StartMotorcycleAsync();
+                        SimulationState.IsMotorcycleOn = true;
+                        dashboard.DisplayDashboard();
+                    }
+                    else if (payload == "off" && SimulationState.IsMotorcycleOn)
+                    {
+                        //Program.WriteMessage("[Remoto] Comando DESLIGAR recebido.");
+                        await startAndUpdate.StopMotorcycleAsync();
+                        SimulationState.IsMotorcycleOn = false;
+                        Console.Clear();
+                        dashboard.DisplayCommands();
+                    }
+                }
+            };
+            //---------- FIM DA LÓGICA DA APP ANDROID --------------------
             try
             {
                 await mqttService.ConnectAsync();
+
+                //Diz ao broker que quer ouvir os tópicos ainda antes de dar start
+                await mqttService.SubscribeAsync("sim/motorcycle");
 
                 // Choose the VIN before starting the simulator
                 Console.Clear();
