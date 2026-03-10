@@ -49,12 +49,34 @@ class MapFragment : Fragment() {
 
     private fun setupMqtt() {
         mqttManager = MqttManager(requireContext())
-        mqttManager.connect(BROKER_URL, CLIENT_ID) {
-            activity?.runOnUiThread {
-                tvStatus.text = "Estado: Ligado à mota \uD83D\uDFE2"
+
+        // Define o que fazer quando recebe mensagens
+        mqttManager.messageListener = { topic, payload ->
+            if (topic == "sim/motorcycle") {
+                activity?.runOnUiThread {
+                    val isOn = payload.trim() == "on"
+                    // Só atualiza se o estado do switch for diferente do recebido
+                    if (switchMotor.isChecked != isOn) {
+                        switchMotor.setOnCheckedChangeListener(null) // Pausa o clique
+                        switchMotor.isChecked = isOn
+                        tvStatus.text = "Motor: ${payload.uppercase()}"
+                        setSwitchListener() // Reativa o clique
+                    }
+                }
             }
         }
 
+        mqttManager.connect(BROKER_URL, CLIENT_ID) {
+            activity?.runOnUiThread {
+                tvStatus.text = "Estado: Ligado à mota \uD83D\uDFE2"
+                mqttManager.subscribe("sim/motorcycle") // Subscreve assim que liga
+            }
+        }
+
+        setSwitchListener()
+    }
+
+    private fun setSwitchListener() {
         switchMotor.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 mqttManager.publish("sim/motorcycle", "on", retain = true)

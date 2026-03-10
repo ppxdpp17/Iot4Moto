@@ -6,32 +6,42 @@ import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 class MqttManager(private val context: Context) {
+
     private var mqttClient: MqttAsyncClient? = null
+    var messageListener: ((String, String) -> Unit)? = null
 
     fun connect(brokerUri: String, clientId: String, onConnected: () -> Unit) {
         try {
             mqttClient = MqttAsyncClient(brokerUri, clientId, MemoryPersistence())
+
+            //Ouve tudo o que chega
+            mqttClient?.setCallback(object : MqttCallback {
+                override fun connectionLost(cause: Throwable?) {}
+                override fun messageArrived(topic: String?, message: MqttMessage?) {
+                    messageListener?.invoke(topic!!, String(message!!.payload))
+                }
+                override fun deliveryComplete(token: IMqttDeliveryToken?) {}
+            })
+
             val options = MqttConnectOptions().apply {
                 isCleanSession = true
                 connectionTimeout = 10
-                // Se o teu broker tiver password, descomenta isto:
-                // userName = "teu_user"
-                // password = "tua_password".toCharArray()
             }
 
             mqttClient?.connect(options, context, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    Log.d("MQTT", "Ligado ao broker com sucesso!")
                     onConnected()
                 }
-
-                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    Log.e("MQTT", "Falha na ligação: ${exception?.message}")
-                }
+                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {}
             })
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    //Subscreve o tópico MQTT para receber info do Simuladro
+    fun subscribe(topic: String) {
+        try {
+            mqttClient?.subscribe(topic, 1)
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     fun publish(topic: String, payload: String, retain: Boolean = false) {
@@ -44,7 +54,7 @@ class MqttManager(private val context: Context) {
                 mqttClient?.publish(topic, message)
                 Log.d("MQTT", "Publicado: $payload no tópico $topic")
             } else {
-                Log.w("MQTT", "Cliente desligado. Impossível publicar.")
+                Log.w("MQTT", "Cliente desligado.")
             }
         } catch (e: Exception) {
             e.printStackTrace()
