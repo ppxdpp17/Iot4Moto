@@ -5,11 +5,73 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.rideriot.R
+import com.example.rideriot.adapters.AlertAdapter
+import com.example.rideriot.models.Alert
+import com.example.rideriot.utils.MqttManager
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AlertsFragment : Fragment() {
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: AlertAdapter
+    private val alertList = mutableListOf<Alert>()
+
+    private lateinit var mqttManager: MqttManager
+    private val BROKER_URL = "tcp://172.20.0.203:1883" //IP da CSVU
+    private val CLIENT_ID = "AndroidApp_Alerts_${System.currentTimeMillis()}" //ID único dinâmico para evitar conflitos MQTT
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Terás de criar um fragment_map.xml mais tarde
         return inflater.inflate(R.layout.fragment_alerts, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        recyclerView = view.findViewById(R.id.recyclerViewAlerts)
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+
+        adapter = AlertAdapter(alertList)
+        recyclerView.adapter = adapter
+
+        setupMqtt()
+    }
+
+    private fun setupMqtt() {
+        mqttManager = MqttManager(requireContext())
+
+        //Define o que fazer quando chega um alerta do C#
+        mqttManager.messageListener = { topic, payload ->
+            //Exemplo de tópico esperado: "sim/alerts/theft"
+            if (topic == "moto/alarm") {
+
+                //Extrair o conteúdo
+                val alertType = payload.trim().uppercase()
+
+                //Vai buscar a hora atual do telemóvel
+                val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+
+                //Atualiza a UI no ecrã
+                activity?.runOnUiThread {
+                    val newAlert = Alert(
+                        title = "Alerta: $alertType",
+                        message = payload.trim(),
+                        timestamp = currentTime,
+                        type = alertType
+                    )
+                    adapter.addAlert(newAlert)
+                    recyclerView.scrollToPosition(0) //Força a lista a ir para o topo para mostrar sempre o alerta mais recente
+                }
+            }
+        }
+
+        //Liga e subscreve a todos os tópicos de alerta
+        mqttManager.connect(BROKER_URL, CLIENT_ID) {
+            mqttManager.subscribe("moto/alarm")
+        }
     }
 }
