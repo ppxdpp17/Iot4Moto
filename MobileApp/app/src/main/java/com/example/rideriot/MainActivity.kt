@@ -1,9 +1,11 @@
 package com.example.rideriot
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.example.rideriot.fragments.* // Importa os teus fragments
+import com.example.rideriot.utils.ForegroundAlertService
 
 class MainActivity : AppCompatActivity() {
 
@@ -13,9 +15,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicializa e pede permissões
+        //Inicia e pede permissões
         permissionManager = PermissionManager(this)
         permissionManager.checkAndRequest()
+
+        //Arranca o serviço de segundo plano (alerta) em background
+        val serviceIntent = Intent(this, ForegroundAlertService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
