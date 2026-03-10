@@ -106,6 +106,10 @@ namespace Simulador
             //Novos relacionados à sensorização e IoT
             var imuService = new ImuService(mqttService, canService);
 
+            //Código relacionado ao Feed da Câmara
+            var cameraService = new CameraService(mqttService);
+            _ = Task.Run(() => cameraService.StartStreamingAsync(_cancellationTokenSource.Token));
+            //.....................................
 
             startAndUpdate.SetAux(auxiliar);
             updateMethods.SetRoutes(routes);

@@ -60,4 +60,14 @@ class MqttManager(private val context: Context) {
             e.printStackTrace()
         }
     }
+
+    fun disconnect() {
+        try {
+            if (mqttClient?.isConnected == true) {
+                mqttClient?.disconnect()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
