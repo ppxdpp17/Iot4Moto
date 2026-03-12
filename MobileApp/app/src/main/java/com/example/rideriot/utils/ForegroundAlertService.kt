@@ -4,16 +4,21 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import org.json.JSONObject
 
 class ForegroundAlertService : Service() {
 
     private lateinit var mqttManager: MqttManager
-    private val BROKER_URL = "tcp://172.20.0.203:1883" //IP da CSVU
+    private val BROKER_URL = "tcp://172.20.0.203:1883"
     private val CLIENT_ID = "AndroidApp_Watchdog_${System.currentTimeMillis()}"
+
+    private var lastLat: Double = 0.0
+    private var lastLon: Double = 0.0
 
     override fun onCreate() {
         super.onCreate()
@@ -22,13 +27,10 @@ class ForegroundAlertService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        //START_STICKY diz ao Android para recriar o serviço se ele for morto por falta de RAM
         return START_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null //Não precisamos de dar bind à UI
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startForegroundServiceNotification() {
         val channelId = "rideriot_watchdog_channel"
@@ -37,7 +39,7 @@ class ForegroundAlertService : Service() {
             val channel = NotificationChannel(
                 channelId,
                 "Monitorização de Alertas",
-                NotificationManager.IMPORTANCE_LOW //Low para não estar sempre a apitar
+                NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
@@ -46,26 +48,46 @@ class ForegroundAlertService : Service() {
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("RiderIoT Ativo")
             .setContentText("A monitorizar mota em tempo real...")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm) //TODO: Mudar este ícone
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .build()
 
-        startForeground(1, notification)
+        // Garante que não crasha em versões Android 14+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(1, notification)
+        }
     }
 
     private fun setupMqttWatchdog() {
         mqttManager = MqttManager(this)
 
         mqttManager.messageListener = { topic, payload ->
-            if (topic == "moto/alarm") {
-                val alertType = payload.trim().uppercase()
-
-                if (alertType == "FALL") {
-                    Log.d("WATCHDOG", "Queda detetada em background! A iniciar SOS...")
+            when (topic) {
+                "moto/gps" -> {
                     try {
-                        val smsHelper = SmsHelper(this)
-                        smsHelper.triggerEmergencySms(payload)
+                        val json = JSONObject(payload)
+                        lastLat = json.getDouble("lat")
+                        lastLon = json.getDouble("lon")
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e("WATCHDOG", "Erro a ler GPS: ${e.message}")
+                    }
+                }
+                "moto/alarm" -> {
+                    val alertType = payload.trim().uppercase()
+
+                    if (alertType == "FALL") {
+                        Log.d("WATCHDOG", "Queda detetada! A gerar link de mapas e a iniciar SOS...")
+
+                        // URL oficial do Google Maps, em HTTPS, com a injeção da Latitude e Longitude
+                        val coordenadasGPS = "$lastLat,$lastLon"
+
+                        try {
+                            val smsHelper = SmsHelper(this@ForegroundAlertService)
+                            smsHelper.triggerEmergencySms(coordenadasGPS)
+                        } catch (e: Exception) {
+                            Log.e("WATCHDOG", "Erro a enviar SMS: ${e.message}")
+                        }
                     }
                 }
             }
@@ -73,11 +95,13 @@ class ForegroundAlertService : Service() {
 
         mqttManager.connect(BROKER_URL, CLIENT_ID) {
             mqttManager.subscribe("moto/alarm")
+            mqttManager.subscribe("moto/gps")
             Log.d("WATCHDOG", "Vigilância MQTT ativada em background.")
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        mqttManager.disconnect()
     }
 }

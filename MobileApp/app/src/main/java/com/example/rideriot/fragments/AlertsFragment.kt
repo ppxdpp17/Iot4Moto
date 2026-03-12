@@ -67,14 +67,6 @@ class AlertsFragment : Fragment() {
                         else    -> "Informação" to "Evento registado: $alertType"
                     }
 
-                    //Alerta de Queda
-                    if(alertType == "FALL") {
-                        //Para já, envia o payload como GPS.
-                        //TODO: Ajustar para extrair a lat/long real do MQTT.
-                        val smsHelper = SmsHelper(requireContext())
-                        smsHelper.triggerEmergencySms(payload)
-                    }
-
                     val newAlert = Alert(
                         title = titulo,
                         message = descricao,

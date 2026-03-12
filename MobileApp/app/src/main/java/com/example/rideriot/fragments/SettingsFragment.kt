@@ -62,7 +62,7 @@ class SettingsFragment : Fragment() {
         etPhone3.setText(sharedPrefs.getString("phone3", ""))
 
         //Mensagem por defeito se o utilizador ainda não tiver configurado nada
-        val defaultMsg = "Tive uma queda com a mota. Preciso de ajuda nesta localização:"
+        val defaultMsg = "Tive uma queda com a mota."
         etSosMessage.setText(sharedPrefs.getString("sos_message", defaultMsg))
 
         //Por default carrega os valores a true
