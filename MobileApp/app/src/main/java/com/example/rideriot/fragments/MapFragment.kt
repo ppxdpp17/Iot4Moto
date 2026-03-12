@@ -1,4 +1,4 @@
-package com.example.rideriot.fragments // Confirma o teu package!
+package com.example.rideriot.fragments
 
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -13,6 +13,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 class MapFragment : Fragment() {
 
@@ -21,11 +22,15 @@ class MapFragment : Fragment() {
     private lateinit var switchMotor: SwitchMaterial
     private lateinit var mqttManager: MqttManager
 
-    private val BROKER_URL = "tcp://172.20.0.203:1883" //IP da CSVU
-    private val CLIENT_ID = "AndroidApp_Map"
+    private val BROKER_URL = "tcp://172.20.0.203:1883" // Mantém o teu IP
+    private val CLIENT_ID = "AndroidApp_Map_${System.currentTimeMillis()}"
+
+    // Variáveis para o GPS
+    private var motoMarker: Marker? = null
+    private var currentLat: Double? = null
+    private var currentLon: Double? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        //Carregar as prefs do OSMDroid com requireContext() no Fragment
         Configuration.getInstance().load(requireContext(), PreferenceManager.getDefaultSharedPreferences(requireContext()))
         return inflater.inflate(R.layout.fragment_map, container, false)
     }
@@ -43,24 +48,32 @@ class MapFragment : Fragment() {
 
     private fun setupMap() {
         map.setMultiTouchControls(true)
-        map.controller.setZoom(15.0)
-        map.controller.setCenter(GeoPoint(41.3000, -7.7400)) //Forçar estas coordenadas (VR)
+        map.controller.setZoom(18.0) // Mais zoom para ver a rua
+        map.controller.setCenter(GeoPoint(41.3000, -7.7400))
     }
 
     private fun setupMqtt() {
         mqttManager = MqttManager(requireContext())
 
-        // Define o que fazer quando recebe mensagens
         mqttManager.messageListener = { topic, payload ->
-            if (topic == "sim/motorcycle") {
-                activity?.runOnUiThread {
-                    val isOn = payload.trim() == "on"
-                    // Só atualiza se o estado do switch for diferente do recebido
-                    if (switchMotor.isChecked != isOn) {
-                        switchMotor.setOnCheckedChangeListener(null) // Pausa o clique
-                        switchMotor.isChecked = isOn
-                        tvStatus.text = "Motor: ${payload.uppercase()}"
-                        setSwitchListener() // Reativa o clique
+            activity?.runOnUiThread {
+                when (topic) {
+                    "sim/motorcycle" -> {
+                        val isOn = payload.trim() == "on"
+                        if (switchMotor.isChecked != isOn) {
+                            switchMotor.setOnCheckedChangeListener(null)
+                            switchMotor.isChecked = isOn
+                            tvStatus.text = "Motor: ${payload.uppercase()}"
+                            setSwitchListener()
+                        }
+                    }
+                    "moto/gps/latitude" -> {
+                        currentLat = payload.toDoubleOrNull()
+                        updateMapLocation()
+                    }
+                    "moto/gps/longitude" -> {
+                        currentLon = payload.toDoubleOrNull()
+                        updateMapLocation()
                     }
                 }
             }
@@ -69,11 +82,33 @@ class MapFragment : Fragment() {
         mqttManager.connect(BROKER_URL, CLIENT_ID) {
             activity?.runOnUiThread {
                 tvStatus.text = "Estado: Ligado à mota \uD83D\uDFE2"
-                mqttManager.subscribe("sim/motorcycle") // Subscreve assim que liga
+                // Subscreve a tudo o que este ecrã precisa
+                mqttManager.subscribe("sim/motorcycle")
+                mqttManager.subscribe("moto/gps/latitude")
+                mqttManager.subscribe("moto/gps/longitude")
             }
         }
 
         setSwitchListener()
+    }
+
+    private fun updateMapLocation() {
+        // Só atualiza se já tiver as duas coordenadas
+        val lat = currentLat ?: return
+        val lon = currentLon ?: return
+
+        val point = GeoPoint(lat, lon)
+
+        if (motoMarker == null) {
+            motoMarker = Marker(map)
+            motoMarker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            motoMarker?.title = "A tua Mota"
+            map.overlays.add(motoMarker)
+        }
+
+        motoMarker?.position = point
+        map.controller.setCenter(point)
+        map.invalidate() // Força o redesenho do mapa
     }
 
     private fun setSwitchListener() {
@@ -96,5 +131,11 @@ class MapFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         map.onPause()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mqttManager.disconnect()
+        map.onDetach()
     }
 }
