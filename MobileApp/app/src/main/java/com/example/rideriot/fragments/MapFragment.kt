@@ -67,13 +67,15 @@ class MapFragment : Fragment() {
                             setSwitchListener()
                         }
                     }
-                    "moto/gps/latitude" -> {
-                        currentLat = payload.toDoubleOrNull()
-                        updateMapLocation()
-                    }
-                    "moto/gps/longitude" -> {
-                        currentLon = payload.toDoubleOrNull()
-                        updateMapLocation()
+                    "moto/gps" -> {
+                        try {
+                            val json = org.json.JSONObject(payload)
+                            currentLat = json.getDouble("lat")
+                            currentLon = json.getDouble("lon")
+                            updateMapLocation()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
             }
@@ -82,10 +84,8 @@ class MapFragment : Fragment() {
         mqttManager.connect(BROKER_URL, CLIENT_ID) {
             activity?.runOnUiThread {
                 tvStatus.text = "Estado: Ligado à mota \uD83D\uDFE2"
-                // Subscreve a tudo o que este ecrã precisa
                 mqttManager.subscribe("sim/motorcycle")
-                mqttManager.subscribe("moto/gps/latitude")
-                mqttManager.subscribe("moto/gps/longitude")
+                mqttManager.subscribe("moto/gps")
             }
         }
 

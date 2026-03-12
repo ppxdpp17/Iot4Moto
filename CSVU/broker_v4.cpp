@@ -115,16 +115,19 @@ void* can_reader(void* arg) {
             client->publish("moto/time", std::string(timeBuffer), 0, true);
         }
         else if (id == 0x301) {
-            // Reconstrói a Latitude
+            //Reconstrói a Latitude e Longitude
             int32_t lat_raw = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
-            // Reconstrói a Longitude
             int32_t lon_raw = frame.data[4] | (frame.data[5] << 8) | (frame.data[6] << 16) | (frame.data[7] << 24);
 
             double lat = lat_raw / 1000000.0;
             double lon = lon_raw / 1000000.0;
 
-            client->publish("moto/gps/latitude", std::to_string(lat));
-            client->publish("moto/gps/longitude", std::to_string(lon));
+            //Criar JSON único com latitude + longitude
+            json gpsPayload;
+            gpsPayload["lat"] = lat;
+            gpsPayload["lon"] = lon;
+            
+            client->publish("moto/gps", gpsPayload.dump());
         }
     }
     return nullptr;
