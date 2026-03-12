@@ -139,6 +139,8 @@ namespace Simulador
                 }
             };
             //---------- FIM DA LÓGICA DA APP ANDROID --------------------
+            
+            //RETIREI ESCOLHA DO VIN AQUI
             try
             {
                 await mqttService.ConnectAsync();
@@ -146,37 +148,12 @@ namespace Simulador
                 //Diz ao broker que quer ouvir os tópicos ainda antes de dar start
                 await mqttService.SubscribeAsync("sim/motorcycle");
 
-                // Choose the VIN before starting the simulator
                 Console.Clear();
-
-                Console.WriteLine("Choose the VIN of the motorcycle to simulate:");
-                Console.WriteLine("1 - AJP1RB5SXLB123456");
-                Console.WriteLine("2 - AJP7XZ8MWQ2Y1R3K");
-
-                string? selectedVin = null;
-                while (selectedVin == null)
-                {
-                    Console.Write("Enter 1 or 2: ");
-                    var input = Console.ReadLine();
-                    switch (input)
-                    {
-                        case "1":
-                            selectedVin = "AJP1RB5SXLB123456";
-                            break;
-                        case "2":
-                            selectedVin = "AJP7XZ8MWQ2Y1R3K";
-                            break;
-                        default:
-                            Console.WriteLine("Invalid option. Try again.");
-                            break;
-                    }
-                }
-
-                // Publish the VIN to the moto/vin topic
+                
+                //VIN automático para não bloquear a thread principal
+                string selectedVin = "AJP1RB5SXLB123456";
                 await mqttService.PublishAsync("moto/vin", selectedVin);
-                Console.WriteLine($"\nVIN {selectedVin} selected and published.\n");
-                Thread.Sleep(1000); // small delay before continuing
-
+                Console.WriteLine($"\n[Auto-Start] VIN {selectedVin} selecionado automaticamente e publicado.\n");
             }
             catch
             {
