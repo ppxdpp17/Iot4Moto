@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Contactos SOS (Em caso de Queda)"
+            android:text="Contactos SOS (Adicionar prefixo)"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:textSize="18sp"
@@ -55,7 +55,7 @@
             android:text="Mensagem de Emergência"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:layout_marginTop="20dp"
             android:layout_marginBottom="8dp"/>
 
@@ -63,7 +63,7 @@
             android:id="@+id/etSosMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Preciso de ajuda. Tive um acidente aqui: "
+            android:hint="Tive um acidente com a mota."
             android:textColor="#FFFFFF"
             android:textColorHint="#888888"
             android:inputType="textMultiLine"

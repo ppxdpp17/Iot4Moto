@@ -9,7 +9,11 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.rideriot.models.Alert
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ForegroundAlertService : Service() {
 
@@ -51,7 +55,6 @@ class ForegroundAlertService : Service() {
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .build()
 
-        // Garante que não crasha em versões Android 14+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
         } else {
@@ -77,11 +80,7 @@ class ForegroundAlertService : Service() {
                     val alertType = payload.trim().uppercase()
 
                     if (alertType == "FALL") {
-                        Log.d("WATCHDOG", "Queda detetada! A gerar link de mapas e a iniciar SOS...")
-
-                        // URL oficial do Google Maps, em HTTPS, com a injeção da Latitude e Longitude
                         val coordenadasGPS = "$lastLat,$lastLon"
-
                         try {
                             val smsHelper = SmsHelper(this@ForegroundAlertService)
                             smsHelper.triggerEmergencySms(coordenadasGPS)
@@ -89,6 +88,19 @@ class ForegroundAlertService : Service() {
                             Log.e("WATCHDOG", "Erro a enviar SMS: ${e.message}")
                         }
                     }
+
+                    //Gravar o alerta no histórico (AlertManager)
+                    val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                    val (titulo, descricao) = when (alertType) {
+                        "THEFT" -> "Tentativa de Roubo" to "Movimento detetado com a mota estacionada."
+                        "FALL"  -> "Queda Detetada" to "SOS ativado. Coordenadas enviadas."
+                        "RAIN"  -> "Chuva" to "A mota está à chuva."
+                        "FCW"   -> "Travagem Brusca" to "Risco de colisão."
+                        else    -> "Informação" to "Evento: $alertType"
+                    }
+
+                    val newAlert = Alert(titulo, descricao, currentTime, alertType)
+                    AlertManager.addAlert(newAlert)
                 }
             }
         }
@@ -96,7 +108,6 @@ class ForegroundAlertService : Service() {
         mqttManager.connect(BROKER_URL, CLIENT_ID) {
             mqttManager.subscribe("moto/alarm")
             mqttManager.subscribe("moto/gps")
-            Log.d("WATCHDOG", "Vigilância MQTT ativada em background.")
         }
     }
 
