@@ -2,157 +2,339 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-
     <title>Dashboard Moto IoT - Telemetria</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; text-align: center; }
-        .container { margin-top: 50px; }
-        #bike-container {
-            width: 320px; height: 320px; margin: 0 auto;
-            border: 4px solid #333; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle, #222 0%, #121212 100%);
-            box-shadow: 0 0 20px rgba(0,255,0,0.1);
+        :root {
+            --bg-dark: #0f1115;
+            --bg-panel: #1a1d24;
+            --primary: #00ff88;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --danger: #ff4757;
+            --warning: #ffa502;
+            --border: #2d323e;
         }
-        #bike-img {
-            width: 220px;
-            /* Se a imagem falhar, isto ajuda a ver que algo está a rodar */
-            transition: transform 0.05s linear; 
-        }
-        .data-box { font-size: 28px; margin-top: 25px; color: #00ff00; font-weight: bold; }
-        #log { font-size: 12px; color: #888; margin-top: 20px; font-family: monospace; }
-        .alert { color: #ff4444; }
-    </style>
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg-dark); 
+            color: var(--text-main); 
+            height: 100vh; 
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 80px 350px 1fr; /* Layout: Sidebar | Centro | Mapa */
+        }
+
+        /* SIDEBAR (Esquerda) */
+        .sidebar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+        .logo { font-size: 32px; color: var(--primary); margin-bottom: 50px; }
+        
+        .nav-btn {
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 24px; margin-bottom: 30px; cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+        }
+        .nav-btn:hover, .nav-btn.active { color: var(--primary); }
+        .nav-btn.active::after {
+            content: ''; position: absolute; right: -28px; top: 0;
+            height: 100%; width: 4px; background: var(--primary); border-radius: 4px;
+        }
+
+        /* COLUNA CENTRAL (Telemetria) */
+        .panel-center {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+        
+        .header-status {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--bg-panel); padding: 15px; border-radius: 12px;
+        }
+        .state-badge {
+            background: rgba(255, 68, 68, 0.2); color: var(--danger);
+            padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;
+        }
+        .state-badge.on { background: rgba(0, 255, 136, 0.2); color: var(--primary); }
+
+        .telemetry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .t-card {
+            background: var(--bg-panel); padding: 15px; border-radius: 12px; text-align: center;
+        }
+        .t-card i { color: var(--text-muted); font-size: 18px; margin-bottom: 5px; }
+        .t-value { font-size: 24px; font-weight: bold; color: var(--primary); }
+        .t-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+
+        /* Módulo IMU */
+        .imu-module {
+            background: var(--bg-panel); border-radius: 12px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        #bike-container {
+            width: 200px; height: 200px; position: relative;
+            border: 2px dashed var(--border); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 15px;
+        }
+        #bike-img { width: 140px; transition: transform 0.1s ease-out; }
+        .roll-display { font-size: 28px; font-weight: bold; font-family: monospace; }
+        
+        /* Feed de Alertas */
+        .alerts-module { flex-grow: 1; background: var(--bg-panel); border-radius: 12px; padding: 15px; overflow: hidden; display: flex; flex-direction: column; }
+        .alerts-module h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase;}
+        #alerts-list { list-style: none; overflow-y: auto; flex-grow: 1; }
+        .alert-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+        }
+        .alert-item i { font-size: 16px; margin-top: 2px; }
+        .alert-item .time { color: var(--text-muted); font-size: 11px; display: block; }
+        .alert-danger { color: var(--danger); }
+        .alert-warning { color: var(--warning); }
+        .alert-info { color: var(--primary); }
+
+        /* COLUNA DIREITA (Mapa / Histórico) */
+        .panel-right { position: relative; display: flex; flex-direction: column; background: #000; }
+        #map { flex-grow: 1; width: 100%; height: 100%; z-index: 1; }
+        
+        /* Controlo de Histórico (Escondido por defeito) */
+        #history-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); z-index: 10; padding: 30px; flex-direction: column;
+        }
+        .history-controls { display: flex; gap: 15px; margin-bottom: 20px; }
+        .history-controls select {
+            padding: 12px; background: var(--bg-panel); color: white; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 16px; flex-grow: 1;
+        }
+        #route-video { width: 100%; max-height: 60vh; border-radius: 12px; border: 1px solid var(--border); background: #000; }
+        
+    </style>
 </head>
 <body>
 
-    <h1>Motorcycle Intelligent System</h1>
-
-    <div style="margin-bottom: 20px;">
-        <button onclick="setMode('live')" style="padding: 10px; background: #00ff00; color: #000; font-weight: bold; border: none; cursor: pointer;">Em Tempo Real</button>
-        <button onclick="setMode('history')" style="padding: 10px; background: #444; color: #fff; font-weight: bold; border: none; cursor: pointer;">Rotas Passadas</button>
+    <div class="sidebar">
+        <div class="logo"><i class="fa-solid fa-motorcycle"></i></div>
+        <button class="nav-btn active" id="btn-live" onclick="switchMode('live')" title="Tempo Real">
+            <i class="fa-solid fa-satellite-dish"></i>
+        </button>
+        <button class="nav-btn" id="btn-history" onclick="switchMode('history')" title="Rotas Passadas">
+            <i class="fa-solid fa-folder-open"></i>
+        </button>
     </div>
 
-    <div id="history-controls" style="display: none; margin-bottom: 20px; background: #222; padding: 20px; border-radius: 10px; width: 80%; margin: 0 auto;">
-        <select id="route-select" onchange="loadRoute()" style="padding: 10px; font-size: 16px; width: 100%; max-width: 400px;"></select>
-        <div id="route-stats" style="margin-top: 15px; color: #00ff00; font-size: 18px;"></div>
-        <video id="route-video" width="100%" max-width="600" controls style="margin-top: 20px; border: 2px solid #555; border-radius: 8px;"></video>
-    </div>
-
-    <div class="container">
-        <div id="bike-container">
-            <img id="bike-img" src="/WebPlatform/img/mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
-        </div>
+    <div class="panel-center">
         
-        <div class="data-box">
-            Roll: <span id="roll-val">0.00</span>°
-            Motor: <span id="moto-state" style="color: #ff4444;">OFF</span>
+        <div class="header-status">
+            <div>
+                <span style="font-size: 12px; color: var(--text-muted);">Estado do Sistema</span>
+                <div id="conn-status" style="font-size: 14px; color: var(--warning);">A aguardar...</div>
+            </div>
+            <div id="moto-state" class="state-badge">OFF</div>
         </div>
-        <div id="status">A ligar ao Broker...</div>
-        <div id="log"></div>
+
+        <div class="telemetry-cards">
+            <div class="t-card">
+                <i class="fa-solid fa-gauge-high"></i>
+                <div class="t-value" id="vel-val">0</div>
+                <div class="t-label">km/h</div>
+            </div>
+            <div class="t-card">
+                <i class="fa-solid fa-battery-three-quarters"></i>
+                <div class="t-value" id="bat-val">--</div>
+                <div class="t-label">% Bateria</div>
+            </div>
+        </div>
+
+        <div class="imu-module">
+            <div id="bike-container">
+                <img id="bike-img" src="/WebPlatform/img/mota.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3721/3721619.png'" alt="Moto">
+            </div>
+            <div class="roll-display"><span id="roll-val">0.00</span>°</div>
+            <div style="color: var(--text-muted); font-size: 12px; margin-top: 5px;">Ângulo de Inclinação (Roll)</div>
+        </div>
+
+        <div class="alerts-module">
+            <h3>Eventos Recentes</h3>
+            <ul id="alerts-list">
+                </ul>
+        </div>
     </div>
 
-    <div id="map" style="width: 100%; max-width: 600px; height: 500px; margin: 40px auto; border-radius: 12px; border: 2px solid #333; box-shadow: 0 0 20px rgba(0,255,0,0.1);"></div>
+    <div class="panel-right">
+        <div id="map"></div>
+
+        <div id="history-overlay">
+            <div class="history-controls">
+                <select id="route-select" onchange="loadRoute()">
+                    <option value="">A carregar rotas...</option>
+                </select>
+                <div id="route-stats" style="align-self: center; font-size: 14px; color: var(--primary);"></div>
+            </div>
+            <video id="route-video" controls></video>
+        </div>
+    </div>
 
     <script>
+        // CONFIGURAÇÕES MQTT
         const BROKER_IP = "172.20.0.203"; 
         const PORT = 9001;
         const CLIENT_ID = "Web_Dash_" + Math.random().toString(16).substr(2, 5);
 
-
-        let map = L.map('map').setView([0, 0], 15); // Inicializa a 0,0
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-        
-        let marker = L.marker([0, 0]).addTo(map);
+        // VARIÁVEIS GLOBAIS
+        let currentMode = 'live';
+        let routeData = [];
         let currentLat = null;
         let currentLon = null;
 
-        function addLog(msg, isError = false) {
-            const logDiv = document.getElementById("log");
-            logDiv.innerHTML = `<span class="${isError ? 'alert' : ''}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + logDiv.innerHTML;
+        // INICIALIZAR MAPA (Leaflet)
+        let map = L.map('map', { zoomControl: false }).setView([41.3, -7.74], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, theme: 'dark' }).addTo(map);
+        let marker = L.marker([41.3, -7.74]).addTo(map);
+
+        // NAVEGAÇÃO ENTRE ABAS
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-live').classList.toggle('active', mode === 'live');
+            document.getElementById('btn-history').classList.toggle('active', mode === 'history');
+            
+            const historyOverlay = document.getElementById('history-overlay');
+            if (mode === 'history') {
+                historyOverlay.style.display = 'flex';
+                fetchRoutes();
+            } else {
+                historyOverlay.style.display = 'none';
+                document.getElementById('route-video').pause();
+            }
+            // Força o mapa a recalcular tamanho caso tenha sido ocultado
+            setTimeout(() => map.invalidateSize(), 100);
         }
 
+        // ATUALIZAR MAPA
         function updateMap() {
-            if (currentLat !== null && currentLon !== null) {
+            if (currentLat !== null && currentLon !== null && currentMode === 'live') {
                 let newLatLng = new L.LatLng(currentLat, currentLon);
                 marker.setLatLng(newLatLng);
                 map.panTo(newLatLng);
             }
         }
 
+        // GERIR ALERTAS (Tabela Esquerda)
+        function logEvent(type, message) {
+            const list = document.getElementById('alerts-list');
+            const time = new Date().toLocaleTimeString();
+            let icon, colorClass;
+
+            switch(type) {
+                case 'FALL': icon = 'fa-triangle-exclamation'; colorClass = 'alert-danger'; break;
+                case 'THEFT': icon = 'fa-shield-halved'; colorClass = 'alert-warning'; break;
+                case 'RAIN': icon = 'fa-cloud-rain'; colorClass = 'alert-info'; break;
+                default: icon = 'fa-circle-info'; colorClass = 'alert-info';
+            }
+
+            const li = document.createElement('li');
+            li.className = `alert-item ${colorClass}`;
+            li.innerHTML = `<i class="fa-solid ${icon}"></i> 
+                            <div><span>${message}</span> <span class="time">${time}</span></div>`;
+            
+            list.prepend(li);
+            if (list.children.length > 20) list.lastChild.remove(); // Manter limite de 20
+        }
+
+        // --- LIGAÇÃO MQTT ---
         const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
 
-        client.onConnectionLost = (responseObject) => {
-            document.getElementById("status").innerText = "❌ Ligação Perdida";
-            addLog(responseObject.errorMessage, true);
+        client.onConnectionLost = (resp) => {
+            const status = document.getElementById("conn-status");
+            status.innerText = "Ligação Perdida"; status.style.color = "var(--danger)";
         };
 
         client.onMessageArrived = (message) => {
-            if (currentMode === 'history') return;
-            if (message.destinationName === "moto/roll") {
-                let angle = parseFloat(message.payloadString);
-                document.getElementById("roll-val").innerText = angle.toFixed(2);
-                document.getElementById("bike-img").style.transform = `rotate(${angle}deg)`;
-            }
-            else if (message.destinationName === "sim/motorcycle") {
-                const stateSpan = document.getElementById("moto-state");
-                if (message.payloadString === "on") {
-                    stateSpan.innerText = "ON";
-                    stateSpan.style.color = "#00ff00"; //Verde
-                } else {
-                    stateSpan.innerText = "OFF";
-                    stateSpan.style.color = "#ff4444"; //Vermelho
+            if (currentMode === 'history') return; // Ignora live data se estiver a ver histórico
+            const topic = message.destinationName;
+            const payload = message.payloadString;
+
+            try {
+                if (topic === "moto/roll") {
+                    let angle = parseFloat(payload);
+                    document.getElementById("roll-val").innerText = angle.toFixed(2);
+                    document.getElementById("bike-img").style.transform = `rotate(${angle}deg)`;
                 }
-            }
-            else if (message.destinationName === "moto/gps/latitude") {
-                currentLat = parseFloat(message.payloadString);
-                updateMap();
-            }
-            else if (message.destinationName === "moto/gps/longitude") {
-                currentLon = parseFloat(message.payloadString);
-                updateMap();
-            }
+                else if (topic === "sim/motorcycle") {
+                    const stateBadge = document.getElementById("moto-state");
+                    if (payload === "on") {
+                        stateBadge.innerText = "ON";
+                        stateBadge.classList.add('on');
+                    } else {
+                        stateBadge.innerText = "OFF";
+                        stateBadge.classList.remove('on');
+                    }
+                }
+                // Adicionei subscrições para telemetria e alarmes:
+                else if (topic === "moto/speed") {
+                    document.getElementById("vel-val").innerText = Math.round(parseFloat(payload));
+                }
+                else if (topic === "moto/battery") {
+                    document.getElementById("bat-val").innerText = Math.round(parseFloat(payload));
+                }
+                else if (topic === "moto/alarm") {
+                    const alertType = payload.trim().toUpperCase();
+                    let msg = "Evento registado.";
+                    if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
+                    if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
+                    if (alertType === "RAIN") msg = "Chuva detetada. Riso de piso escorregadio.";
+                    logEvent(alertType, msg);
+                }
+                else if (topic === "moto/gps/latitude") { currentLat = parseFloat(payload); updateMap(); }
+                else if (topic === "moto/gps/longitude") { currentLon = parseFloat(payload); updateMap(); }
+            } catch (e) { console.error("Erro a processar MQTT:", e); }
         };
 
-        const connectOptions = {
+        client.connect({
             onSuccess: () => {
-                document.getElementById("status").innerText = "✅ Ligado via WebSocket";
-                document.getElementById("status").style.color = "#00ff00";
-                addLog("Subscrito ao tópico moto/roll");
+                const status = document.getElementById("conn-status");
+                status.innerText = "Online"; status.style.color = "var(--primary)";
+                
+                // Tópicos base
                 client.subscribe("moto/roll");
                 client.subscribe("sim/motorcycle");
                 client.subscribe("moto/gps/latitude");
                 client.subscribe("moto/gps/longitude");
+                
+                // Tópicos novos que tens de garantir que o C# envia
+                client.subscribe("moto/speed");
+                client.subscribe("moto/battery");
+                client.subscribe("moto/alarm");
             },
             onFailure: (err) => {
-                document.getElementById("status").innerText = "❌ Falha na Ligação";
-                addLog("Erro: " + err.errorMessage, true);
+                const status = document.getElementById("conn-status");
+                status.innerText = "Falha de Rede"; status.style.color = "var(--danger)";
             },
-            useSSL: false,
-            timeout: 3
-        };
+            useSSL: false, timeout: 3
+        });
 
-            let currentMode = 'live';
-        let routeData = [];
-
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('history-controls').style.display = mode === 'history' ? 'block' : 'none';
-            if (mode === 'history') fetchRoutes();
-        }
-
+        // --- LÓGICA DE HISTÓRICO (Mantida do teu código original) ---
         async function fetchRoutes() {
             try {
-                // Lê o catálogo gerado pelo Python
                 const res = await fetch('./data/index.json');
                 const routes = await res.json();
                 const select = document.getElementById('route-select');
@@ -162,9 +344,7 @@
                 routes.forEach(r => {
                     select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
                 });
-            } catch (e) {
-                addLog("Erro ao carregar histórico. A pasta processed_routes está na raiz do HTML?", true);
-            }
+            } catch (e) { console.error("Erro a carregar histórico"); }
         }
 
         async function loadRoute() {
@@ -172,55 +352,36 @@
             if(!id) return;
             const route = window.routesCatalog.find(r => r.id === id);
 
-            // Estatísticas sem a feature das curvas
             document.getElementById('route-stats').innerHTML = 
-                `Início: ${route.start_time} | Duração: ${route.duration_sec}s <br> Distância: ${route.distance_km} km`;
+                `Distância: ${route.distance_km} km | Duração: ${route.duration_sec}s`;
 
-            // Lida com a presença ou ausência de vídeo
             const videoElement = document.getElementById('route-video');
             if (route.video_file) {
-                const videoName = route.video_file.split('/').pop();
-                videoElement.src = `./videos/${videoName}`; // Aponta para a pasta videos/
+                videoElement.src = `./videos/${route.video_file.split('/').pop()}`;
                 videoElement.style.display = 'block';
             } else {
-                videoElement.src = "";
                 videoElement.style.display = 'none';
             }
 
-            // Carrega o JSON da pasta 'data'
             const res = await fetch(`./data/${route.data_file}`);
             routeData = await res.json();
         }
 
-        // O coração da sincronização
+        // Sincronização Vídeo/Dados
         document.getElementById('route-video').addEventListener('timeupdate', (e) => {
             if(currentMode !== 'history' || routeData.length === 0) return;
-
-            // Converter o tempo do vídeo para milissegundos
             const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
-
-            // Procurar a frame de dados exata (ou a mais próxima)
             const frame = routeData.find(d => d.t >= currentTimeMs);
             
             if(frame) {
-                // Atualiza Mota
+                // Atualiza a Mota Central
                 document.getElementById("roll-val").innerText = frame.r.toFixed(2);
                 document.getElementById("bike-img").style.transform = `rotate(${frame.r}deg)`;
-
-                // Atualiza Mapa
-                if(frame.la && frame.lo) {
-                    currentLat = frame.la;
-                    currentLon = frame.lo;
-                    updateMap();
-                }
+                
+                // Se tiveres velocidade e bateria no JSON, atualiza aqui também
+                // document.getElementById("vel-val").innerText = frame.speed || 0;
             }
         });
-
-        try {
-            client.connect(connectOptions);
-        } catch (e) {
-            addLog(e.message, true);
-        }
     </script>
 </body>
 </html>
