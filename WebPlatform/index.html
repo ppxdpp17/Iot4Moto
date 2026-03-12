@@ -23,6 +23,12 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
+        /* --- SCROLLBAR MINIMALISTA --- */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: var(--bg-dark); 
@@ -30,25 +36,20 @@
             height: 100vh; 
             overflow: hidden;
             display: grid;
-            grid-template-columns: 80px 350px 1fr; /* Layout: Sidebar | Centro | Mapa */
+            grid-template-columns: 80px 350px 1fr; 
         }
 
-        /* SIDEBAR (Esquerda) */
+        /* SIDEBAR */
         .sidebar {
             background: var(--bg-panel);
             border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 20px;
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px;
         }
         .logo { font-size: 32px; color: var(--primary); margin-bottom: 50px; }
         
         .nav-btn {
             background: transparent; border: none; color: var(--text-muted);
-            font-size: 24px; margin-bottom: 30px; cursor: pointer;
-            transition: 0.3s;
-            position: relative;
+            font-size: 24px; margin-bottom: 30px; cursor: pointer; transition: 0.3s; position: relative;
         }
         .nav-btn:hover, .nav-btn.active { color: var(--primary); }
         .nav-btn.active::after {
@@ -56,14 +57,10 @@
             height: 100%; width: 4px; background: var(--primary); border-radius: 4px;
         }
 
-        /* COLUNA CENTRAL (Telemetria) */
+        /* COLUNA CENTRAL */
         .panel-center {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            border-right: 1px solid var(--border);
-            overflow-y: auto;
+            padding: 20px; display: flex; flex-direction: column; gap: 20px;
+            border-right: 1px solid var(--border); overflow-y: auto;
         }
         
         .header-status {
@@ -77,14 +74,11 @@
         .state-badge.on { background: rgba(0, 255, 136, 0.2); color: var(--primary); }
 
         .telemetry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .t-card {
-            background: var(--bg-panel); padding: 15px; border-radius: 12px; text-align: center;
-        }
+        .t-card { background: var(--bg-panel); padding: 15px; border-radius: 12px; text-align: center; }
         .t-card i { color: var(--text-muted); font-size: 18px; margin-bottom: 5px; }
         .t-value { font-size: 24px; font-weight: bold; color: var(--primary); }
         .t-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
 
-        /* Módulo IMU */
         .imu-module {
             background: var(--bg-panel); border-radius: 12px; padding: 20px;
             display: flex; flex-direction: column; align-items: center;
@@ -92,42 +86,62 @@
         #bike-container {
             width: 200px; height: 200px; position: relative;
             border: 2px dashed var(--border); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 15px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
         }
-        #bike-img { width: 140px; transition: transform 0.1s ease-out; }
+        #bike-img { width: 140px; transition: transform 0.1s linear; }
         .roll-display { font-size: 28px; font-weight: bold; font-family: monospace; }
         
-        /* Feed de Alertas */
-        .alerts-module { flex-grow: 1; background: var(--bg-panel); border-radius: 12px; padding: 15px; overflow: hidden; display: flex; flex-direction: column; }
-        .alerts-module h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase;}
-        #alerts-list { list-style: none; overflow-y: auto; flex-grow: 1; }
+        .alerts-module { 
+            flex-grow: 1; background: var(--bg-panel); border-radius: 12px; 
+            padding: 15px; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .alerts-module h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase;}
+        
+        #alerts-wrapper { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
+        #alerts-list { list-style: none; }
         .alert-item {
             display: flex; align-items: flex-start; gap: 10px;
             padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px;
         }
         .alert-item i { font-size: 16px; margin-top: 2px; }
-        .alert-item .time { color: var(--text-muted); font-size: 11px; display: block; }
+        .alert-item .time { color: var(--text-muted); font-size: 11px; display: block; margin-top: 3px;}
+        
+        /* Mensagem quando em modo histórico */
+        #history-msg { display: none; color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 20px; }
+
         .alert-danger { color: var(--danger); }
         .alert-warning { color: var(--warning); }
         .alert-info { color: var(--primary); }
 
-        /* COLUNA DIREITA (Mapa / Histórico) */
-        .panel-right { position: relative; display: flex; flex-direction: column; background: #000; }
-        #map { flex-grow: 1; width: 100%; height: 100%; z-index: 1; }
+        /* COLUNA DIREITA (Mapa + Câmaras flutuantes) */
+        .panel-right { position: relative; background: #000; }
+        #map { width: 100%; height: 100%; z-index: 1; }
         
-        /* Controlo de Histórico (Escondido por defeito) */
-        #history-overlay {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-dark); z-index: 10; padding: 30px; flex-direction: column;
+        /* CAIXA FLUTUANTE TOP RIGHT (Câmara/Vídeo) */
+        .top-right-panel {
+            position: absolute; top: 20px; right: 20px; width: 340px;
+            background: rgba(26, 29, 36, 0.95); backdrop-filter: blur(5px);
+            border: 1px solid var(--border); border-radius: 12px;
+            padding: 15px; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .history-controls { display: flex; gap: 15px; margin-bottom: 20px; }
-        .history-controls select {
-            padding: 12px; background: var(--bg-panel); color: white; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 16px; flex-grow: 1;
+
+        /* Elementos dentro do painel flutuante */
+        #live-cam-placeholder {
+            height: 180px; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 8px;
         }
-        #route-video { width: 100%; max-height: 60vh; border-radius: 12px; border: 1px solid var(--border); background: #000; }
         
+        #history-controls { display: none; flex-direction: column; gap: 10px; }
+        #history-controls select {
+            padding: 10px; background: var(--bg-dark); color: white; border: 1px solid var(--border);
+            border-radius: 6px; font-size: 14px; width: 100%; outline: none;
+        }
+        #route-stats { font-size: 12px; color: var(--primary); text-align: center; }
+        #route-video { width: 100%; border-radius: 8px; background: #000; margin-top: 10px; }
+
+        .leaflet-marker-icon {
+            transition: transform 1s linear !important;
+        }
     </style>
 </head>
 <body>
@@ -143,7 +157,6 @@
     </div>
 
     <div class="panel-center">
-        
         <div class="header-status">
             <div>
                 <span style="font-size: 12px; color: var(--text-muted);">Estado do Sistema</span>
@@ -174,71 +187,139 @@
         </div>
 
         <div class="alerts-module">
-            <h3>Eventos Recentes</h3>
-            <ul id="alerts-list">
-                </ul>
+            <h3 id="alerts-title">Eventos Recentes</h3>
+            <div id="alerts-wrapper">
+                <ul id="alerts-list"></ul>
+                <div id="history-msg"><i class="fa-solid fa-clock-rotate-left" style="font-size:24px; margin-bottom:10px; display:block;"></i>Eventos ao vivo ocultos no modo histórico.</div>
+            </div>
         </div>
     </div>
 
     <div class="panel-right">
         <div id="map"></div>
 
-        <div id="history-overlay">
-            <div class="history-controls">
+        <div class="top-right-panel">
+            
+            <div id="live-cam-placeholder">
+                <i class="fa-solid fa-video-slash" style="font-size: 24px; margin-bottom: 10px;"></i>
+                <span style="font-size: 12px;">Câmara Offline</span>
+            </div>
+
+            <div id="history-controls">
                 <select id="route-select" onchange="loadRoute()">
                     <option value="">A carregar rotas...</option>
                 </select>
-                <div id="route-stats" style="align-self: center; font-size: 14px; color: var(--primary);"></div>
+                <div id="route-stats"></div>
+                <video id="route-video" controls></video>
             </div>
-            <video id="route-video" controls></video>
+
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÕES MQTT
         const BROKER_IP = "172.20.0.203"; 
         const PORT = 9001;
         const CLIENT_ID = "Web_Dash_" + Math.random().toString(16).substr(2, 5);
 
-        // VARIÁVEIS GLOBAIS
         let currentMode = 'live';
         let routeData = [];
         let currentLat = null;
         let currentLon = null;
 
-        // INICIALIZAR MAPA (Leaflet)
+        let lastLat = null;
+        let lastLon = null;
+
+        //Icon da mota
+        const motoIcon = L.divIcon({
+            html: `<img id="moto-marker-icon" src="https://cdn-icons-png.flaticon.com/512/3104/3104868.png" style="width: 32px; height: 32px; transition: transform 1s linear; transform: rotate(0deg);">`,
+            className: 'custom-moto-icon',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+
+
+        // Memória do estado LIVE para restaurar quando voltamos do histórico
+        let liveState = {
+            roll: 0, vel: 0, bat: '--', lat: null, lon: null
+        };
+
+        // INICIALIZAR MAPA
         let map = L.map('map', { zoomControl: false }).setView([41.3, -7.74], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, theme: 'dark' }).addTo(map);
-        let marker = L.marker([41.3, -7.74]).addTo(map);
+        let marker = L.marker([41.3, -7.74], {icon: motoIcon}).addTo(map);
 
-        // NAVEGAÇÃO ENTRE ABAS
+        // Função para calcular para onde a mota está virada
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const toRad = deg => deg * Math.PI / 180;
+            const toDeg = rad => rad * 180 / Math.PI;
+            const dLon = toRad(lon2 - lon1);
+            lat1 = toRad(lat1); lat2 = toRad(lat2);
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            return (toDeg(Math.atan2(y, x)) + 360) % 360;
+        }
+
+        function updateMap() {
+            if (currentLat !== null && currentLon !== null) {
+                let newLatLng = new L.LatLng(currentLat, currentLon);
+                marker.setLatLng(newLatLng);
+                map.panTo(newLatLng);
+
+                // Efeito Uber: Rodar a mota na direção do movimento
+                if (lastLat !== null && lastLon !== null && (lastLat !== currentLat || lastLon !== currentLon)) {
+                    let angle = calculateBearing(lastLat, lastLon, currentLat, currentLon);
+                    document.getElementById('moto-marker-icon').style.transform = `rotate(${angle}deg)`;
+                }
+                
+                lastLat = currentLat;
+                lastLon = currentLon;
+            }
+        }
+
+        // ALTERNAR MODOS (LIVE / HISTÓRICO)
         function switchMode(mode) {
             currentMode = mode;
             document.getElementById('btn-live').classList.toggle('active', mode === 'live');
             document.getElementById('btn-history').classList.toggle('active', mode === 'history');
             
-            const historyOverlay = document.getElementById('history-overlay');
+            const liveCam = document.getElementById('live-cam-placeholder');
+            const histControls = document.getElementById('history-controls');
+            const alertsList = document.getElementById('alerts-list');
+            const historyMsg = document.getElementById('history-msg');
+            const alertsTitle = document.getElementById('alerts-title');
+            const headerStatus = document.querySelector('.header-status'); // Seleciona o cabeçalho
+
             if (mode === 'history') {
-                historyOverlay.style.display = 'flex';
+                liveCam.style.display = 'none';
+                histControls.style.display = 'flex';
+                headerStatus.style.display = 'none'; // Esconde o estado
+                alertsList.style.display = 'none';
+                historyMsg.style.display = 'block';
+                alertsTitle.innerText = "Histórico de Rota";
+                
                 fetchRoutes();
             } else {
-                historyOverlay.style.display = 'none';
+                histControls.style.display = 'none';
+                liveCam.style.display = 'flex';
+                headerStatus.style.display = 'flex'; // Restaura o estado
                 document.getElementById('route-video').pause();
+                
+                alertsList.style.display = 'block';
+                historyMsg.style.display = 'none';
+                alertsTitle.innerText = "Eventos Recentes";
+
+                document.getElementById("vel-val").innerText = liveState.vel;
+                document.getElementById("bat-val").innerText = liveState.bat;
+                document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
+                document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
+                
+                currentLat = liveState.lat; currentLon = liveState.lon;
+                updateMap();
             }
-            // Força o mapa a recalcular tamanho caso tenha sido ocultado
             setTimeout(() => map.invalidateSize(), 100);
         }
 
-        // ATUALIZAR MAPA
-        function updateMap() {
-            if (currentLat !== null && currentLon !== null && currentMode === 'live') {
-                let newLatLng = new L.LatLng(currentLat, currentLon);
-                marker.setLatLng(newLatLng);
-                map.panTo(newLatLng);
-            }
-        }
-
-        // GERIR ALERTAS (Tabela Esquerda)
         function logEvent(type, message) {
             const list = document.getElementById('alerts-list');
             const time = new Date().toLocaleTimeString();
@@ -257,56 +338,59 @@
                             <div><span>${message}</span> <span class="time">${time}</span></div>`;
             
             list.prepend(li);
-            if (list.children.length > 20) list.lastChild.remove(); // Manter limite de 20
+            if (list.children.length > 30) list.lastChild.remove(); 
         }
 
         // --- LIGAÇÃO MQTT ---
         const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
 
-        client.onConnectionLost = (resp) => {
+        client.onConnectionLost = () => {
             const status = document.getElementById("conn-status");
             status.innerText = "Ligação Perdida"; status.style.color = "var(--danger)";
         };
 
         client.onMessageArrived = (message) => {
-            if (currentMode === 'history') return; // Ignora live data se estiver a ver histórico
             const topic = message.destinationName;
             const payload = message.payloadString;
 
             try {
-                if (topic === "moto/roll") {
-                    let angle = parseFloat(payload);
-                    document.getElementById("roll-val").innerText = angle.toFixed(2);
-                    document.getElementById("bike-img").style.transform = `rotate(${angle}deg)`;
-                }
-                else if (topic === "sim/motorcycle") {
-                    const stateBadge = document.getElementById("moto-state");
-                    if (payload === "on") {
-                        stateBadge.innerText = "ON";
-                        stateBadge.classList.add('on');
-                    } else {
-                        stateBadge.innerText = "OFF";
-                        stateBadge.classList.remove('on');
-                    }
-                }
-                // Adicionei subscrições para telemetria e alarmes:
-                else if (topic === "moto/speed") {
-                    document.getElementById("vel-val").innerText = Math.round(parseFloat(payload));
-                }
-                else if (topic === "moto/battery") {
-                    document.getElementById("bat-val").innerText = Math.round(parseFloat(payload));
-                }
-                else if (topic === "moto/alarm") {
+                // Guarda sempre em memória (mesmo se estivermos no ecrã de histórico)
+                if (topic === "moto/roll") liveState.roll = parseFloat(payload);
+                if (topic === "moto/speed") liveState.vel = Math.round(parseFloat(payload));
+                if (topic === "moto/battery") liveState.bat = Math.round(parseFloat(payload));
+                if (topic === "moto/gps/latitude") liveState.lat = parseFloat(payload);
+                if (topic === "moto/gps/longitude") liveState.lon = parseFloat(payload);
+
+                // Só processa alertas MQTT. Os outros dados só mexem a UI se estivermos no modo LIVE.
+                if (topic === "moto/alarm") {
                     const alertType = payload.trim().toUpperCase();
                     let msg = "Evento registado.";
                     if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
                     if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
-                    if (alertType === "RAIN") msg = "Chuva detetada. Riso de piso escorregadio.";
+                    if (alertType === "RAIN") msg = "Chuva detetada. Piso escorregadio.";
                     logEvent(alertType, msg);
                 }
-                else if (topic === "moto/gps/latitude") { currentLat = parseFloat(payload); updateMap(); }
-                else if (topic === "moto/gps/longitude") { currentLon = parseFloat(payload); updateMap(); }
-            } catch (e) { console.error("Erro a processar MQTT:", e); }
+                
+                if (currentMode === 'history') return; // Bloqueia UI updates de live se estiver a ver vídeo
+
+                if (topic === "moto/roll") {
+                    document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
+                    document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
+                }
+                else if (topic === "sim/motorcycle") {
+                    const stateBadge = document.getElementById("moto-state");
+                    if (payload === "on") {
+                        stateBadge.innerText = "ON"; stateBadge.classList.add('on');
+                    } else {
+                        stateBadge.innerText = "OFF"; stateBadge.classList.remove('on');
+                    }
+                }
+                else if (topic === "moto/speed") document.getElementById("vel-val").innerText = liveState.vel;
+                else if (topic === "moto/battery") document.getElementById("bat-val").innerText = liveState.bat;
+                else if (topic === "moto/gps/latitude" || topic === "moto/gps/longitude") {
+                    currentLat = liveState.lat; currentLon = liveState.lon; updateMap();
+                }
+            } catch (e) {}
         };
 
         client.connect({
@@ -314,25 +398,22 @@
                 const status = document.getElementById("conn-status");
                 status.innerText = "Online"; status.style.color = "var(--primary)";
                 
-                // Tópicos base
                 client.subscribe("moto/roll");
                 client.subscribe("sim/motorcycle");
                 client.subscribe("moto/gps/latitude");
                 client.subscribe("moto/gps/longitude");
-                
-                // Tópicos novos que tens de garantir que o C# envia
                 client.subscribe("moto/speed");
                 client.subscribe("moto/battery");
                 client.subscribe("moto/alarm");
             },
-            onFailure: (err) => {
+            onFailure: () => {
                 const status = document.getElementById("conn-status");
                 status.innerText = "Falha de Rede"; status.style.color = "var(--danger)";
             },
             useSSL: false, timeout: 3
         });
 
-        // --- LÓGICA DE HISTÓRICO (Mantida do teu código original) ---
+        // --- HISTÓRICO LÓGICA ---
         async function fetchRoutes() {
             try {
                 const res = await fetch('./data/index.json');
@@ -340,11 +421,8 @@
                 const select = document.getElementById('route-select');
                 select.innerHTML = '<option value="">Selecione uma rota...</option>';
                 window.routesCatalog = routes; 
-                
-                routes.forEach(r => {
-                    select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
-                });
-            } catch (e) { console.error("Erro a carregar histórico"); }
+                routes.forEach(r => select.innerHTML += `<option value="${r.id}">${r.name}</option>`);
+            } catch (e) {}
         }
 
         async function loadRoute() {
@@ -352,9 +430,15 @@
             if(!id) return;
             const route = window.routesCatalog.find(r => r.id === id);
 
-            document.getElementById('route-stats').innerHTML = 
-                `Distância: ${route.distance_km} km | Duração: ${route.duration_sec}s`;
+            // Formata os segundos para MM:SS
+            const totalSecs = Math.round(route.duration_sec);
+            const mins = Math.floor(totalSecs / 60);
+            const secs = (totalSecs % 60).toString().padStart(2, '0');
 
+           document.getElementById('route-stats').innerHTML = 
+                `Distância: ${route.distance_km} km | Duração: ${mins}:${secs}`;
+
+                
             const videoElement = document.getElementById('route-video');
             if (route.video_file) {
                 videoElement.src = `./videos/${route.video_file.split('/').pop()}`;
@@ -367,19 +451,27 @@
             routeData = await res.json();
         }
 
-        // Sincronização Vídeo/Dados
+        // Sincronizar vídeo com dados
         document.getElementById('route-video').addEventListener('timeupdate', (e) => {
             if(currentMode !== 'history' || routeData.length === 0) return;
+            
             const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
             const frame = routeData.find(d => d.t >= currentTimeMs);
             
             if(frame) {
-                // Atualiza a Mota Central
                 document.getElementById("roll-val").innerText = frame.r.toFixed(2);
                 document.getElementById("bike-img").style.transform = `rotate(${frame.r}deg)`;
                 
-                // Se tiveres velocidade e bateria no JSON, atualiza aqui também
-                // document.getElementById("vel-val").innerText = frame.speed || 0;
+                //Tenta encontrar a velocidade com as chaves mais comuns. 
+                let speed = frame.speed || frame.v || frame.s || frame.vel || 0;
+                document.getElementById("vel-val").innerText = Math.round(speed);
+                
+                document.getElementById("bat-val").innerText = frame.bat !== undefined ? Math.round(frame.bat) : "--";
+
+                if(frame.la && frame.lo) {
+                    currentLat = frame.la; currentLon = frame.lo;
+                    updateMap();
+                }
             }
         });
     </script>
