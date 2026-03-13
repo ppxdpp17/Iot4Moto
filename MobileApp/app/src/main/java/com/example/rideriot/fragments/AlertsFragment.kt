@@ -63,10 +63,10 @@ class AlertsFragment : Fragment() {
     private fun showAlertDialog(alert: Alert) {
         // Gera contexto extra mediante o tipo de alerta
         val conselho = when (alert.type) {
-            "FALL" -> "ALERTA MÁXIMO:\nFoi enviada uma SMS com as coordenadas. Liga para as autoridades (112) caso o condutor não responda."
-            "THEFT" -> "AÇÃO RECOMENDADA:\nA mota foi movida com o motor desligado. Verifica a localização GPS ou contacta a polícia."
-            "RAIN" -> "AÇÃO RECOMENDADA:\nRecolhe a mota ou cobre o ecrã/sensores para evitar danos de humidade."
-            "FCW" -> "AVISO DE CONDUÇÃO:\nTravagem de emergência registada. Analisa o teu distanciamento de segurança."
+            "FALL" -> "ALERTA DE ACIDENTE:\nFoi enviada uma SMS com as coordenadas para os contactos de emergência. Caso possível, ligar para o 112"
+            "THEFT" -> "AÇÃO RECOMENDADA:\nA mota foi movida enquanto estavionada. É recomendado verificar a localização GPS."
+            "RAIN" -> "AÇÃO RECOMENDADA:\nRecomenda-se recolher ou cobrir a mota e o ecrã para evitar danos causados pela água."
+            "FCW" -> "AVISO DE CONDUÇÃO:\nTravagem de emergência registada. É recomendado analisar as distâncias de segurança."
             else -> "Registo informativo do sistema."
         }
 

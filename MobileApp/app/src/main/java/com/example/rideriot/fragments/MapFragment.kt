@@ -48,7 +48,7 @@ class MapFragment : Fragment() {
 
     private fun setupMap() {
         map.setMultiTouchControls(true)
-        map.controller.setZoom(18.0) // Mais zoom para ver a rua
+        map.controller.setZoom(20.0)
         map.controller.setCenter(GeoPoint(41.3000, -7.7400))
     }
 
@@ -101,8 +101,12 @@ class MapFragment : Fragment() {
 
         if (motoMarker == null) {
             motoMarker = Marker(map)
+
+            val customIcon = androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.moto_icon)
+            motoMarker?.icon = customIcon
+
             motoMarker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            motoMarker?.title = "A tua Mota"
+            motoMarker?.title = "Mota"
             map.overlays.add(motoMarker)
         }
 
