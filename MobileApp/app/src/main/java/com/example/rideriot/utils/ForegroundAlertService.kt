@@ -26,6 +26,7 @@ class ForegroundAlertService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        createAlertNotificationChannel()
         startForegroundServiceNotification()
         setupMqttWatchdog()
     }
@@ -52,7 +53,6 @@ class ForegroundAlertService : Service() {
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("RiderIoT Ativo")
             .setContentText("A monitorizar mota em tempo real...")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -60,6 +60,32 @@ class ForegroundAlertService : Service() {
         } else {
             startForeground(1, notification)
         }
+    }
+
+    private fun createAlertNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "rideriot_alerts_channel",
+                "Alertas de Emergência",
+                NotificationManager.IMPORTANCE_HIGH // Crucial para o popup aparecer e fazer som
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showEmergencyNotification(title: String, message: String) {
+        val notification = NotificationCompat.Builder(this, "rideriot_alerts_channel")
+            .setSmallIcon(android.R.drawable.ic_dialog_alert) // Substitui depois pelo logo da app
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true) // Desaparece quando o utilizador clica
+            .build()
+
+        val manager = getSystemService(NotificationManager::class.java)
+        // Usar o System.currentTimeMillis() como ID garante que notificações novas não apagam as antigas
+        manager?.notify(System.currentTimeMillis().toInt(), notification)
     }
 
     private fun setupMqttWatchdog() {
@@ -92,15 +118,16 @@ class ForegroundAlertService : Service() {
                     //Gravar o alerta no histórico (AlertManager)
                     val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
                     val (titulo, descricao) = when (alertType) {
-                        "THEFT" -> "Tentativa de Roubo" to "Movimento detetado com a mota estacionada."
+                        "THEFT" -> "Alerta de Roubo" to "Movimento detetado com a mota estacionada."
                         "FALL"  -> "Queda Detetada" to "SOS ativado. Coordenadas enviadas."
-                        "RAIN"  -> "Chuva" to "A mota está à chuva."
+                        "RAIN"  -> "Alerta de Chuva" to "A mota está à chuva."
                         "FCW"   -> "Travagem Brusca" to "Risco de colisão."
                         else    -> "Informação" to "Evento: $alertType"
                     }
 
                     val newAlert = Alert(titulo, descricao, currentTime, alertType)
                     AlertManager.addAlert(newAlert)
+                    showEmergencyNotification(titulo, descricao)
                 }
             }
         }
