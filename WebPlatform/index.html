@@ -23,7 +23,7 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        /* --- SCROLLBAR MINIMALISTA --- */
+        /*SCROLLBAR*/
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 10px; }
@@ -231,7 +231,7 @@
 
         //Icon da mota
         const motoIcon = L.divIcon({
-            html: `<img id="moto-marker-icon" src="https://cdn-icons-png.flaticon.com/512/3104/3104868.png" style="width: 32px; height: 32px; transition: transform 1s linear; transform: rotate(0deg);">`,
+            html: `<img id="moto-marker-icon" src="https://cdn-icons-png.flaticon.com/128/11432/11432322.png" style="width: 32px; height: 32px; transition: transform 1s linear; transform: rotate(180deg);">`,
             className: 'custom-moto-icon',
             iconSize: [32, 32],
             iconAnchor: [16, 16]
@@ -264,12 +264,19 @@
             if (currentLat !== null && currentLon !== null) {
                 let newLatLng = new L.LatLng(currentLat, currentLon);
                 marker.setLatLng(newLatLng);
-                map.panTo(newLatLng);
+                
+                // Força a câmara do mapa a deslizar durante 1 segundo de forma linear
+                map.panTo(newLatLng, {
+                    animate: true,
+                    duration: 1.0, // Se o teu GPS enviar a cada 0.5s, muda isto para 0.5
+                    easeLinearity: 1
+                });
 
-                // Efeito Uber: Rodar a mota na direção do movimento
                 if (lastLat !== null && lastLon !== null && (lastLat !== currentLat || lastLon !== currentLon)) {
                     let angle = calculateBearing(lastLat, lastLon, currentLat, currentLon);
-                    document.getElementById('moto-marker-icon').style.transform = `rotate(${angle}deg)`;
+                    
+                    // Subtrai 90º para corrigir a orientação da imagem base
+                    document.getElementById('moto-marker-icon').style.transform = `rotate(${angle - 90}deg)`;
                 }
                 
                 lastLat = currentLat;
