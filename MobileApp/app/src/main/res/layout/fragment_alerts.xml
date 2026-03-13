@@ -8,7 +8,31 @@
         android:id="@+id/recyclerViewAlerts"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingTop="8dp"
-        android:clipToPadding="false"/>
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/emptyStateLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@android:drawable/ic_dialog_info"
+            app:tint="#555555"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sem alertas registados."
+            android:textColor="#555555"
+            android:textSize="18sp"
+            android:layout_marginTop="12dp"
+            android:textStyle="bold"/>
+    </LinearLayout>
 
 </RelativeLayout>

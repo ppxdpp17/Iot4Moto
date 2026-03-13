@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.rideriot.R
 import com.example.rideriot.models.Alert
 
-class AlertAdapter(private val alerts: MutableList<Alert>) : RecyclerView.Adapter<AlertAdapter.AlertViewHolder>() {
+class AlertAdapter(private val alerts: MutableList<Alert>, private val onItemClick: (Alert) -> Unit) : RecyclerView.Adapter<AlertAdapter.AlertViewHolder>() {
 
     class AlertViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvTitle: TextView = view.findViewById(R.id.tvAlertTitle)
@@ -29,9 +29,7 @@ class AlertAdapter(private val alerts: MutableList<Alert>) : RecyclerView.Adapte
 
         //Click no card
         holder.itemView.setOnClickListener {
-            //TODO - abrir um novo Fragment com o Mapa do momento e feed da câmara.
-            //Para já, apenas mostra um Toast a provar que funciona.
-            android.widget.Toast.makeText(holder.itemView.context, "Detalhes do alerta: ${alert.type}", android.widget.Toast.LENGTH_SHORT).show()
+            onItemClick(alert)
         }
     }
 
