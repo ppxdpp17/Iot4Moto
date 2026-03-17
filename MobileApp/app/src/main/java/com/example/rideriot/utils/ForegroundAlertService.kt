@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.rideriot.MainActivity
 import com.example.rideriot.models.Alert
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -74,17 +75,31 @@ class ForegroundAlertService : Service() {
         }
     }
 
-    private fun showEmergencyNotification(title: String, message: String) {
-        val notification = NotificationCompat.Builder(this, "rideriot_alerts_channel")
-            .setSmallIcon(android.R.drawable.ic_dialog_alert) // Substitui depois pelo logo da app
+    private fun showEmergencyNotification(title: String, message: String, alertType: String) {
+
+        // Cria a intenção de abrir a app
+        val intent = android.content.Intent(this, MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+            // Define o destino consoante o alerta
+            val target = if (alertType == "THEFT") "CAMERA" else "ALERTS"
+            putExtra("TARGET_FRAGMENT", target)
+        }
+
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            this, 0, intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = androidx.core.app.NotificationCompat.Builder(this, "rideriot_alerts_channel")
+            .setSmallIcon(android.R.drawable.ic_dialog_alert) // Já sabes, muda para o logo depois
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true) // Desaparece quando o utilizador clica
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent) // ANEXA A AÇÃO AQUI
+            .setAutoCancel(true)
             .build()
 
-        val manager = getSystemService(NotificationManager::class.java)
-        // Usar o System.currentTimeMillis() como ID garante que notificações novas não apagam as antigas
+        val manager = getSystemService(android.app.NotificationManager::class.java)
         manager?.notify(System.currentTimeMillis().toInt(), notification)
     }
 
@@ -127,7 +142,7 @@ class ForegroundAlertService : Service() {
 
                     val newAlert = Alert(titulo, descricao, currentTime, alertType)
                     AlertManager.addAlert(newAlert)
-                    showEmergencyNotification(titulo, descricao)
+                    showEmergencyNotification(titulo, descricao, alertType)
                 }
             }
         }
