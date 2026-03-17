@@ -84,6 +84,18 @@
                 </select>
                 <div id="route-stats"></div>
                 <video id="route-video" controls></video>
+                <div id="virtual-player" style="display: none; background: var(--bg-panel); padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border);">
+                    <div style="margin-bottom: 10px; color: var(--text-muted); font-size: 13px; text-align: center;">
+                        Apenas Dados de Telemetria
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button id="virtual-play-btn" onclick="toggleVirtualPlay()" style="background: var(--primary); color: #000; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <input type="range" id="virtual-slider" value="0" min="0" max="100" step="0.1" style="flex-grow: 1; accent-color: var(--primary);" oninput="seekVirtual()">
+                    </div>
+                    <div id="virtual-time-display" style="font-size: 12px; margin-top: 8px; color: var(--text-muted); text-align: center;">00:00 / 00:00</div>
+                </div>
             </div>
         </div>
     </div>

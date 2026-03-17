@@ -93,6 +93,7 @@ function switchMode(mode) {
         liveCamWrapper.style.display = 'block'; // Atualizado aqui
         headerStatus.style.display = 'flex'; 
         document.getElementById('route-video').pause();
+        if(vPlaying) toggleVirtualPlay();
         
         alertsList.style.display = 'block';
         historyMsg.style.display = 'none';
@@ -217,32 +218,42 @@ async function loadRoute() {
     if(!id) return;
     const route = window.routesCatalog.find(r => r.id === id);
 
+    const videoElement = document.getElementById('route-video');
+    const virtualPlayer = document.getElementById('virtual-player');
+
     const totalSecs = Math.round(route.duration_sec);
     const mins = Math.floor(totalSecs / 60);
     const secs = (totalSecs % 60).toString().padStart(2, '0');
 
+    clearInterval(vTimer);
+    vPlaying = false;
+    vTimeMs = 0;
+    document.getElementById('virtual-play-btn').innerHTML = '<i class="fa-solid fa-play"></i>';
+
     document.getElementById('route-stats').innerHTML = 
         `Distância: ${route.distance_km} km | Duração: ${mins}:${secs}`;
 
-        
-    const videoElement = document.getElementById('route-video');
     if (route.video_file) {
         videoElement.src = `./videos/${route.video_file.split('/').pop()}`;
         videoElement.style.display = 'block';
+        virtualPlayer.style.display = 'none'; // Esconde player virtual
     } else {
+        videoElement.src = "";
         videoElement.style.display = 'none';
+        virtualPlayer.style.display = 'block'; // Mostra player virtual
+        
+        vDurationMs = route.duration_sec * 1000;
+        updateVirtualUI();
     }
 
     const res = await fetch(`./data/${route.data_file}`);
     routeData = await res.json();
 }
-
-document.getElementById('route-video').addEventListener('timeupdate', (e) => {
+// --- MOTOR DE SINCRONIZAÇÃO DE TELEMETRIA ---
+function syncTelemetry(currentTimeMs) {
     if(currentMode !== 'history' || routeData.length === 0) return;
     
-    const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
     const frame = routeData.find(d => d.t >= currentTimeMs);
-    
     if(frame) {
         document.getElementById("roll-val").innerText = frame.r.toFixed(2);
         document.getElementById("bike-img").style.transform = `rotate(${frame.r}deg)`;
@@ -257,4 +268,55 @@ document.getElementById('route-video').addEventListener('timeupdate', (e) => {
             updateMap();
         }
     }
+}
+
+// 1. Sincronização via Vídeo Real
+document.getElementById('route-video').addEventListener('timeupdate', (e) => {
+    const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
+    syncTelemetry(currentTimeMs);
 });
+
+// 2. Sincronização via Player Virtual (Sem Vídeo)
+let vTimer = null;
+let vTimeMs = 0;
+let vDurationMs = 0;
+let vPlaying = false;
+
+function formatVirtualTime(ms) {
+    let totalSecs = Math.floor(ms / 1000);
+    let mins = Math.floor(totalSecs / 60);
+    let secs = (totalSecs % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+}
+
+function updateVirtualUI() {
+    document.getElementById('virtual-slider').value = (vTimeMs / vDurationMs) * 100 || 0;
+    document.getElementById('virtual-time-display').innerText = `${formatVirtualTime(vTimeMs)} / ${formatVirtualTime(vDurationMs)}`;
+}
+
+function toggleVirtualPlay() {
+    vPlaying = !vPlaying;
+    const btn = document.getElementById('virtual-play-btn');
+    if (vPlaying) {
+        btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        vTimer = setInterval(() => {
+            vTimeMs += 100; // Avança 100ms
+            if (vTimeMs >= vDurationMs) {
+                vTimeMs = vDurationMs;
+                toggleVirtualPlay(); // Faz auto-pause no fim
+            }
+            updateVirtualUI();
+            syncTelemetry(vTimeMs);
+        }, 100);
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        clearInterval(vTimer);
+    }
+}
+
+function seekVirtual() {
+    const sliderVal = document.getElementById('virtual-slider').value;
+    vTimeMs = (sliderVal / 100) * vDurationMs;
+    updateVirtualUI();
+    syncTelemetry(vTimeMs);
+}
