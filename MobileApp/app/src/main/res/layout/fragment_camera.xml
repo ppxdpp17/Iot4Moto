@@ -17,7 +17,7 @@
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="30dp"
         android:src="@android:drawable/ic_menu_camera"
-        android:backgroundTint="#00ff88"
+        android:backgroundTint="#ffffff"
         android:contentDescription="Tirar Foto"/>
 
 </RelativeLayout>
