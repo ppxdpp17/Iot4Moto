@@ -66,8 +66,18 @@
         <div id="map"></div>
 
         <div class="top-right-panel">
-            <img id="live-cam-stream" src="http://172.20.0.154:5000/stream" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);" alt="Câmara Offline">
-
+            <div id="live-cam-wrapper">
+                <div id="live-cam-placeholder">
+                    <i class="fa-solid fa-video-slash" style="font-size: 24px; margin-bottom: 10px;"></i>
+                    <span style="font-size: 12px;">Câmara Offline</span>
+                </div>
+                
+                <img id="live-cam-stream" src="http://172.20.0.154:5000/stream" 
+                     style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: none;" 
+                     onload="this.style.display='block'; document.getElementById('live-cam-placeholder').style.display='none';"
+                     onerror="this.style.display='none'; document.getElementById('live-cam-placeholder').style.display='flex';">
+            </div>
+            
             <div id="history-controls">
                 <select id="route-select" onchange="loadRoute()">
                     <option value="">A carregar rotas...</option>

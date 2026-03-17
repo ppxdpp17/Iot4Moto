@@ -64,12 +64,15 @@ function updateMap() {
 }
 
 // ALTERNAR MODOS (LIVE / HISTÓRICO)
+// ALTERNAR MODOS (LIVE / HISTÓRICO)
 function switchMode(mode) {
     currentMode = mode;
     document.getElementById('btn-live').classList.toggle('active', mode === 'live');
     document.getElementById('btn-history').classList.toggle('active', mode === 'history');
     
-    const liveCam = document.getElementById('live-cam-stream');            
+    // Substitui a variável liveCam por esta:
+    const liveCamWrapper = document.getElementById('live-cam-wrapper');            
+    
     const histControls = document.getElementById('history-controls');
     const alertsList = document.getElementById('alerts-list');
     const historyMsg = document.getElementById('history-msg');
@@ -77,7 +80,7 @@ function switchMode(mode) {
     const headerStatus = document.querySelector('.header-status'); 
 
     if (mode === 'history') {
-        liveCam.style.display = 'none';
+        liveCamWrapper.style.display = 'none'; // Atualizado aqui
         histControls.style.display = 'flex';
         headerStatus.style.display = 'none'; 
         alertsList.style.display = 'none';
@@ -87,7 +90,7 @@ function switchMode(mode) {
         fetchRoutes();
     } else {
         histControls.style.display = 'none';
-        liveCam.style.display = 'flex';
+        liveCamWrapper.style.display = 'block'; // Atualizado aqui
         headerStatus.style.display = 'flex'; 
         document.getElementById('route-video').pause();
         
