@@ -133,10 +133,10 @@ class ForegroundAlertService : Service() {
                     //Gravar o alerta no histórico (AlertManager)
                     val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
                     val (titulo, descricao) = when (alertType) {
-                        "THEFT" -> "Alerta de Roubo" to "Movimento detetado com a mota estacionada."
-                        "FALL"  -> "Queda Detetada" to "SOS ativado. Coordenadas enviadas."
-                        "RAIN"  -> "Alerta de Chuva" to "A mota está à chuva."
-                        "FCW"   -> "Travagem Brusca" to "Risco de colisão."
+                        "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
+                        "FALL"  -> "Queda Detetada!" to "SOS ativado. Coordenadas enviadas."
+                        "RAIN"  -> "Alerta de Chuva!" to "A mota está à chuva."
+                        "FCW"   -> "Travagem Brusca!" to "Risco de colisão frontal."
                         else    -> "Informação" to "Evento: $alertType"
                     }
 

@@ -16,7 +16,7 @@
             android:text="Contactos SOS (Adicionar prefixo)"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
-            android:textSize="18sp"
+            android:textSize="22sp"
             android:layout_marginBottom="16dp"/>
 
         <EditText
@@ -55,7 +55,7 @@
             android:text="Mensagem de Emergência"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
-            android:textSize="18sp"
+            android:textSize="22sp"
             android:layout_marginTop="20dp"
             android:layout_marginBottom="8dp"/>
 
@@ -76,7 +76,7 @@
             android:text="Preferências de Notificação"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
-            android:textSize="18sp"
+            android:textSize="22sp"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="8dp"/>
 
