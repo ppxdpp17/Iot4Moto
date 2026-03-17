@@ -90,7 +90,7 @@ function switchMode(mode) {
         fetchRoutes();
     } else {
         histControls.style.display = 'none';
-        liveCamWrapper.style.display = 'block'; // Atualizado aqui
+        liveCamWrapper.style.display = 'block';
         headerStatus.style.display = 'flex'; 
         document.getElementById('route-video').pause();
         if(vPlaying) toggleVirtualPlay();
@@ -201,7 +201,7 @@ client.connect({
     useSSL: false, timeout: 3
 });
 
-// --- HISTÓRICO LÓGICA ---
+//---HISTÓRICO LÓGICA---
 async function fetchRoutes() {
     try {
         const res = await fetch('./data/index.json');
@@ -236,11 +236,11 @@ async function loadRoute() {
     if (route.video_file) {
         videoElement.src = `./videos/${route.video_file.split('/').pop()}`;
         videoElement.style.display = 'block';
-        virtualPlayer.style.display = 'none'; // Esconde player virtual
+        virtualPlayer.style.display = 'none';
     } else {
         videoElement.src = "";
         videoElement.style.display = 'none';
-        virtualPlayer.style.display = 'block'; // Mostra player virtual
+        virtualPlayer.style.display = 'block';
         
         vDurationMs = route.duration_sec * 1000;
         updateVirtualUI();
@@ -249,7 +249,8 @@ async function loadRoute() {
     const res = await fetch(`./data/${route.data_file}`);
     routeData = await res.json();
 }
-// --- MOTOR DE SINCRONIZAÇÃO DE TELEMETRIA ---
+
+//---SINCRONIZAÇÃO DE TELEMETRIA (SEM VÍDEO)---
 function syncTelemetry(currentTimeMs) {
     if(currentMode !== 'history' || routeData.length === 0) return;
     
@@ -270,13 +271,11 @@ function syncTelemetry(currentTimeMs) {
     }
 }
 
-// 1. Sincronização via Vídeo Real
 document.getElementById('route-video').addEventListener('timeupdate', (e) => {
     const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
     syncTelemetry(currentTimeMs);
 });
 
-// 2. Sincronização via Player Virtual (Sem Vídeo)
 let vTimer = null;
 let vTimeMs = 0;
 let vDurationMs = 0;
@@ -300,10 +299,10 @@ function toggleVirtualPlay() {
     if (vPlaying) {
         btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
         vTimer = setInterval(() => {
-            vTimeMs += 100; // Avança 100ms
+            vTimeMs += 100;
             if (vTimeMs >= vDurationMs) {
                 vTimeMs = vDurationMs;
-                toggleVirtualPlay(); // Faz auto-pause no fim
+                toggleVirtualPlay();
             }
             updateVirtualUI();
             syncTelemetry(vTimeMs);

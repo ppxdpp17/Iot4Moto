@@ -60,15 +60,15 @@ void* can_reader(void* arg) {
         else if (id == 0x201) {
             client->publish("moto/battery", std::to_string((int)frame.data[0]), 0, true);
         }
-        else if (id == 0x202) { //GEAR
+        else if (id == 0x202) {
             std::string gear = (frame.data[0] == 1) ? "F" : (frame.data[0] == 2) ? "R" : (frame.data[0] == 3) ? "P" : "N";
             client->publish("moto/gear", gear);
         }
-        else if (id == 0x203) { //DRIVE MODE
+        else if (id == 0x203) {
             std::string mode = (frame.data[0] == 1) ? "ECO" : (frame.data[0] == 2) ? "SPORT" : "STD";
             client->publish("moto/drive_mode", mode);
         }
-        else if (id == 0x204) { //LUZES (Bitmask)
+        else if (id == 0x204) {
             uint8_t mask = frame.data[0];
             client->publish("moto/lights",          (mask & 0x01) ? "true" : "false");
             client->publish("moto/maxlights",       (mask & 0x02) ? "true" : "false");
@@ -79,13 +79,13 @@ void* can_reader(void* arg) {
         else if (id == 0x205) {
             client->publish("moto/brake", (frame.data[0] == 1) ? "true" : "false");
         }
-        else if (id == 0x206) { //ABS
+        else if (id == 0x206) {
             client->publish("moto/abs", (frame.data[0] == 1) ? "true" : "false");
         }
-        else if (id == 0x207) { //TEMPERATURE
+        else if (id == 0x207) {
             client->publish("moto/temperature", std::to_string((int)frame.data[0]));
         }
-        else if (id == 0x208) { //AUTONOMIA (Range)
+        else if (id == 0x208) {
             uint16_t range = frame.data[0]; 
             client->publish("moto/range", std::to_string(range), 0, true);
         }
@@ -94,7 +94,7 @@ void* can_reader(void* arg) {
             int16_t roll_raw = frame.data[0] | (frame.data[1] << 8);
             float roll = roll_raw / 100.0f;
 
-            //Publicar com precisÃ£o de 2 casas decimais para a Web
+            //Publicar com precisão de 2 casas decimais para a Web
             std::stringstream ss;
             ss << std::fixed << std::setprecision(2) << roll;
             client->publish("moto/roll", ss.str());

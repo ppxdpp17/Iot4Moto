@@ -116,7 +116,7 @@ namespace Simulador
             routes.SetUpdateMethods(updateMethods);
             routes.SetBackgroundUpdated(backgroundUpdated);
 
-            //------ INÍCIO DA LÓGICA DA APP ANDROID -------
+            //------INÍCIO DA LÓGICA DA APP ANDROID-------
             mqttService.OnMessageReceived += async (topic, payload) =>
             {
                 if (topic == "sim/motorcycle")
@@ -138,7 +138,7 @@ namespace Simulador
                     }
                 }
             };
-            //---------- FIM DA LÓGICA DA APP ANDROID --------------------
+            //----------FIM DA LÓGICA DA APP ANDROID--------------------
             
             //RETIREI ESCOLHA DO VIN AQUI
             try
@@ -162,7 +162,7 @@ namespace Simulador
             }
 
            PromptRow = Console.WindowHeight - 1;
-            DashboardMaxHeight = PromptRow - MaxMessageLines - 1; // reserva linhas
+            DashboardMaxHeight = PromptRow - MaxMessageLines - 1; //reserva linhas
             MessageStartRow = PromptRow - MaxMessageLines;
 
 
