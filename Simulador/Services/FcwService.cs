@@ -21,6 +21,9 @@ namespace Simulador.Services
         private readonly CanService _canService;
         private GpioController? _gpio;
 
+        //Para evitar spam de alertas
+        private DateTime _lastAlarmTime = DateTime.MinValue;
+
         // Histórico para cálculo de velocidade (Tempo, Distância)
         private Queue<Tuple<DateTime, double>> _history = new Queue<Tuple<DateTime, double>>();
         private const int MAX_HISTORY = 6;
@@ -46,15 +49,23 @@ namespace Simulador.Services
                 {
                     if (SimulationState.IsMotorcycleOn)
                     {
+                        //Se a velocidade for 15 km/h ou menos, ignora e limpa o histórico
+                        if (SimulationState.Speed <= 15)
+                        {
+                            _history.Clear();
+                            await Task.Delay(100, token);
+                            continue;
+                        }
+
                         double dist = MeasureDistance();
 
-                        if (dist > 0 && dist < 4.0) // Sensor só é fiável até 4m
+                        if (dist > 0 && dist < 4.0) 
                         {
                             ProcessFcwLogic(dist);
                         }
                         else
                         {
-                            _history.Clear(); // Fora de alcance, limpa histórico
+                            _history.Clear(); 
                         }
                     }
 
@@ -128,11 +139,23 @@ namespace Simulador.Services
             if (ttc < 1.0)
             {
                 type = "CRITICAL";
-                //Program.WriteMessage("\n!!! ALERTA: Colisão Frontal Iminente !!!");
+                //Só dispara se tiverem passado 5 segundos desde o último alarme
+                if ((now - _lastAlarmTime).TotalSeconds > 5)
+                {
+                    _lastAlarmTime = now;
+                    //Program.WriteMessage("\n!!! ALERTA ECU: Colisão Frontal Iminente !!!");
+                    _canService.EnviarFcw(currentDistance, ttc, type);
+                }
             }
             else if (ttc < 2.5)
             {
                 type = "WARNING";
+                _canService.EnviarFcw(currentDistance, ttc, type);
+            }
+            else 
+            {
+                //Envia INFO normal
+                _canService.EnviarFcw(currentDistance, ttc, type);
             }
 
             _canService.EnviarFcw(currentDistance, ttc, type);

@@ -160,12 +160,12 @@ class MainInterface1Activity : AppCompatActivity() {
     }
 
     private fun showAlarm(type: String) {
-        // Limpa o que estiver no overlay (para não sobrepor ao ecrã vermelho original do XML)
+        // Limpa o overlay antigo
         alarmOverlay.removeAllViews()
 
-        // Cria um texto dinâmico para preencher o ecrã
-        val alarmText = TextView(this).apply {
-            setTextColor(android.graphics.Color.WHITE)
+        // Contentor centralizado para ter Imagem e Texto juntos
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -173,25 +173,54 @@ class MainInterface1Activity : AppCompatActivity() {
             )
         }
 
-        if (type.trim() == "FALL") {
-            alarmOverlay.setBackgroundColor(android.graphics.Color.BLUE)
-            alarmText.text = "SOS"
-            alarmText.textSize = 120f
-        } else {
-            // Assume THEFT por defeito
-            alarmOverlay.setBackgroundColor(android.graphics.Color.RED)
-            alarmText.text = "!"
-            alarmText.textSize = 150f
+        val alarmText = TextView(this).apply {
+            setTextColor(android.graphics.Color.WHITE)
+            gravity = android.view.Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
         }
 
-        // Adiciona o texto ao ecrã e mostra-o
-        alarmOverlay.addView(alarmText)
+        val alarmIcon = ImageView(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(400, 400).apply {
+                bottomMargin = 40
+            }
+        }
+
+        // Lógica de cores e mensagens
+        when (type.trim()) {
+            "FALL" -> {
+                alarmOverlay.setBackgroundColor(android.graphics.Color.BLUE)
+                alarmText.text = "SOS"
+                alarmText.textSize = 120f
+                container.addView(alarmText)
+            }
+            "COLLISION_WARNING" -> {
+                // Laranja Alerta (#FF8C00)
+                alarmOverlay.setBackgroundColor(android.graphics.Color.parseColor("#FF8C00"))
+                alarmText.text = "COLISÃO IMINENTE!"
+                alarmText.textSize = 60f
+
+                // ADICIONA O ÍCONE DO CARRO AQUI
+                alarmIcon.setImageResource(R.drawable.car)
+
+                container.addView(alarmIcon)
+                container.addView(alarmText)
+            }
+            else -> {
+                // Assume THEFT por defeito
+                alarmOverlay.setBackgroundColor(android.graphics.Color.RED)
+                alarmText.text = "!"
+                alarmText.textSize = 150f
+                container.addView(alarmText)
+            }
+        }
+
+        alarmOverlay.addView(container)
         alarmOverlay.visibility = View.VISIBLE
 
-        // Oculta ao fim de 5 segundos
+        // Oculta ao fim de 4 segundos (reduzido para não tapar o GPS muito tempo em andamento)
         Handler(Looper.getMainLooper()).postDelayed({
             alarmOverlay.visibility = View.GONE
-        }, 5000)
+        }, 4000)
     }
 
     // FUNCAO QUE CONFIGURA O SERVIDOR MQTT
