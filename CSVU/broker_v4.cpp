@@ -45,6 +45,7 @@ void* can_reader(void* arg) {
     addr.can_family = AF_CAN;
     addr.can_ifindex = ifr.ifr_ifindex;
     bind(s, (struct sockaddr*)&addr, sizeof(addr));
+    auto last_fcw_alarm = std::chrono::steady_clock::now() - std::chrono::seconds(10);
     
     std::cout << "[CAN] A ler dados do Raspberry em can0...\n";
 
@@ -150,8 +151,13 @@ void* can_reader(void* arg) {
 
             //Se for crítico, dispara o alarme genérico para a App Android te notificar
             if (type_byte == 2) {
-                std::cout << "\a!! CSVU: ALERTA DE COLISÃO FRONTAL ENVIADO PARA 5G !!" << std::endl;
-                client->publish("moto/alarm", "COLLISION_WARNING");
+                auto now = std::chrono::steady_clock::now();
+                
+                // Só publica no MQTT se já passaram 5 segundos desde o último alarme
+                if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
+                    last_fcw_alarm = now; // Atualiza o relógio
+                    client->publish("moto/alarm", "FCW");
+                }
             }
         }
     }

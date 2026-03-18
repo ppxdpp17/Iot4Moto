@@ -193,7 +193,7 @@ class MainInterface1Activity : AppCompatActivity() {
                 alarmText.textSize = 120f
                 container.addView(alarmText)
             }
-            "COLLISION_WARNING" -> {
+            "FCW" -> {
                 // Laranja Alerta (#FF8C00)
                 alarmOverlay.setBackgroundColor(android.graphics.Color.parseColor("#FF8C00"))
                 alarmText.text = "COLISÃO IMINENTE!"
@@ -206,7 +206,7 @@ class MainInterface1Activity : AppCompatActivity() {
                 container.addView(alarmText)
             }
             else -> {
-                // Assume THEFT por defeito
+                //Assume THEFT por defeito
                 alarmOverlay.setBackgroundColor(android.graphics.Color.RED)
                 alarmText.text = "!"
                 alarmText.textSize = 150f

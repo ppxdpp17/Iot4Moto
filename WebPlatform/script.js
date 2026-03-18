@@ -119,6 +119,7 @@ function logEvent(type, message) {
         case 'FALL': icon = 'fa-triangle-exclamation'; colorClass = 'alert-danger'; break;
         case 'THEFT': icon = 'fa-shield-halved'; colorClass = 'alert-warning'; break;
         case 'RAIN': icon = 'fa-cloud-rain'; colorClass = 'alert-info'; break;
+        case 'FCW': icon = 'fa-solid fa-car'; colorClass = 'alert-info'; break;
         default: icon = 'fa-circle-info'; colorClass = 'alert-info';
     }
 
@@ -155,6 +156,7 @@ client.onMessageArrived = (message) => {
             let msg = "Evento registado.";
             if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
             if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
+            if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
             if (alertType === "RAIN") msg = "Chuva detetada. Piso escorregadio.";
             logEvent(alertType, msg);
         }

@@ -139,23 +139,11 @@ namespace Simulador.Services
             if (ttc < 1.0)
             {
                 type = "CRITICAL";
-                //Só dispara se tiverem passado 5 segundos desde o último alarme
-                if ((now - _lastAlarmTime).TotalSeconds > 5)
-                {
-                    _lastAlarmTime = now;
-                    //Program.WriteMessage("\n!!! ALERTA ECU: Colisão Frontal Iminente !!!");
-                    _canService.EnviarFcw(currentDistance, ttc, type);
-                }
+                //Não há cooldown aqui. A ECU avisa sempre o que se passa agora.
             }
             else if (ttc < 2.5)
             {
                 type = "WARNING";
-                _canService.EnviarFcw(currentDistance, ttc, type);
-            }
-            else 
-            {
-                //Envia INFO normal
-                _canService.EnviarFcw(currentDistance, ttc, type);
             }
 
             _canService.EnviarFcw(currentDistance, ttc, type);

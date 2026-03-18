@@ -136,7 +136,7 @@ class ForegroundAlertService : Service() {
                         "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
                         "FALL"  -> "Queda Detetada!" to "SOS ativado. Coordenadas enviadas."
                         "RAIN"  -> "Alerta de Chuva!" to "A mota está à chuva."
-                        "FCW"   -> "Travagem Brusca!" to "Risco de colisão frontal."
+                        "FCW"   -> "Aviso FCW!" to "Risco de colisão frontal."
                         else    -> "Informação" to "Evento: $alertType"
                     }
 

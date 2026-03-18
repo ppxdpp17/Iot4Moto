@@ -2,6 +2,7 @@
     --bg-dark: #0f1115;
     --bg-panel: #1a1d24;
     --primary: #00ff88;
+    --fcw: #fbff00;
     --text-main: #e2e8f0;
     --text-muted: #94a3b8;
     --danger: #ff4757;
@@ -97,7 +98,7 @@ body {
 
 .alert-danger { color: var(--danger); }
 .alert-warning { color: var(--warning); }
-.alert-info { color: var(--primary); }
+.alert-info { color: var(--fcw); }
 
 .panel-right { position: relative; background: #000; }
 #map { width: 100%; height: 100%; z-index: 1; }
