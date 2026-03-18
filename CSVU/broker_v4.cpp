@@ -129,6 +129,31 @@ void* can_reader(void* arg) {
             
             client->publish("moto/gps", gpsPayload.dump());
         }
+        else if (id == 0x302) {
+            //Desempacota os bytes
+            uint16_t dist_cm = frame.data[0] | (frame.data[1] << 8);
+            uint8_t ttc_ds = frame.data[2];
+            uint8_t type_byte = frame.data[3];
+
+            //Reconstrói os valores reais
+            double dist_m = dist_cm / 100.0;
+            double ttc_s = ttc_ds / 10.0;
+            std::string type_str = (type_byte == 2) ? "CRITICAL" : (type_byte == 1) ? "WARNING" : "INFO";
+
+            //Monta o JSON para a Plataforma Web
+            json fcwPayload;
+            fcwPayload["dist"] = dist_m;
+            fcwPayload["ttc"] = ttc_s;
+            fcwPayload["type"] = type_str;
+
+            client->publish("moto/fcw", fcwPayload.dump());
+
+            //Se for crítico, dispara o alarme genérico para a App Android te notificar
+            if (type_byte == 2) {
+                std::cout << "\a!! CSVU: ALERTA DE COLISÃO FRONTAL ENVIADO PARA 5G !!" << std::endl;
+                client->publish("moto/alarm", "COLLISION_WARNING");
+            }
+        }
     }
     return nullptr;
 }

@@ -175,7 +175,26 @@ namespace CAN
         }
 
 
+        //Envio de dados do HC-SR04 (FCW)
+        public void EnviarFcw(double distanceMeters, double ttcSeconds, string type)
+        {
+            //Converter a distância para centímetros (para caber num inteiro de 16 bits)
+            ushort distCm = (ushort)Math.Round(distanceMeters * 100);
+            
+            //Converte o TTC para décimas de segundo (para caber num byte)
+            byte ttcDs = (byte)Math.Min(255, Math.Max(0, Math.Round(ttcSeconds * 10)));
+            
+            //Converte o Tipo de Alerta para um código numérico (0=INFO, 1=WARNING, 2=CRITICAL)
+            byte typeByte = (byte)(type == "CRITICAL" ? 2 : type == "WARNING" ? 1 : 0);
 
+            byte[] data = new byte[4];
+            data[0] = (byte)(distCm & 0xFF);          //Distância (Byte baixo)
+            data[1] = (byte)((distCm >> 8) & 0xFF);   //Distância (Byte alto)
+            data[2] = ttcDs;                          //TTC
+            data[3] = typeByte;                       //Nível de Alerta
+
+            EnviarDadosSimulados(0x302, data);
+        }
 
         //SIMULADOR A GERAR DADOS DE GPS (ESTÁTICOS) - MAIS TARDE RETIRAR ISTO, JÁ QUE OS DADOS GPS
         //SERÃO "GERADOS" DIRETAMENTE NA CSVU ATRAVÉS DO MODEM
