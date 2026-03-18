@@ -68,8 +68,13 @@ class ForegroundAlertService : Service() {
             val channel = NotificationChannel(
                 "rideriot_alerts_channel",
                 "Alertas de Emergência",
-                NotificationManager.IMPORTANCE_HIGH // Crucial para o popup aparecer e fazer som
-            )
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                // Padrão: [Espera, Vibra, Espera, Vibra, Espera, Vibra] em milissegundos
+                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 1000)
+                enableVibration(true)
+            }
+
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
         }
