@@ -18,17 +18,17 @@ const motoIcon = L.divIcon({
     iconAnchor: [16, 16]
 });
 
-// Memória do estado LIVE para restaurar quando voltamos do histórico
+//Memória do estado LIVE para restaurar quando voltamos do histórico
 let liveState = {
     roll: 0, vel: 0, bat: '--', lat: null, lon: null
 };
 
-// INICIALIZAR MAPA
+//Código relativo ao mapa
 let map = L.map('map', { zoomControl: false }).setView([41.3, -7.74], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, theme: 'dark' }).addTo(map);
 let marker = L.marker([41.3, -7.74], {icon: motoIcon}).addTo(map);
 
-// Função para calcular para onde a mota está virada
+//Função para calcular para onde a mota está virada (??)
 function calculateBearing(lat1, lon1, lat2, lon2) {
     const toRad = deg => deg * Math.PI / 180;
     const toDeg = rad => rad * 180 / Math.PI;
@@ -44,7 +44,7 @@ function updateMap() {
         let newLatLng = new L.LatLng(currentLat, currentLon);
         marker.setLatLng(newLatLng);
         
-        // Força a câmara do mapa a deslizar durante 1 segundo de forma linear
+        //Força a câmara do mapa a deslizar durante 1 segundo de forma linear (para movimento mais "fluído")
         map.panTo(newLatLng, {
             animate: true,
             duration: 1.0, 
@@ -54,7 +54,7 @@ function updateMap() {
         if (lastLat !== null && lastLon !== null && (lastLat !== currentLat || lastLon !== currentLon)) {
             let angle = calculateBearing(lastLat, lastLon, currentLat, currentLon);
             
-            // Subtrai 90º para corrigir a orientação da imagem base
+            //Subtrai 90º para corrigir a orientação da imagem base
             document.getElementById('moto-marker-icon').style.transform = `rotate(${angle - 90}deg)`;
         }
         
@@ -63,14 +63,12 @@ function updateMap() {
     }
 }
 
-// ALTERNAR MODOS (LIVE / HISTÓRICO)
-// ALTERNAR MODOS (LIVE / HISTÓRICO)
+//ALTERNAR MODOS (LIVE / HISTÓRICO)
 function switchMode(mode) {
     currentMode = mode;
     document.getElementById('btn-live').classList.toggle('active', mode === 'live');
     document.getElementById('btn-history').classList.toggle('active', mode === 'history');
     
-    // Substitui a variável liveCam por esta:
     const liveCamWrapper = document.getElementById('live-cam-wrapper');            
     
     const histControls = document.getElementById('history-controls');
@@ -80,7 +78,7 @@ function switchMode(mode) {
     const headerStatus = document.querySelector('.header-status'); 
 
     if (mode === 'history') {
-        liveCamWrapper.style.display = 'none'; // Atualizado aqui
+        liveCamWrapper.style.display = 'none';
         histControls.style.display = 'flex';
         headerStatus.style.display = 'none'; 
         alertsList.style.display = 'none';
@@ -132,7 +130,7 @@ function logEvent(type, message) {
     if (list.children.length > 30) list.lastChild.remove(); 
 }
 
-// --- LIGAÇÃO MQTT ---
+//---LIGAÇÃO MQTT---
 const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
 
 client.onConnectionLost = () => {
@@ -203,7 +201,7 @@ client.connect({
     useSSL: false, timeout: 3
 });
 
-//---HISTÓRICO LÓGICA---
+//Lógica das Rotas Passadas
 async function fetchRoutes() {
     try {
         const res = await fetch('./data/index.json');
