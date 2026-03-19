@@ -10,6 +10,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.rideriot.MainActivity
+import com.example.rideriot.R
 import com.example.rideriot.models.Alert
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -20,7 +21,7 @@ class ForegroundAlertService : Service() {
 
     private lateinit var mqttManager: MqttManager
     private val BROKER_URL = "tcp://172.20.0.203:1883"
-    private val CLIENT_ID = "AndroidApp_Watchdog_${System.currentTimeMillis()}"
+    private val CLIENT_ID = "AndroidApp_Sentinel_${System.currentTimeMillis()}"
 
     private var lastLat: Double = 0.0
     private var lastLon: Double = 0.0
@@ -29,7 +30,7 @@ class ForegroundAlertService : Service() {
         super.onCreate()
         createAlertNotificationChannel()
         startForegroundServiceNotification()
-        setupMqttWatchdog()
+        setupMqttSentinel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -39,7 +40,7 @@ class ForegroundAlertService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startForegroundServiceNotification() {
-        val channelId = "rideriot_watchdog_channel"
+        val channelId = "rideriot_sentinel_channel"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -70,7 +71,7 @@ class ForegroundAlertService : Service() {
                 "Alertas de Emergência",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                // Padrão: [Espera, Vibra, Espera, Vibra, Espera, Vibra] em milissegundos
+                //Padrão: [Espera, Vibra, Espera, Vibra, Espera, Vibra] em milissegundos
                 vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 1000)
                 enableVibration(true)
             }
@@ -81,11 +82,9 @@ class ForegroundAlertService : Service() {
     }
 
     private fun showEmergencyNotification(title: String, message: String, alertType: String) {
-
-        // Cria a intenção de abrir a app
         val intent = android.content.Intent(this, MainActivity::class.java).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-            // Define o destino consoante o alerta
+            //Define o destino consoante o alerta
             val target = if (alertType == "THEFT") "CAMERA" else "ALERTS"
             putExtra("TARGET_FRAGMENT", target)
         }
@@ -96,11 +95,11 @@ class ForegroundAlertService : Service() {
         )
 
         val notification = androidx.core.app.NotificationCompat.Builder(this, "rideriot_alerts_channel")
-            .setSmallIcon(android.R.drawable.ic_dialog_alert) // Já sabes, muda para o logo depois
+            .setSmallIcon(R.drawable.logo_iot)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent) // ANEXA A AÇÃO AQUI
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 
@@ -108,7 +107,7 @@ class ForegroundAlertService : Service() {
         manager?.notify(System.currentTimeMillis().toInt(), notification)
     }
 
-    private fun setupMqttWatchdog() {
+    private fun setupMqttSentinel() {
         mqttManager = MqttManager(this)
 
         mqttManager.messageListener = { topic, payload ->
@@ -119,7 +118,7 @@ class ForegroundAlertService : Service() {
                         lastLat = json.getDouble("lat")
                         lastLon = json.getDouble("lon")
                     } catch (e: Exception) {
-                        Log.e("WATCHDOG", "Erro a ler GPS: ${e.message}")
+                        Log.e("SENTINEL", "Erro a ler GPS: ${e.message}")
                     }
                 }
                 "moto/alarm" -> {
@@ -131,7 +130,7 @@ class ForegroundAlertService : Service() {
                             val smsHelper = SmsHelper(this@ForegroundAlertService)
                             smsHelper.triggerEmergencySms(coordenadasGPS)
                         } catch (e: Exception) {
-                            Log.e("WATCHDOG", "Erro a enviar SMS: ${e.message}")
+                            Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
                         }
                     }
 

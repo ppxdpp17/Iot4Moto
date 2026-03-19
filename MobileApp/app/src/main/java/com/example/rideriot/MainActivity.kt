@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity() {
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
-        // 1. O MOTOR (Apenas um listener)
         bottomNav.setOnItemSelectedListener { item ->
             val selectedFragment = when (item.itemId) {
                 R.id.nav_map -> MapFragment()
@@ -47,14 +46,13 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // 2. A IGNIÇÃO (Lê a notificação e diz ao motor para arrancar)
         if (savedInstanceState == null) {
             val targetFragment = intent.getStringExtra("TARGET_FRAGMENT")
 
             when (targetFragment) {
                 "CAMERA" -> bottomNav.selectedItemId = R.id.nav_camera
                 "ALERTS" -> bottomNav.selectedItemId = R.id.nav_alerts
-                else -> bottomNav.selectedItemId = R.id.nav_map // Se não houver notificação, arranca no mapa
+                else -> bottomNav.selectedItemId = R.id.nav_map
             }
         }
     }

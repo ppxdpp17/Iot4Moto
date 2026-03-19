@@ -37,7 +37,7 @@ class MqttManager(private val context: Context) {
         } catch (e: Exception) { e.printStackTrace() }
     }
 
-    //Subscreve o tópico MQTT para receber info do Simuladro
+    //Subscreve o tópico MQTT para receber info do Simulador
     fun subscribe(topic: String) {
         try {
             mqttClient?.subscribe(topic, 1)

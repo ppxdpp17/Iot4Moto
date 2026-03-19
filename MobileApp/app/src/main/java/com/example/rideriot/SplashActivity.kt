@@ -17,10 +17,10 @@ class SplashActivity : AppCompatActivity() {
         val imgLogoFill = findViewById<ImageView>(R.id.img_logo_fill)
         val clipDrawable = imgLogoFill.drawable as ClipDrawable
 
-        // Garante que começa vazio
+        //Garante que começa vazio
         clipDrawable.level = 0
 
-        // Anima de 0 a 10000 durante 1500ms (1.5s)
+        //Anima de 0 a 10000 durante 1500ms (1.5s)
         val animator = ValueAnimator.ofInt(0, 10000)
         animator.duration = 1500
         animator.addUpdateListener { animation ->
@@ -29,7 +29,7 @@ class SplashActivity : AppCompatActivity() {
 
         animator.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
-                // Quando acaba de encher, salta para a app e destrói a splash
+                //Quando acaba de encher, salta para a app e destrói a splash
                 startActivity(Intent(this@SplashActivity, MainActivity::class.java))
                 finish()
             }

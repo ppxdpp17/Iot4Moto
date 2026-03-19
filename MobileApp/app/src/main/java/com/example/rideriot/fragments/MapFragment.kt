@@ -22,10 +22,10 @@ class MapFragment : Fragment() {
     private lateinit var switchMotor: SwitchMaterial
     private lateinit var mqttManager: MqttManager
 
-    private val BROKER_URL = "tcp://172.20.0.203:1883" // Mantém o teu IP
+    private val BROKER_URL = "tcp://172.20.0.203:1883"
     private val CLIENT_ID = "AndroidApp_Map_${System.currentTimeMillis()}"
 
-    // Variáveis para o GPS
+    //Variáveis para o GPS
     private var motoMarker: Marker? = null
     private var currentLat: Double? = null
     private var currentLon: Double? = null
@@ -93,7 +93,7 @@ class MapFragment : Fragment() {
     }
 
     private fun updateMapLocation() {
-        // Só atualiza se já tiver as duas coordenadas
+        //Só atualiza se já tiver as duas coordenadas
         val lat = currentLat ?: return
         val lon = currentLon ?: return
 
@@ -112,7 +112,7 @@ class MapFragment : Fragment() {
 
         motoMarker?.position = point
         map.controller.setCenter(point)
-        map.invalidate() // Força o redesenho do mapa
+        map.invalidate()
     }
 
     private fun setSwitchListener() {

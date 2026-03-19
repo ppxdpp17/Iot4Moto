@@ -53,36 +53,35 @@ class CameraFragment : Fragment() {
 
         webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 
-        // LÓGICA DO BOTÃO
+        //Botão de tirar foto
         btnCapture.setOnClickListener {
             captureAndSaveImage()
         }
     }
 
     private fun captureAndSaveImage() {
-        // 1. Tira screenshot à WebView
+        //Tira screenshot à WebView
         val bitmap = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         webView.draw(canvas)
 
-        // 2. Guarda na Galeria
+        //Guarda na Galeria
         val filename = "RiderIoT_${System.currentTimeMillis()}.jpg"
         var fos: OutputStream? = null
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10+ (Usa o MediaStore)
                 val resolver = requireContext().contentResolver
                 val contentValues = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                     put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                    // Define a pasta personalizada
+                    //Define a pasta personalizada
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/RiderIoT")
                 }
                 val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                 fos = imageUri?.let { resolver.openOutputStream(it) }
             } else {
-                // Androids antigos (Acesso direto ao ficheiro)
+                //Androids antigos (Acesso direto ao ficheiro)
                 val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                 val appDir = File(imagesDir, "RiderIoT")
                 if (!appDir.exists()) appDir.mkdir()
@@ -92,7 +91,7 @@ class CameraFragment : Fragment() {
 
             fos?.use {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
-                Toast.makeText(requireContext(), "Foto guardada na galeria!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Foto guardada na galeria", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             e.printStackTrace()
