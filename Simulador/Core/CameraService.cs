@@ -20,29 +20,27 @@ namespace Simulador.Core
         {
             if (!File.Exists(_imagePath))
             {
-                Console.WriteLine($"[CÂMARA] ERRO: Ficheiro {_imagePath} não encontrado.");
+                Console.WriteLine($"Erro na câmara: Ficheiro {_imagePath} não encontrado.");
                 return;
             }
-
-            Console.WriteLine("[CÂMARA] Streaming falso iniciado...");
 
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    // Lê a imagem e converte para Base64
+                    //Lê a imagem e converte para Base64
                     byte[] imageArray = await File.ReadAllBytesAsync(_imagePath, token);
                     string base64Image = Convert.ToBase64String(imageArray);
 
-                    // Publica no tópico
+                    //Publica no tópico
                     await _mqttService.PublishAsync("moto/camera", base64Image);
 
-                    // 1 FPS para não estrangular o broker local
+                    //1 FPS para não "encher" broker local
                     await Task.Delay(1000, token);
                 }
                 catch (TaskCanceledException)
                 {
-                    break; // Sai limpo se mandares parar
+                    break;
                 }
                 catch (Exception ex)
                 {

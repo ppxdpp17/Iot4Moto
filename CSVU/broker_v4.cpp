@@ -155,7 +155,7 @@ void* can_reader(void* arg) {
                 
                 // Só publica no MQTT se já passaram 5 segundos desde o último alarme
                 if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
-                    last_fcw_alarm = now; // Atualiza o relógio
+                    last_fcw_alarm = now; //Atualiza o relógio
                     client->publish("moto/alarm", "FCW");
                 }
             }

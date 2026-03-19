@@ -230,20 +230,20 @@ namespace CAN
 
             while (await timer.WaitForNextTickAsync(ct))
             {
-                // --- 100ms (Sempre) ---
+                // --- 100ms ---
                 EnviarVelocidade(SimulationState.Speed);
 
-                // --- 200ms (A cada 2 ticks) ---
+                // --- 200ms ---
                 if (tickCount % 200 == 0)
                 {
                     EnviarGear(SimulationState.Gear);
                     EnviarModo(SimulationState.DriveMode);
-                    EnviarLuzes(); // Já inclui Piscas e DangerLights
+                    EnviarLuzes(); //Inclui Piscas e DangerLights
                     EnviarAbs(SimulationState.Abs);
                     EnviarBrake(SimulationState.Brake);
                 }
 
-                // --- 500ms (A cada 5 ticks) ---
+                // --- 500ms ---
                 if (tickCount % 500 == 0)
                 {
                     EnviarBateria(SimulationState.Battery);
@@ -257,7 +257,6 @@ namespace CAN
                     EnviarGPS(SimulationState.Latitude, SimulationState.Longitude);
                 }
 
-                // Incrementa e reinicia a cada segundo para evitar overflow (embora irrelevante aqui)
                 tickCount = (tickCount + 100) % 1000;
             }
         }

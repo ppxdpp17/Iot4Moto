@@ -163,7 +163,7 @@ namespace Simulador
                 return;
             }
 
-           PromptRow = Console.WindowHeight - 1;
+            PromptRow = Console.WindowHeight - 1;
             DashboardMaxHeight = PromptRow - MaxMessageLines - 1; //reserva linhas
             MessageStartRow = PromptRow - MaxMessageLines;
 

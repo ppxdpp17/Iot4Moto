@@ -13,7 +13,7 @@ namespace Simulador.Services
 {
     public class FcwService
     {
-        // Define os pinos BCM onde ligaste o sensor (Muda para os teus pinos reais)
+        //Define os pinos onde o sensor liga
         private const int TRIG_PIN = 23; 
         private const int ECHO_PIN = 24; 
 
@@ -24,7 +24,7 @@ namespace Simulador.Services
         //Para evitar spam de alertas
         private DateTime _lastAlarmTime = DateTime.MinValue;
 
-        // Histórico para cálculo de velocidade (Tempo, Distância)
+        //Histórico para cálculo de velocidade (Tempo, Distância)
         private Queue<Tuple<DateTime, double>> _history = new Queue<Tuple<DateTime, double>>();
         private const int MAX_HISTORY = 6;
 
@@ -69,7 +69,7 @@ namespace Simulador.Services
                         }
                     }
 
-                    await Task.Delay(100, token); // Loop a 10Hz (100ms) é ideal para o sensor sonoro
+                    await Task.Delay(100, token); //Loop a 10Hz (100ms)
                 }
             }
             catch (Exception ex)
@@ -86,24 +86,24 @@ namespace Simulador.Services
         {
             if (_gpio == null) return -1;
 
-            // Envia um pulso de 10 microsegundos
+            //Envia um pulso de 10ms
             _gpio.Write(TRIG_PIN, PinValue.High);
             DelayMicroseconds(10);
             _gpio.Write(TRIG_PIN, PinValue.Low);
 
             Stopwatch sw = new Stopwatch();
             
-            // Espera o sinal de retorno ficar Alto (Timeout de 50ms para não bloquear a thread)
+            //Espera o sinal de retorno ficar Alto (Timeout de 50ms para não bloquear a thread)
             sw.Start();
             while (_gpio.Read(ECHO_PIN) == PinValue.Low && sw.ElapsedMilliseconds < 50) { }
             if (sw.ElapsedMilliseconds >= 50) return -1;
 
-            // Mede o tempo que o sinal fica Alto
+            //Mede o tempo que o sinal fica Alto
             sw.Restart();
             while (_gpio.Read(ECHO_PIN) == PinValue.High && sw.ElapsedMilliseconds < 50) { }
             double elapsedSeconds = sw.Elapsed.TotalSeconds;
 
-            // Distância = (Tempo * Velocidade do Som 343m/s) / 2 (ida e volta)
+            //Distância = (Tempo * Velocidade do Som 343m/s) / 2 (ida e volta)
             return (elapsedSeconds * 343.0) / 2.0;
         }
 
@@ -125,10 +125,9 @@ namespace Simulador.Services
 
                 if (dt > 0)
                 {
-                    // Velocidade de aproximação (m/s)
+                    //Velocidade de aproximação (m/s)
                     vel = (oldest.Item2 - newest.Item2) / dt;
 
-                    // Ignora velocidades residuais/ruído sonoro (< 10cm/s)
                     if (vel > 0.1) 
                     {
                         ttc = currentDistance / vel;
@@ -139,7 +138,6 @@ namespace Simulador.Services
             if (ttc < 1.0)
             {
                 type = "CRITICAL";
-                //Não há cooldown aqui. A ECU avisa sempre o que se passa agora.
             }
             else if (ttc < 2.5)
             {
@@ -149,7 +147,6 @@ namespace Simulador.Services
             _canService.EnviarFcw(currentDistance, ttc, type);
         }
 
-        // Função auxiliar para delays muito curtos em C# Linux
         private void DelayMicroseconds(long microseconds)
         {
             var sw = Stopwatch.StartNew();
