@@ -106,7 +106,7 @@ namespace Simulador
             //Novos relacionados à sensorização e IoT
             var imuService = new ImuService(mqttService, canService);
             var fcwService = new FcwService(mqttService, canService);
-
+            var rainService = new RainService(canService);
 
             //Código relacionado ao Feed da Câmara
             var cameraService = new CameraService(mqttService);
@@ -198,6 +198,9 @@ namespace Simulador
 
             //Arranque do sistema do FCW
             _ = Task.Run(() => fcwService.StartAsync(_cancellationTokenSource.Token));
+
+            //Arranque do sistema de CHUVA
+            _ = Task.Run(() => rainService.StartAsync(_cancellationTokenSource.Token));
 
             // >>> New task: SIMULATE ROUTE (more realistic logic)
             _ = routes.UpdateRouteAsync(sensorService);
