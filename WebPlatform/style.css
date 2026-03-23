@@ -8,6 +8,7 @@
     --danger: #ff4757;
     --warning: #ffa502;
     --border: #2d323e;
+    --rain: #1492db;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -99,6 +100,7 @@ body {
 .alert-danger { color: var(--danger); }
 .alert-warning { color: var(--warning); }
 .alert-info { color: var(--fcw); }
+.alert-rain { color: var(--rain); }
 
 .panel-right { position: relative; background: #000; }
 #map { width: 100%; height: 100%; z-index: 1; }

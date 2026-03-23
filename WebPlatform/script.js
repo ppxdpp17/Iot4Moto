@@ -116,7 +116,7 @@ function logEvent(type, message) {
     switch(type) {
         case 'FALL': icon = 'fa-triangle-exclamation'; colorClass = 'alert-danger'; break;
         case 'THEFT': icon = 'fa-shield-halved'; colorClass = 'alert-warning'; break;
-        case 'RAIN': icon = 'fa-cloud-rain'; colorClass = 'alert-info'; break;
+        case 'RAIN': icon = 'fa-cloud-rain'; colorClass = 'alert-rain'; break;
         case 'FCW': icon = 'fa-solid fa-car'; colorClass = 'alert-info'; break;
         default: icon = 'fa-circle-info'; colorClass = 'alert-info';
     }
@@ -155,7 +155,7 @@ client.onMessageArrived = (message) => {
             if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
             if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
             if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
-            if (alertType === "RAIN") msg = "Chuva detetada. Piso escorregadio.";
+            if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
             logEvent(alertType, msg);
         }
         

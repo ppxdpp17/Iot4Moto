@@ -66,25 +66,46 @@ class ForegroundAlertService : Service() {
 
     private fun createAlertNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "rideriot_alerts_channel",
-                "Alertas de Emergência",
+            val manager = getSystemService(NotificationManager::class.java)
+
+            //CANAL CRÍTICO (FCW, Queda) - Vibração Longa e Forte
+            val safetyChannel = NotificationChannel(
+                "rideriot_safety_channel",
+                "Segurança Crítica",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                //Padrão: [Espera, Vibra, Espera, Vibra, Espera, Vibra] em milissegundos
-                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 1000)
+                //Padrão: [Espera, Vibra, Espera, Vibra...]
+                vibrationPattern = longArrayOf(0, 1000, 200, 1000, 200, 1000)
                 enableVibration(true)
             }
 
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(channel)
+            //CANAL AMBIENTAL (Chuva, Info) - Vibração Curta e Discreta
+            val envChannel = NotificationChannel(
+                "rideriot_env_channel",
+                "Alertas Ambientais",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                // Padrão: Dois toques curtos (tipo SMS antigo)
+                vibrationPattern = longArrayOf(0, 200, 100, 200)
+                enableVibration(true)
+            }
+
+            manager?.createNotificationChannel(safetyChannel)
+            manager?.createNotificationChannel(envChannel)
         }
     }
 
     private fun showEmergencyNotification(title: String, message: String, alertType: String) {
+        val channelId = when (alertType) {
+            "FCW", "COLLISION_WARNING", "FALL", "THEFT" -> "rideriot_safety_channel"
+            else -> "rideriot_env_channel"
+        }
+
+        //Extensor apenas com as funcionalidades básicas necessárias
+        val wearableExtender = androidx.core.app.NotificationCompat.WearableExtender()
+
         val intent = android.content.Intent(this, MainActivity::class.java).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-            //Define o destino consoante o alerta
             val target = if (alertType == "THEFT") "CAMERA" else "ALERTS"
             putExtra("TARGET_FRAGMENT", target)
         }
@@ -94,17 +115,19 @@ class ForegroundAlertService : Service() {
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = androidx.core.app.NotificationCompat.Builder(this, "rideriot_alerts_channel")
-            .setSmallIcon(R.drawable.logo_iot)
+        val notification = androidx.core.app.NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
+            .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .extend(wearableExtender)
             .build()
 
         val manager = getSystemService(android.app.NotificationManager::class.java)
-        manager?.notify(System.currentTimeMillis().toInt(), notification)
+        manager?.notify(alertType.hashCode(), notification)
     }
 
     private fun setupMqttSentinel() {
