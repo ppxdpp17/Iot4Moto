@@ -160,6 +160,12 @@ void* can_reader(void* arg) {
                 }
             }
         }
+        else if (id == 0x401) {
+            if (frame.data[0] == 0x01) {
+                //std::cout << "[CSVU] Chuva detetada via CAN. A avisar proprietário..." << std::endl;
+                client->publish("moto/alarm", "RAIN");
+            }
+        }
     }
     return nullptr;
 }
