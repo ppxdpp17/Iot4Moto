@@ -3,6 +3,7 @@ package com.example.rideriot.utils
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -147,29 +148,45 @@ class ForegroundAlertService : Service() {
                 "moto/alarm" -> {
                     val alertType = payload.trim().uppercase()
 
-                    if (alertType == "FALL") {
-                        val coordenadasGPS = "$lastLat,$lastLon"
-                        try {
-                            val smsHelper = SmsHelper(this@ForegroundAlertService)
-                            smsHelper.triggerEmergencySms(coordenadasGPS)
-                        } catch (e: Exception) {
-                            Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
+                    // 1. Aceder ao ficheiro de definições
+                    val prefs = getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
+
+                    // 2. Verificar se o alerta específico está ATIVO
+                    val isEnabled = when (alertType) {
+                        "FALL"  -> prefs.getBoolean("alert_fall", true)
+                        "THEFT" -> prefs.getBoolean("alert_theft", true)
+                        "RAIN"  -> prefs.getBoolean("alert_rain", true)
+                        "FCW"   -> prefs.getBoolean("alert_fcw", true)
+                        else    -> true
+                    }
+
+                    // 3. Executa a lógica APENAS se estiver ativado
+                    if (isEnabled) {
+                        if (alertType == "FALL") {
+                            val coordenadasGPS = "$lastLat,$lastLon"
+                            try {
+                                val smsHelper = SmsHelper(this@ForegroundAlertService)
+                                smsHelper.triggerEmergencySms(coordenadasGPS)
+                            } catch (e: Exception) {
+                                Log.e("SENTINEL", "Erro SMS: ${e.message}")
+                            }
                         }
-                    }
 
-                    //Gravar o alerta no histórico (AlertManager)
-                    val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                    val (titulo, descricao) = when (alertType) {
-                        "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
-                        "FALL"  -> "Queda Detetada!" to "SOS ativado. Coordenadas enviadas."
-                        "RAIN"  -> "Alerta de Chuva!" to "A mota está à chuva."
-                        "FCW"   -> "Aviso FCW!" to "Risco de colisão frontal."
-                        else    -> "Informação" to "Evento: $alertType"
-                    }
+                        val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                        val (titulo, descricao) = when (alertType) {
+                            "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
+                            "FALL"  -> "Queda Detetada!" to "SOS ativado. Coordenadas enviadas."
+                            "RAIN"  -> "Alerta de Chuva!" to "A mota está à chuva."
+                            "FCW"   -> "Aviso FCW!" to "Risco de colisão frontal."
+                            else    -> "Informação" to "Evento: $alertType"
+                        }
 
-                    val newAlert = Alert(titulo, descricao, currentTime, alertType)
-                    AlertManager.addAlert(newAlert)
-                    showEmergencyNotification(titulo, descricao, alertType)
+                        val newAlert = Alert(titulo, descricao, currentTime, alertType)
+                        AlertManager.addAlert(newAlert)
+                        showEmergencyNotification(titulo, descricao, alertType)
+                    } else {
+                        Log.d("SENTINEL", "Alerta $alertType ignorado (OFF nas definições)")
+                    }
                 }
             }
         }

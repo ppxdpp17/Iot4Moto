@@ -65,10 +65,21 @@
             android:layout_height="wrap_content"
             android:hint="Tive um acidente com a mota."
             android:textColor="#FFFFFF"
+            android:maxLength="40"
             android:textColorHint="#888888"
             android:inputType="textMultiLine"
             android:lines="3"
             android:backgroundTint="#555555"/>
+
+        <TextView
+            android:id="@+id/tvCharCounter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="0/40"
+            android:textColor="#AAAAAA"
+            android:textSize="12sp"
+            android:gravity="end"
+            android:layout_marginTop="4dp"/>
 
         <TextView
             android:layout_width="wrap_content"

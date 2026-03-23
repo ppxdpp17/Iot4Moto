@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.rideriot.R
@@ -23,6 +24,7 @@ class SettingsFragment : Fragment() {
     private lateinit var swAlertTheft: com.google.android.material.switchmaterial.SwitchMaterial
     private lateinit var swAlertRain: com.google.android.material.switchmaterial.SwitchMaterial
     private lateinit var swAlertFcw: com.google.android.material.switchmaterial.SwitchMaterial
+    private lateinit var tvCharCounter: TextView
 
     //O ficheiro das sharedpreferences onde o Android vai guardar as configurações
     private lateinit var sharedPrefs: SharedPreferences
@@ -47,6 +49,25 @@ class SettingsFragment : Fragment() {
 
         //Criar/abrir o ficheiro local de configurações
         sharedPrefs = requireActivity().getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
+
+        tvCharCounter = view.findViewById(R.id.tvCharCounter)
+        etSosMessage.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                // Atualiza o contador (ex: "45/160")
+                val currentLength = s?.length ?: 0
+                tvCharCounter.text = "$currentLength/40"
+
+                // Opcional: Muda a cor para vermelho se chegar ao limite
+                if (currentLength >= 40) {
+                    tvCharCounter.setTextColor(android.graphics.Color.RED)
+                } else {
+                    tvCharCounter.setTextColor(android.graphics.Color.parseColor("#AAAAAA"))
+                }
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+
 
         loadSettings()
 
