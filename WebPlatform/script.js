@@ -10,6 +10,8 @@ let currentLon = null;
 let lastLat = null;
 let lastLon = null;
 
+let rainResetTimer;
+
 //Icon da mota
 const motoIcon = L.divIcon({
     html: `<img id="moto-marker-icon" src="https://cdn-icons-png.flaticon.com/128/11432/11432322.png" style="width: 32px; height: 32px; transition: transform 1s linear; transform: rotate(180deg);">`,
@@ -148,15 +150,40 @@ client.onMessageArrived = (message) => {
         if (topic === "moto/battery") liveState.bat = Math.round(parseFloat(payload));
         if (topic === "moto/gps/latitude") liveState.lat = parseFloat(payload);
         if (topic === "moto/gps/longitude") liveState.lon = parseFloat(payload);
+        if (topic === "moto/fcw") {
+            const fcwData = JSON.parse(payload);
+            
+            //Atualiza os valores
+            document.getElementById("fcw-dist").innerText = fcwData.dist.toFixed(2);
+            document.getElementById("fcw-ttc").innerText = fcwData.ttc < 99 ? fcwData.ttc.toFixed(1) : "--";
+
+            //Atualiza a cor do card com base na gravidade
+            const fcwCard = document.querySelector('.fcw-card');
+            fcwCard.className = `sensor-card fcw-card ${fcwData.type.toLowerCase()}`;
+        }
 
         if (topic === "moto/alarm") {
             const alertType = payload.trim().toUpperCase();
+            
             let msg = "Evento registado.";
             if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
             if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
             if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
             if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
             logEvent(alertType, msg);
+
+            if (alertType === "RAIN") {
+                document.getElementById("rain-icon").classList.remove("inactive");
+                document.getElementById("rain-icon").classList.add("active");
+                document.getElementById("rain-text").innerText = "A Chover";
+
+                clearTimeout(rainResetTimer);
+                rainResetTimer = setTimeout(() => {
+                    document.getElementById("rain-icon").classList.remove("active");
+                    document.getElementById("rain-icon").classList.add("inactive");
+                    document.getElementById("rain-text").innerText = "Seco";
+                }, 35000); 
+            }
         }
         
         if (currentMode === 'history') return; 
@@ -193,6 +220,7 @@ client.connect({
         client.subscribe("moto/speed");
         client.subscribe("moto/battery");
         client.subscribe("moto/alarm");
+        client.subscribe("moto/fcw");
     },
     onFailure: () => {
         const status = document.getElementById("conn-status");

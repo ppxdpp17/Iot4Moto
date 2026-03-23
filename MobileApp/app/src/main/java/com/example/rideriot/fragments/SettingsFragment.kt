@@ -58,7 +58,7 @@ class SettingsFragment : Fragment() {
                 val currentLength = s?.length ?: 0
                 tvCharCounter.text = "$currentLength/40"
 
-                // Opcional: Muda a cor para vermelho se chegar ao limite
+                //Muda a cor para vermelho se chegar ao limite
                 if (currentLength >= 40) {
                     tvCharCounter.setTextColor(android.graphics.Color.RED)
                 } else {
