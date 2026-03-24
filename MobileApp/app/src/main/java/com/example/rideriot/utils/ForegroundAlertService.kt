@@ -97,6 +97,9 @@ class ForegroundAlertService : Service() {
     }
 
     private fun showEmergencyNotification(title: String, message: String, alertType: String) {
+
+        val notificationId = if (alertType == "RAIN") 9999 else System.currentTimeMillis().toInt()
+
         val channelId = when (alertType) {
             "FCW", "COLLISION_WARNING", "FALL", "THEFT" -> "rideriot_safety_channel"
             else -> "rideriot_env_channel"
@@ -128,7 +131,7 @@ class ForegroundAlertService : Service() {
             .build()
 
         val manager = getSystemService(android.app.NotificationManager::class.java)
-        manager?.notify(alertType.hashCode(), notification)
+        manager?.notify(notificationId, notification)
     }
 
     private fun setupMqttSentinel() {
@@ -148,44 +151,53 @@ class ForegroundAlertService : Service() {
                 "moto/alarm" -> {
                     val alertType = payload.trim().uppercase()
 
-                    // 1. Aceder ao ficheiro de definições
-                    val prefs = getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
-
-                    // 2. Verificar se o alerta específico está ATIVO
-                    val isEnabled = when (alertType) {
-                        "FALL"  -> prefs.getBoolean("alert_fall", true)
-                        "THEFT" -> prefs.getBoolean("alert_theft", true)
-                        "RAIN"  -> prefs.getBoolean("alert_rain", true)
-                        "FCW"   -> prefs.getBoolean("alert_fcw", true)
-                        else    -> true
-                    }
-
-                    // 3. Executa a lógica APENAS se estiver ativado
-                    if (isEnabled) {
-                        if (alertType == "FALL") {
-                            val coordenadasGPS = "$lastLat,$lastLon"
-                            try {
-                                val smsHelper = SmsHelper(this@ForegroundAlertService)
-                                smsHelper.triggerEmergencySms(coordenadasGPS)
-                            } catch (e: Exception) {
-                                Log.e("SENTINEL", "Erro SMS: ${e.message}")
-                            }
-                        }
-
-                        val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                        val (titulo, descricao) = when (alertType) {
-                            "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
-                            "FALL"  -> "Queda Detetada!" to "SOS ativado. Coordenadas enviadas."
-                            "RAIN"  -> "Alerta de Chuva!" to "A mota está à chuva."
-                            "FCW"   -> "Aviso FCW!" to "Risco de colisão frontal."
-                            else    -> "Informação" to "Evento: $alertType"
-                        }
-
-                        val newAlert = Alert(titulo, descricao, currentTime, alertType)
-                        AlertManager.addAlert(newAlert)
-                        showEmergencyNotification(titulo, descricao, alertType)
+                    if (alertType == "RAIN_CLEARED") {
+                        //Mata a notificação da chuva
+                        val manager = getSystemService(NotificationManager::class.java)
+                        manager?.cancel(9999)
+                        Log.d("SENTINEL", "Chuva parou. Alerta removido.")
                     } else {
-                        Log.d("SENTINEL", "Alerta $alertType ignorado (OFF nas definições)")
+                        // 1. Aceder ao ficheiro de definições
+                        val prefs = getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
+
+                        // 2. Verificar se o alerta específico está ATIVO
+                        val isEnabled = when (alertType) {
+                            "FALL"  -> prefs.getBoolean("alert_fall", true)
+                            "THEFT" -> prefs.getBoolean("alert_theft", true)
+                            "RAIN"  -> prefs.getBoolean("alert_rain", true)
+                            "FCW"   -> prefs.getBoolean("alert_fcw", true)
+                            else    -> true
+                        }
+
+                        // 3. Executa a lógica APENAS se estiver ativado
+                        if (isEnabled) {
+                            if (alertType == "FALL") {
+                                val coordenadasGPS = "$lastLat,$lastLon"
+                                try {
+                                    val smsHelper = SmsHelper(this@ForegroundAlertService)
+                                    smsHelper.triggerEmergencySms(coordenadasGPS)
+                                } catch (e: Exception) {
+                                    Log.e("SENTINEL", "Erro SMS: ${e.message}")
+                                }
+                            }
+
+                            val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                            val (titulo, descricao) = when (alertType) {
+                                "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
+                                "FALL"  -> "Queda Detetada!" to "SOS ativado. Coordenadas enviadas."
+                                "RAIN"  -> "Alerta de Chuva!" to "A mota está à chuva."
+                                "FCW"   -> "Aviso FCW!" to "Risco de colisão frontal."
+                                else    -> "Informação" to "Evento: $alertType"
+                            }
+
+                            val newAlert = Alert(titulo, descricao, currentTime, alertType)
+                            AlertManager.addAlert(newAlert)
+
+                            // Na função showEmergencyNotification não te esqueças de usar o ID 9999 para a chuva
+                            showEmergencyNotification(titulo, descricao, alertType)
+                        } else {
+                            Log.d("SENTINEL", "Alerta $alertType ignorado (OFF nas definições)")
+                        }
                     }
                 }
             }

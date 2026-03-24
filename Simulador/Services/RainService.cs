@@ -12,6 +12,7 @@ namespace Simulador.Services
         private const int RAIN_PIN = 17; 
         private readonly CanService _canService;
         private GpioController _gpio;
+        private bool _isRaining = false;
 
         public RainService(CanService canService)
         {
@@ -24,23 +25,30 @@ namespace Simulador.Services
         {
             while (!token.IsCancellationRequested)
             {
-                //Só verifica se a mota estiver desligada
+                if (!SimulationState.IsRainEnabled) { 
+                    await Task.Delay(1000, token); 
+                    continue; 
+                }
+
                 if (!SimulationState.IsMotorcycleOn)
                 {
-                    //Se o sensor detetar água suficiente para passar os ~1.8V
-                    if (_gpio.Read(RAIN_PIN) == PinValue.High) 
-                    {
-                        //Program.WriteMessage("\n[SENTINELA] Humidade detetada na mota!");
-                        
-                        //Envia para o barramento CAN (ID 0x401)
-                        _canService.EnviarDadosSimulados(0x401, new byte[] { 0x01 });
+                    var isWet = _gpio.Read(RAIN_PIN) == PinValue.High;
 
-                        //Cooldown de 20 segundos para não encher o smartphone de notificações
-                        await Task.Delay(20000, token); 
+                    if (isWet && !_isRaining) 
+                    {
+                        _isRaining = true;
+                        _canService.EnviarDadosSimulados(0x401, new byte[] { 0x01 });
+                    }
+                    else if (!isWet && _isRaining)
+                    {
+                        _isRaining = false;
+                        //Envia 0x00 para sinalizar que o perigo passou
+                        _canService.EnviarDadosSimulados(0x401, new byte[] { 0x00 }); 
                     }
                 }
-                await Task.Delay(500, token);
+                
+                //Intervalo de 1 minuto
+                await Task.Delay(60000, token); 
             }
-        }
     }
 }

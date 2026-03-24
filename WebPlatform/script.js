@@ -176,13 +176,9 @@ client.onMessageArrived = (message) => {
                 document.getElementById("rain-icon").classList.remove("inactive");
                 document.getElementById("rain-icon").classList.add("active");
                 document.getElementById("rain-text").innerText = "A Chover";
-
-                clearTimeout(rainResetTimer);
-                rainResetTimer = setTimeout(() => {
-                    document.getElementById("rain-icon").classList.remove("active");
-                    document.getElementById("rain-icon").classList.add("inactive");
+            } else if (alertType === "RAIN_CLEARED") {
+                    document.getElementById("rain-icon").classList.replace("active", "inactive");
                     document.getElementById("rain-text").innerText = "Seco";
-                }, 35000); 
             }
         }
         

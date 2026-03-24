@@ -161,9 +161,13 @@ void* can_reader(void* arg) {
             }
         }
         else if (id == 0x401) {
+            //Se ainda deteta chuva
             if (frame.data[0] == 0x01) {
-                //std::cout << "[CSVU] Chuva detetada via CAN. A avisar proprietário..." << std::endl;
                 client->publish("moto/alarm", "RAIN");
+            } 
+            //Se parou de detetar chuva
+            else if (frame.data[0] == 0x00) {
+                client->publish("moto/alarm", "RAIN_CLEARED");
             }
         }
     }
