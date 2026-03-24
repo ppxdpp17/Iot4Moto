@@ -13,6 +13,8 @@ namespace Simulador.Services
         private readonly MqttService _mqttService;
         private readonly CanService _canService;
         private I2cDevice? _i2cDevice;
+        private bool _isSensorInitialized = false;
+        private DateTime _lastImpactTime = DateTime.MinValue;
 
         public ImuService(MqttService mqttService, CanService canService)
         {
@@ -22,89 +24,110 @@ namespace Simulador.Services
 
         public async Task StartAsync(CancellationToken token)
         {
-            try
+            double roll = 0;
+            const double alpha = 0.98;
+            const double dt = 0.01;
+
+            while (!token.IsCancellationRequested)
             {
-                var settings = new I2cConnectionSettings(1, MPU6050_ADDR);
-                _i2cDevice = I2cDevice.Create(settings);
-
-                //Acordar o sensor
-                _i2cDevice.Write(new byte[] { 0x6B, 0x00 });
-
-                double roll = 0;
-                const double alpha = 0.98;
-                const double dt = 0.01;
-
-                while (!token.IsCancellationRequested)
+                try
                 {
+                    // Tenta ligar e acordar o sensor se ainda não o fez
+                    if (!_isSensorInitialized)
+                    {
+                        var settings = new I2cConnectionSettings(1, MPU6050_ADDR);
+                        _i2cDevice = I2cDevice.Create(settings);
+                        _i2cDevice.Write(new byte[] { 0x6B, 0x00 }); // Acorda o sensor
+                        _isSensorInitialized = true;
+                        Program.WriteMessage("[IMU] Sensor ligado e ativo.");
+                    }
+
+                    // A partir daqui tenta ler
                     byte[] writeBuf = { 0x3B };
                     byte[] readBuf = new byte[14];
-                    _i2cDevice.WriteRead(writeBuf, readBuf);
+                    _i2cDevice!.WriteRead(writeBuf, readBuf);
 
                     short ax = (short)((readBuf[0] << 8) | readBuf[1]);
                     short ay = (short)((readBuf[2] << 8) | readBuf[3]);
                     short az = (short)((readBuf[4] << 8) | readBuf[5]);
                     short gx = (short)((readBuf[8] << 8) | readBuf[9]);
 
-                    //Calcular Orientação (Roll)
+                    // Calcular Orientação (Roll)
                     double accRoll = Math.Atan2(ay, az) * 180 / Math.PI;
                     double gyroRollRate = gx / 131.0;
                     roll = alpha * (roll + gyroRollRate * dt) + (1.0 - alpha) * accRoll;
                     SimulationState.Roll = roll;
 
-                    //Calcular Força G (Sum Vector Magnitude)
+                    // Calcular Força G (Sum Vector Magnitude)
                     double ax_g = ax / 16384.0;
                     double ay_g = ay / 16384.0;
                     double az_g = az / 16384.0;
                     double svm = Math.Sqrt(ax_g * ax_g + ay_g * ay_g + az_g * az_g);
 
-                    //Enviar Roll pelo CAN
+                    // Enviar Roll pelo CAN
                     int rollInt = (int)(roll * 100);
                     byte[] canData = new byte[2];
                     canData[0] = (byte)(rollInt & 0xFF);
                     canData[1] = (byte)((rollInt >> 8) & 0xFF);
                     _canService.EnviarDadosSimulados(0x300, canData);
 
-                    //Máquina de Estados (Mota Ligada vs Desligada)
+                    // Máquina de Estados (Mota Ligada vs Desligada)
                     if (SimulationState.IsMotorcycleOn)
                     {
-                        //Queda (Ex: SVM > 2.5G)
-                        if (svm > 2.5 && !SimulationState.FallDetected)
+                        // 1. Regista o momento do impacto (> 2.5G)
+                        if (svm > 2.5) 
+                        {
+                            _lastImpactTime = DateTime.UtcNow;
+                        }
+
+                        // 2. Confirma a queda: Teve um impacto nos últimos 3 segundos E inclinou mais de 60 graus?
+                        bool recentImpact = (DateTime.UtcNow - _lastImpactTime).TotalSeconds < 3;
+                        bool isTippedOver = Math.Abs(roll) > 60; // Ajusta os 60 graus se achares pouco
+
+                        if (recentImpact && isTippedOver && !SimulationState.FallDetected)
                         {
                             SimulationState.FallDetected = true;
                             await _mqttService.PublishAsync("moto/alarm", "FALL");
-                            Program.WriteMessage("\n!!! ALERTA: Queda Detetada !!!");
 
-                            //Cooldown não bloqueante
                             _ = Task.Run(async () => {
-                                await Task.Delay(5000);
+                                await Task.Delay(10000); // Dá mais tempo antes de resetar (10s)
                                 SimulationState.FallDetected = false;
                             });
                         }
                     }
                     else
                     {
-                        //Anti-Furto (Ex: SVM > 1.2G quando desligada)
-                        if (svm > 1.2 && !SimulationState.TheftAlarmActive)
+                        // Anti-Furto (Aumentado para 1.6G. Abaixo disso ignora vibrações pequenas)
+                        if (svm > 1.6 && !SimulationState.TheftAlarmActive)
                         {
                             SimulationState.TheftAlarmActive = true;
                             await _mqttService.PublishAsync("moto/alarm", "THEFT");
-                            Program.WriteMessage("\n!!! ALERTA: Tentativa de Furto !!!");
 
-                            //Cooldown não bloqueante
                             _ = Task.Run(async () => {
                                 await Task.Delay(5000);
                                 SimulationState.TheftAlarmActive = false;
                             });
                         }
-                        
                     }
 
-                    await Task.Delay(10, token); //Loop de 10ms (100Hz)
+                    await Task.Delay(10, token); // Loop de 10ms (100Hz) normal
                 }
-            }
-            catch (Exception ex)
-            {
-                Program.WriteMessage($"[IMU] Erro I2C: {ex.Message}");
+                catch (System.IO.IOException)
+                {
+                    // Se falhar o I2C (ex: hardware não está lá)
+                    if (_isSensorInitialized)
+                    {
+                        _isSensorInitialized = false; // Força re-inicialização no futuro
+                    }
+                    
+                    // Espera 10 segundos antes de tentar de novo, para não entupir o CPU do Raspberry
+                    await Task.Delay(10000, token);
+                }
+                catch (Exception ex)
+                {
+                    Program.WriteMessage($"[IMU] Erro inesperado: {ex.Message}");
+                    await Task.Delay(5000, token);
+                }
             }
         }
     }
