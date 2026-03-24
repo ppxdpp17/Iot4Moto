@@ -25,11 +25,7 @@ namespace Simulador.Services
         {
             while (!token.IsCancellationRequested)
             {
-                if (!SimulationState.IsRainEnabled) { 
-                    await Task.Delay(1000, token); 
-                    continue; 
-                }
-
+                //A mota só avalia a chuva se estiver estacionada
                 if (!SimulationState.IsMotorcycleOn)
                 {
                     var isWet = _gpio.Read(RAIN_PIN) == PinValue.High;
@@ -37,18 +33,22 @@ namespace Simulador.Services
                     if (isWet && !_isRaining) 
                     {
                         _isRaining = true;
+                        //Program.WriteMessage("\n[SENTINELA] Chuva detetada!");
                         _canService.EnviarDadosSimulados(0x401, new byte[] { 0x01 });
                     }
                     else if (!isWet && _isRaining)
                     {
                         _isRaining = false;
+                        //Program.WriteMessage("\n[SENTINELA] Sensor seco. Alerta desativado.");
                         //Envia 0x00 para sinalizar que o perigo passou
                         _canService.EnviarDadosSimulados(0x401, new byte[] { 0x00 }); 
                     }
                 }
                 
-                //Intervalo de 1 minuto
-                await Task.Delay(60000, token); 
+                //Intervalo rápido de 2 segundos. 
+                //A máquina de estados (variável _isRaining) garante que não há spam na rede.
+                await Task.Delay(2000, token); 
             }
+        }
     }
 }
