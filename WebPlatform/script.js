@@ -165,20 +165,27 @@ client.onMessageArrived = (message) => {
         if (topic === "moto/alarm") {
             const alertType = payload.trim().toUpperCase();
             
+            //Trata da limpeza e sai imediatamente
+            if (alertType === "RAIN_CLEARED") {
+                document.getElementById("rain-icon").classList.replace("active", "inactive");
+                document.getElementById("rain-text").innerText = "Seco";
+                return; // O código morre aqui. Não há logs para ninguém.
+            }
+
+            //chega aqui se for um alerta real
             let msg = "Evento registado.";
             if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
             if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
             if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
             if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
+            
             logEvent(alertType, msg);
 
+            //Pinta o ícone da chuva, se for o caso
             if (alertType === "RAIN") {
                 document.getElementById("rain-icon").classList.remove("inactive");
                 document.getElementById("rain-icon").classList.add("active");
                 document.getElementById("rain-text").innerText = "A Chover";
-            } else if (alertType === "RAIN_CLEARED") {
-                    document.getElementById("rain-icon").classList.replace("active", "inactive");
-                    document.getElementById("rain-text").innerText = "Seco";
             }
         }
         

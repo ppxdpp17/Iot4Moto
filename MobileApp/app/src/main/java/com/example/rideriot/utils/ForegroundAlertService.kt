@@ -151,16 +151,20 @@ class ForegroundAlertService : Service() {
                 "moto/alarm" -> {
                     val alertType = payload.trim().uppercase()
 
+                    // 1. ISOLAMENTO TOTAL DA LIMPEZA
                     if (alertType == "RAIN_CLEARED") {
-                        //Mata a notificação da chuva
                         val manager = getSystemService(NotificationManager::class.java)
                         manager?.cancel(9999)
-                        Log.d("SENTINEL", "Chuva parou. Alerta removido.")
-                    } else {
-                        // 1. Aceder ao ficheiro de definições
+
+                        // Atualiza o histórico
+                        AlertManager.resolveLastAlertOfType("RAIN")
+
+                        Log.d("SENTINEL", "Chuva parou. Alerta resolvido no histórico.")
+                    }
+                    // 2. PROCESSAMENTO DE ALERTAS REAIS
+                    else {
                         val prefs = getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
 
-                        // 2. Verificar se o alerta específico está ATIVO
                         val isEnabled = when (alertType) {
                             "FALL"  -> prefs.getBoolean("alert_fall", true)
                             "THEFT" -> prefs.getBoolean("alert_theft", true)
@@ -169,7 +173,6 @@ class ForegroundAlertService : Service() {
                             else    -> true
                         }
 
-                        // 3. Executa a lógica APENAS se estiver ativado
                         if (isEnabled) {
                             if (alertType == "FALL") {
                                 val coordenadasGPS = "$lastLat,$lastLon"
@@ -177,7 +180,7 @@ class ForegroundAlertService : Service() {
                                     val smsHelper = SmsHelper(this@ForegroundAlertService)
                                     smsHelper.triggerEmergencySms(coordenadasGPS)
                                 } catch (e: Exception) {
-                                    Log.e("SENTINEL", "Erro SMS: ${e.message}")
+                                    Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
                                 }
                             }
 
@@ -190,10 +193,9 @@ class ForegroundAlertService : Service() {
                                 else    -> "Informação" to "Evento: $alertType"
                             }
 
+                            // Grava no histórico e lança notificação
                             val newAlert = Alert(titulo, descricao, currentTime, alertType)
                             AlertManager.addAlert(newAlert)
-
-                            // Na função showEmergencyNotification não te esqueças de usar o ID 9999 para a chuva
                             showEmergencyNotification(titulo, descricao, alertType)
                         } else {
                             Log.d("SENTINEL", "Alerta $alertType ignorado (OFF nas definições)")
@@ -208,6 +210,7 @@ class ForegroundAlertService : Service() {
             mqttManager.subscribe("moto/gps")
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
