@@ -78,6 +78,8 @@ function switchMode(mode) {
     const historyMsg = document.getElementById('history-msg');
     const alertsTitle = document.getElementById('alerts-title');
     const headerStatus = document.querySelector('.header-status'); 
+    const fcwCard = document.querySelector('.fcw-card');
+    const rainCard = document.querySelector('.rain-card');
 
     if (mode === 'history') {
         liveCamWrapper.style.display = 'none';
@@ -86,6 +88,8 @@ function switchMode(mode) {
         alertsList.style.display = 'none';
         historyMsg.style.display = 'block';
         alertsTitle.innerText = "Histórico de Rota";
+        if (fcwCard) fcwCard.style.display = 'none';
+        if (rainCard) rainCard.style.display = 'none';
         
         fetchRoutes();
     } else {
@@ -94,6 +98,8 @@ function switchMode(mode) {
         headerStatus.style.display = 'flex'; 
         document.getElementById('route-video').pause();
         if(vPlaying) toggleVirtualPlay();
+        if (fcwCard) fcwCard.style.display = 'block'; 
+        if (rainCard) rainCard.style.display = 'block';
         
         alertsList.style.display = 'block';
         historyMsg.style.display = 'none';
@@ -162,7 +168,7 @@ client.onMessageArrived = (message) => {
             const obstacleBar = document.getElementById("radar-obstacle");
             
             // Limites lógicos
-            const maxDist = 10; // O radar "vê" até 10 metros
+            const maxDist = 4.0; 
             const safeDist = Math.min(dist, maxDist);
             
             // Matemática:
@@ -172,9 +178,9 @@ client.onMessageArrived = (message) => {
             obstacleBar.style.right = `${rightPosition}px`;
 
             // Lógica das Cores
-            if (dist > 5) {
+            if (dist > 3.80) {
                 obstacleBar.style.backgroundColor = "#00ff00"; // Verde
-            } else if (dist > 2) {
+            } else if (dist > 1.50) {
                 obstacleBar.style.backgroundColor = "#ffa500"; // Laranja
             } else {
                 obstacleBar.style.backgroundColor = "#ff0000"; // Vermelho
