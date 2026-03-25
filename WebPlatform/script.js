@@ -166,9 +166,9 @@ client.onMessageArrived = (message) => {
             const safeDist = Math.min(dist, maxDist);
             
             // Matemática:
-            // Aos 10m -> right: 0px (Colado à direita do container)
-            // Aos 0m  -> right: 135px (Bate de frente na mota que ocupa a esquerda)
-            const rightPosition = 135 - ((safeDist / maxDist) * 135);
+            // Aos 10m -> right: 0px
+            // Aos 0m  -> right: 100px (Bate de frente na mota)
+            const rightPosition = 100 - ((safeDist / maxDist) * 100);
             obstacleBar.style.right = `${rightPosition}px`;
 
             // Lógica das Cores
