@@ -118,6 +118,51 @@ body {
     opacity: 1;
 }
 
+/*Secção do FCW*/
+.radar-container {
+    position: relative;
+    width: 250px; /* Espaço total */
+    height: 124px; /* A altura da tua imagem */
+    margin: 10px auto;
+    background-color: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.radar-moto {
+    position: absolute;
+    left: 5px; /* Encostada à esquerda */
+    top: 0;
+    width: 100px;
+    height: 124px;
+    z-index: 2;
+}
+
+#radar-obstacle {
+    position: absolute;
+    top: 12px; /* Margem superior para não colar aos limites */
+    right: 0; /* Nasce na direita */
+    width: 15px; /* Espessura do obstáculo */
+    height: 100px;
+    background-color: #00ff00;
+    border-radius: 3px;
+    transition: right 0.2s ease, background-color 0.3s ease;
+    z-index: 1;
+}
+
+.radar-stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Separa Dist e TTC */
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+.ttc-highlight {
+    font-weight: bold;
+}
+
 
 /*Secção da câmara/vídeo*/
 .top-right-panel {

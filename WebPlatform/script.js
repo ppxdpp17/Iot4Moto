@@ -152,14 +152,33 @@ client.onMessageArrived = (message) => {
         if (topic === "moto/gps/longitude") liveState.lon = parseFloat(payload);
         if (topic === "moto/fcw") {
             const fcwData = JSON.parse(payload);
+            const dist = fcwData.dist;
+            const ttc = fcwData.ttc;
             
-            //Atualiza os valores
-            document.getElementById("fcw-dist").innerText = fcwData.dist.toFixed(2);
-            document.getElementById("fcw-ttc").innerText = fcwData.ttc < 99 ? fcwData.ttc.toFixed(1) : "--";
+            // Atualiza os textos
+            document.getElementById("fcw-dist").innerText = dist.toFixed(2);
+            document.getElementById("fcw-ttc").innerText = ttc < 99 ? ttc.toFixed(1) : "--";
 
-            //Atualiza a cor do card com base na gravidade
-            const fcwCard = document.querySelector('.fcw-card');
-            fcwCard.className = `sensor-card fcw-card ${fcwData.type.toLowerCase()}`;
+            const obstacleBar = document.getElementById("radar-obstacle");
+            
+            // Limites lógicos
+            const maxDist = 10; // O radar "vê" até 10 metros
+            const safeDist = Math.min(dist, maxDist);
+            
+            // Matemática:
+            // Aos 10m -> right: 0px (Colado à direita do container)
+            // Aos 0m  -> right: 135px (Bate de frente na mota que ocupa a esquerda)
+            const rightPosition = 135 - ((safeDist / maxDist) * 135);
+            obstacleBar.style.right = `${rightPosition}px`;
+
+            // Lógica das Cores
+            if (dist > 5) {
+                obstacleBar.style.backgroundColor = "#00ff00"; // Verde
+            } else if (dist > 2) {
+                obstacleBar.style.backgroundColor = "#ffa500"; // Laranja
+            } else {
+                obstacleBar.style.backgroundColor = "#ff0000"; // Vermelho
+            }
         }
 
         if (topic === "moto/alarm") {

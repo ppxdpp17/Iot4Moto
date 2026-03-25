@@ -105,7 +105,7 @@ namespace Simulador.Services
 
             double vel = 0.0;
             double ttc = 999.0;
-            string type = "INFO"; // Por defeito, é apenas informação (para a Web)
+            string type = "INFO"; //Por defeito, é apenas informação (para a Web)
 
             if (_history.Count >= 3)
             {
