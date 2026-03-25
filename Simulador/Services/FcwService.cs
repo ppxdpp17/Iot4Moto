@@ -43,23 +43,13 @@ namespace Simulador.Services
                 _gpio.OpenPin(ECHO_PIN, PinMode.Input);
                 _gpio.Write(TRIG_PIN, PinValue.Low);
 
-                //Program.WriteMessage("[FCW] Serviço Ultrassom Iniciado.");
-
                 while (!token.IsCancellationRequested)
                 {
                     if (SimulationState.IsMotorcycleOn)
                     {
-                        //Se a velocidade for 15 km/h ou menos, ignora e limpa o histórico
-                        if (SimulationState.Speed <= 15)
-                        {
-                            _history.Clear();
-                            await Task.Delay(100, token);
-                            continue;
-                        }
-
                         double dist = MeasureDistance();
 
-                        if (dist > 0 && dist < 4.0) 
+                        if (dist > 0 && dist < 4) 
                         {
                             ProcessFcwLogic(dist);
                         }
@@ -69,7 +59,7 @@ namespace Simulador.Services
                         }
                     }
 
-                    await Task.Delay(100, token); //Loop a 10Hz (100ms)
+                    await Task.Delay(100, token); // Loop a 10Hz (100ms)
                 }
             }
             catch (Exception ex)
@@ -115,7 +105,7 @@ namespace Simulador.Services
 
             double vel = 0.0;
             double ttc = 999.0;
-            string type = "INFO";
+            string type = "INFO"; // Por defeito, é apenas informação (para a Web)
 
             if (_history.Count >= 3)
             {
@@ -125,7 +115,6 @@ namespace Simulador.Services
 
                 if (dt > 0)
                 {
-                    //Velocidade de aproximação (m/s)
                     vel = (oldest.Item2 - newest.Item2) / dt;
 
                     if (vel > 0.1) 
@@ -135,15 +124,20 @@ namespace Simulador.Services
                 }
             }
 
-            if (ttc < 1.0)
+            //Só gera alarmes se a mota estiver a 30 km/h ou mais
+            if (SimulationState.Speed >= 30)
             {
-                type = "CRITICAL";
-            }
-            else if (ttc < 2.5)
-            {
-                type = "WARNING";
+                if (ttc < 1.0)
+                {
+                    type = "CRITICAL";
+                }
+                else if (ttc < 2.5)
+                {
+                    type = "WARNING";
+                }
             }
 
+            //Envia sempre os dados para o CAN (e consequentemente para a Web)
             _canService.EnviarFcw(currentDistance, ttc, type);
         }
 
