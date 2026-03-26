@@ -87,6 +87,26 @@ namespace Simulador
 
             var mqttService = new MqttService(host, port, "Simulator"); // board broker
 
+
+
+
+
+            //ENVIO IP/5G
+            //O broker local
+            var localMqtt = new MqttService("localhost", 1883, "SimulatorLocal"); 
+
+            //O broker da Cloud (HiveMQ, Ngrok, VPS)
+            var cloudMqtt = new MqttService("broker.hivemq.com", 1883, "Moto_AJP_12345"); //IP/URL real aqui
+            await cloudMqtt.ConnectAsync();
+
+            //Iniciar o serviço de sincronização
+            var cloudSync = new CloudSyncService(cloudMqtt, "AJP1RB5SXLB123456");
+            _ = Task.Run(() => cloudSync.StartAsync(_cancellationTokenSource.Token));
+
+
+
+
+
             // Initialize services
             var canService = new CAN.CanService(mqttService);
 

@@ -136,15 +136,15 @@
           }
         }
       },
-      "MQTTnet/4.3.7.1207": {
+      "MQTTnet/5.1.0.1559": {
         "type": "package",
         "compile": {
-          "lib/net7.0/MQTTnet.dll": {
+          "lib/net8.0/MQTTnet.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net7.0/MQTTnet.dll": {
+          "lib/net8.0/MQTTnet.dll": {
             "related": ".xml"
           }
         }
@@ -1702,37 +1702,19 @@
         "ref/xamarinwatchos10/_._"
       ]
     },
-    "MQTTnet/4.3.7.1207": {
-      "sha512": "ah7aHXoedWp5m5a4zy2u4phOEVj0QFYzOb5tFKQeV8RRBrxp+1QREF4ymZuG8D+hzB2dhtrrG81WxTFv0PzOeQ==",
+    "MQTTnet/5.1.0.1559": {
+      "sha512": "9mkk0H+76CToIzp9ru5Uj5BuC3P5hQdkhvXM+CLmmTDdZWqajjICCHuUMbDd1yVBt9BWL77Rvzt0A+/PA4WMCA==",
       "type": "package",
-      "path": "mqttnet/4.3.7.1207",
+      "path": "mqttnet/5.1.0.1559",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "lib/net452/MQTTnet.dll",
-        "lib/net452/MQTTnet.xml",
-        "lib/net461/MQTTnet.dll",
-        "lib/net461/MQTTnet.xml",
-        "lib/net48/MQTTnet.dll",
-        "lib/net48/MQTTnet.xml",
-        "lib/net5.0/MQTTnet.dll",
-        "lib/net5.0/MQTTnet.xml",
-        "lib/net6.0/MQTTnet.dll",
-        "lib/net6.0/MQTTnet.xml",
-        "lib/net7.0/MQTTnet.dll",
-        "lib/net7.0/MQTTnet.xml",
-        "lib/netcoreapp3.1/MQTTnet.dll",
-        "lib/netcoreapp3.1/MQTTnet.xml",
-        "lib/netstandard1.3/MQTTnet.dll",
-        "lib/netstandard1.3/MQTTnet.xml",
-        "lib/netstandard2.0/MQTTnet.dll",
-        "lib/netstandard2.0/MQTTnet.xml",
-        "lib/netstandard2.1/MQTTnet.dll",
-        "lib/netstandard2.1/MQTTnet.xml",
-        "lib/uap10.0.10240/MQTTnet.dll",
-        "lib/uap10.0.10240/MQTTnet.pri",
-        "lib/uap10.0.10240/MQTTnet.xml",
-        "mqttnet.4.3.7.1207.nupkg.sha512",
+        "LICENSE",
+        "lib/net10.0/MQTTnet.dll",
+        "lib/net10.0/MQTTnet.xml",
+        "lib/net8.0/MQTTnet.dll",
+        "lib/net8.0/MQTTnet.xml",
+        "mqttnet.5.1.0.1559.nupkg.sha512",
         "mqttnet.nuspec",
         "nuget.png"
       ]
@@ -4990,7 +4972,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "DotNetEnv >= 3.*",
-      "MQTTnet >= 4.3.7.1207",
+      "MQTTnet >= 5.1.0.1559",
       "Npgsql >= 9.0.3",
       "System.Device.Gpio >= 4.1.0"
     ]
@@ -5001,14 +4983,14 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\MqttConsoleClient.csproj",
+      "projectUniqueName": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\MqttConsoleClient.csproj",
       "projectName": "MqttConsoleClient",
-      "projectPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\MqttConsoleClient.csproj",
+      "projectPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\MqttConsoleClient.csproj",
       "packagesPath": "C:\\Users\\Pedro\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\obj\\",
+      "outputPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\NuGet.Config",
+        "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\NuGet.Config",
         "C:\\Users\\Pedro\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
@@ -5045,7 +5027,7 @@
           },
           "MQTTnet": {
             "target": "Package",
-            "version": "[4.3.7.1207, )"
+            "version": "[5.1.0.1559, )"
           },
           "Npgsql": {
             "target": "Package",
