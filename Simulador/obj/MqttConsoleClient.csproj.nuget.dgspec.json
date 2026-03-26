@@ -14,7 +14,6 @@
         "outputPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\NuGet.Config",
           "C:\\Users\\Pedro\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
@@ -51,7 +50,7 @@
             },
             "MQTTnet": {
               "target": "Package",
-              "version": "[5.1.0.1559, )"
+              "version": "[4.3.3.120, )"
             },
             "Npgsql": {
               "target": "Package",

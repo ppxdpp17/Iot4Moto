@@ -1,0 +1,195 @@
+[33m60352ed[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Inicio de implementação de envio para servidor
+[33m6a19469[m Correção de sistemas no past routes
+[33m63d487d[m Correções de tamanho e de coisas da plataforma web
+[33m7184da9[m Mudanças na plataforma web para novo sistema de FCW
+[33m676aa44[m Correções no sistema de FCW
+[33md2b1c75[m Correção de erros e adição de 'rodar graus' a sistema de deteção de queda e menor sensibilidade ao furto
+[33me5b972d[m Correção de aviso de chuva para a app do user
+[33m9baacab[m Correção de bugs
+[33m826bf13[m Implementação de cancelamento de alerta de chuva
+[33m9415df2[m Adição de features de chuva + distância + ttc à plataforma web
+[33m3efae43[m Correções em sliders de notifs e adição de limitação de carateres nas msg
+[33m584b732[m Correções nas notifs da app
+[33mb43fb08[m Correções no sistema de aviso de chuva
+[33m2cac722[m Adição de sistema de aviso de chuva
+[33m9c1bda8[m Limpeza de código 3
+[33mb3ce608[m Limpeza de código 2
+[33mda6fcba[m Limpeza de código
+[33mb87b4d8[m Adição de notificações para o smartwatch (hápticos)
+[33m9c55c21[m Adição de features de sistema fcw ao telemóvel e à plataforma web + correção de bugs
+[33m6bc188d[m Correções no serviço de FCW
+[33mfbbcebb[m Início da implementação de sistema FCW
+[33ma61db91[m Limpeza de código
+[33m2161f75[m Updates de UI da app
+[33m4a0db48[m Correções de UI, adição de animações/transições
+[33me530fd6[m Adição de animação inicial
+[33md48d75d[m Mudanças de UI, adição de tirar foto, e notificações corretas
+[33mce3c5cb[m Correção de plataforma web para conseguir visualizar primeira rota (sem vídeo)
+[33mc20b463[m Correções na câmara
+[33m8a4467d[m Reorganização de código relacionado à plataforma web
+[33m90f3cb0[m Adição de feature de câmara à app móvel e à plataforma web
+[33m0cc9938[m Adição de script de câmara ao raspberry
+[33md2011ed[m Adição de notificações à app móvel
+[33m934a6d1[m Melhorias no UI da app
+[33mf6e71d9[m Melhoria de tela de alerts na app
+[33m6ba8d0d[m Melhorias na Plataforma Web
+[33m395598f[m Atualizações na plataforma web
+[33m5198a94[m Inicio de refactor de plataforma web
+[33m8f36862[m Remoção de pedido de Vin do simulador
+[33mea8def7[m Updates de UI e histórico de alertas
+[33m62273c4[m Atualização de app para mandar info de localização na queda
+[33m68af31d[m Mudança de tópicos mqtt para coordenadas ficar apenas num tópico
+[33m0be943f[m Adição de feature de GPS à app móvel
+[33mb8e14a1[m Mudanças de códigos relativos à transmissão de vídeo
+[33mc955840[m Reorganização de diretórios e implementação de script relativo à câmara
+[33m2034cfd[m Inicio de implementação do feed da câmara para a app + CSVU a enviar frames do vídeo
+[33mbb72f9e[m Implementação de ForegroundService
+[33m266edeb[m Implementação de envio de SMS na alerta de queda
+[33mbf01f60[m Inicio de settings
+[33mbd72351[m Correções de MQTT e tamanho de tela/mostrador
+[33m887e62f[m Inicio de implementação de alerts
+[33m3cab6e2[m Correção de cores again e atualização de simulador para ouvir app móvel
+[33m4c7cf34[m Correções no MQTT na app e nos nomes dos Fragments
+[33m28df300[m Inicio de app com novo UI
+[33m8506270[m Preparação de ícones
+[33m75b5b14[m Inicio de nova implementação da app móvel
+[33ma5e4800[m Inicio de serviço MQTT
+[33mb3a3c06[m Atualização de permissões no manifest
+[33m99c8afd[m Atualização de MainActivity
+[33mcb904bf[m Inicio de request de permissões
+[33me40726b[m Correções do código - app a correr
+[33md012713[m Inicio de código de app móvel
+[33m5fb5c88[m Inicio de app android
+[33m6c657e2[m Reorganização de diretórios e limpeza de projeto
+[33m2c246f1[m Correção de estado de motorcycle e outros
+[33m7e7c41e[m Correções na app e melhorias no UI da plataforma Web
+[33m35dddcb[m Mapa adicionado à plataforma web
+[33m76b1e29[m Sistema a enviar dados de GPS (estáticos, por enquanto)
+[33m61fa4d7[m Adição de projeto do FED
+[33m3001a7b[m Correção de alertas
+[33mbbb5ab9[m Correções de alertas e cooldowns
+[33mfff12b0[m Correção e adição de features à plataforma web
+[33ma92fa9a[m Correção de bugs, limpeza de código, e implementação de cooldowns de alertas
+[33m7866459[m Versão inicial de sistemas de queda e anti-furto semi-funcionais
+[33ma1d94dc[m Correções na plataforma web
+[33med119a9[m Correções de bugs e início de funcionamento total de integração entre simulador, CSVU, e FED
+[33m5f223ec[m Correção de portas
+[33ma198fe6[m Correções
+[33m7dd18a3[m Nova correção de heartbeats
+[33m1cda54a[m Implementação de heartbeats
+[33m5d3dc39[m Correções gerais
+[33m7f4f1fb[m Correções no broker
+[33m13050ea[m Correções no simulador
+[33m455e1d3[m Adição do início da plataforma web
+[33mee1fba1[m Implementação do módulo de segurança
+[33mcd76f93[m Reorganização de diretórios e script de envio de info de IMU
+[33mfd0f485[m Correções nos envios via CAN
+[33m10b464e[m Adição de ficheiro de broker
+[33m94dbba3[m Remoção de ficheiros antigos e adição de ínicio de 'Simulador'
+[33mb1a48bf[m Correções de Video
+[33m75fac59[m Outras alterações!
+[33md71cbe3[m Atualização de links para câmara
+[33m90ec7f5[m COrreção de portas e IPs
+[33m6336894[m Pequenas mudanças ao longo de todo o programa
+[33m48fc354[m Correções de countdown e inicio da utilização de Ngrok
+[33m764d0fd[m Correções no SVC_ACCIDENT
+[33m47de329[m Correção geral de service de acidente
+[33me3bc02a[m Debug para svm
+[33mb93ec0a[m Correção de IPs no FED
+[33mb3a9c38[m Mudança de IPs para resolevr bugs de networking
+[33ma93e293[m Correção de erro de não conseguir ir buscar a config em services
+[33m52f01bf[m UVMA terminada
+[33m8e0d2bc[m Config.py da UVMA pronto
+[33m43ed3ae[m Código de video_player de smartphone pronto
+[33m1045d8f[m Código do alert_messager da app móvel pronto
+[33md0a053e[m Script do LCM Server pronto
+[33m6f88ed6[m Ficheiro de configuração do LCM pronto
+[33m11ae391[m Ficheiro de main_dashboard pronto
+[33m5c32282[m Ficheiro de Config do FED pronto
+[33m6c8cd6e[m Config.py do CSVU feito
+[33m7324d71[m Config de vídeo pronta
+[33m3230109[m Lógica de FCW pronta
+[33me54d47b[m Lógica de anti-furto pronta
+[33mfc0d2cc[m Código do serviço de acidentes pronto
+[33md49e84e[m Código do HC-SR04 pronto
+[33mea411f1[m Código do IMU pronto
+[33m114f5ec[m Limpeza de código 2
+[33mf144036[m Limpeza de Código 1
+[33me5b95c2[m Remoção de documentos relativos à primeira release
+[33m8b1675b[m Push de novas coisas para segunda release
+[33m4cb147c[m Preparação para primeira Release
+[33m9ee6847[m Alertas V2 da app
+[33me259fab[m Main App para o script a correr no Termux
+[33m96afc4c[m Config.py do UVMA
+[33mad12189[m Video player do script do termux
+[33m42d872e[m Inicio de V1 do script móvel
+[33m412cb45[m Atualização de lcmserver.py com abse no seu config
+[33mf648e6d[m Config.py de lcm server
+[33m82b3a26[m Dashboard de FED implementada
+[33mc7c3b76[m Inicio de config.py
+[33md94091e[m Início de LCM Server
+[33m3753991[m Final do código do raspberry - serviços (video)
+[33mb9a6abd[m Continuação do código do raspberry - serviços (fcw)
+[33m7285219[m Continuação do código do raspberry - serviços (antitheft)
+[33m4fa1924[m Continuação do código do raspberr - inicio dos serviços (accident)
+[33m27dde8a[m Continuação do código do raspberry - imu driver.py
+[33m4eef767[m Inicio do código do raspberry - config.py
+[33mec097a2[m Novos ficheiros em LCM Server
+[33m0cd5fdf[m Adição de diretório e ficheiro relativos a LCM Server
+[33m44b206a[m Inicio de scripts em UVMA
+[33m1b183c7[m Inicio de scripts no CSVU
+[33m081d338[m Inicio de nova organização de diretórios
+[33m1660aae[m Adição de novos diretórios
+[33mf9ef201[m Limpeza e correções no telemóvel em Anti-Theft System
+[33m744c94e[m Correções/Limpeza no código de anti-furto do guardian
+[33m7541ad3[m Código que envia avisos para o telemóvel e mostra feed da câmara
+[33m2802980[m Código que vai ler continuamente os dados do sensor
+[33m694120c[m Código inicial do front-end quando é detetado movimento no IMU
+[33m9afd474[m Continuação dos diretórios de sistema anti-roubo
+[33m51813b9[m Inicio de diretórios de sistema anti-roubo
+[33m61aa2ce[m Limpeza de Código de FCW 3/3
+[33m902ee6b[m Limpeza de Código de FCW 2/3
+[33m1b0eb16[m Limpeza de Código de FCW 1/3
+[33m45aa4f3[m Limpeza de Código em Accident Warning 3/3
+[33m096f447[m Limpeza de código em Accident Warning 2/3
+[33meda5104[m Limpeza de código em Accident Warning 1/3
+[33mbe264aa[m Mudanças no smartphone de trajectory warning
+[33mfa2d7a8[m Mudanças no spotter
+[33m0a0c8c5[m Correções no código do termux de FCW
+[33m7b41021[m Correções no código de FCW
+[33mae8580d[m Distância a ser calculada pela câmara com sucesso
+[33mf801345[m Refactor do código do server e smartphone no fcw
+[33mb1a852c[m Refactor do code do raspberry
+[33m636b64c[m Inicio de implementação de utilização da câmara no FCW (server e FED)
+[33mbf8043d[m Inicio de utilização da câmara na implementação de FCW
+[33mb02aee4[m Mudnaças para comm com server 2/2
+[33m92accd7[m Merge branch 'main' of https://github.com/ppxdpp17/Iot4Moto
+[33m00545b4[m Mudanças para envio para server 1/2
+[33md4b5f1f[m Edições para edge computing + utilização de CV pelo raspberry
+[33mb66bfa6[m Mudanças para edge computing + utilização de câmara
+[33m4080db7[m Correções e outros no FED e Server de FCW
+[33m25dec2c[m Correção de várias coisas em gateway de FCW
+[33m64c2c19[m Correção de bugs pelo sistema todo
+[33m3408227[m Mudança de lógica para edge computing em Accident Warning
+[33mbd75964[m Adição no gateway para se basear no SVM e ter menos falsos positivos
+[33m03caf3f[m Organização de diretórios e código de display de moto para Trajectory Collision
+[33m2ea4dab[m Codigo do gateway de Trajectory Collision
+[33mdcd83cf[m Inicio do código do server/processador de dados
+[33mb16d5a3[m Inicio do código do frontend
+[33mc7c5f4f[m Inicio de código do cálculo da distância
+[33mb5b19a0[m Inicio de diretórios
+[33m9561305[m Organização de diretórios
+[33m9f659f0[m Inicio de alerta de proximidade
+[33mf2491a3[m Reorganização de Files
+[33m8008953[m Correções e Limpeza de Código 2/2
+[33me9898f7[m Correções e limpeza de código 1/2
+[33m31b176e[m Correções na app Termux
+[33m5de153c[m Merge branch 'main' of https://github.com/ppxdpp17/Iot4Moto
+[33macd388a[m Primeira vez a funcionar - PI
+[33m71cb324[m Primeira vez a funcionar
+[33m6ffb5c2[m Adição de raspberry
+[33m9889739[m Merge branch 'main' of https://github.com/ppxdpp17/Iot4Moto
+[33mcac1631[m Codigo do gateway
+[33meb3622f[m Merge branch 'main' of https://github.com/ppxdpp17/Iot4Moto
+[33m34d96d5[m Initial commit
+[33ma0d6eca[m Primeiro commit apenas de pastas

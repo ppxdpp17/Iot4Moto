@@ -89,22 +89,23 @@ namespace Simulador
 
 
 
+            var cloudHost = Environment.GetEnvironmentVariable("HIVEMQ_HOST");
+            var cloudPort = int.Parse(Environment.GetEnvironmentVariable("HIVEMQ_PORT") ?? "8883");
+            var cloudUser = Environment.GetEnvironmentVariable("HIVEMQ_USER");
+            var cloudPass = Environment.GetEnvironmentVariable("HIVEMQ_PASS");
 
 
             //ENVIO IP/5G
-            //O broker local
-            var localMqtt = new MqttService("localhost", 1883, "SimulatorLocal"); 
 
-            //O broker da Cloud (HiveMQ, Ngrok, VPS)
-            var cloudMqtt = new MqttService("broker.hivemq.com", 1883, "Moto_AJP_12345"); //IP/URL real aqui
-            await cloudMqtt.ConnectAsync();
+            //OPÇÃO 1: Servidor Amover
+            //var cloudSync = new CloudSyncService("IP_DO_SERVIDOR", 8883, "user", "pass", true, "AJP1RB5SXLB123456");
 
-            //Iniciar o serviço de sincronização
-            var cloudSync = new CloudSyncService(cloudMqtt, "AJP1RB5SXLB123456");
+            //OPÇÃO 2: HiveMQ
+            var cloudSync = new CloudSyncService(cloudHost, cloudPort, cloudUser, cloudPass, true, "AJP1RB5SXLB123456");
+            
+            //Arrancar o serviço de envio em background
             _ = Task.Run(() => cloudSync.StartAsync(_cancellationTokenSource.Token));
-
-
-
+            // -----------------------------
 
 
             // Initialize services
