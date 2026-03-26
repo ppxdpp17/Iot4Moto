@@ -136,7 +136,7 @@
           }
         }
       },
-      "MQTTnet/4.3.3.952": {
+      "MQTTnet/4.3.7.1207": {
         "type": "package",
         "compile": {
           "lib/net7.0/MQTTnet.dll": {
@@ -1702,10 +1702,10 @@
         "ref/xamarinwatchos10/_._"
       ]
     },
-    "MQTTnet/4.3.3.952": {
-      "sha512": "6AFOGkdnqzIfvaPbTnPLYvBibBdGfJlTTWonIZp+VHpRy6fEl+KT9Z1AG1/4AaDAw5TJ0WpqCmrV9TVUWkLffg==",
+    "MQTTnet/4.3.7.1207": {
+      "sha512": "ah7aHXoedWp5m5a4zy2u4phOEVj0QFYzOb5tFKQeV8RRBrxp+1QREF4ymZuG8D+hzB2dhtrrG81WxTFv0PzOeQ==",
       "type": "package",
-      "path": "mqttnet/4.3.3.952",
+      "path": "mqttnet/4.3.7.1207",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -1732,7 +1732,7 @@
         "lib/uap10.0.10240/MQTTnet.dll",
         "lib/uap10.0.10240/MQTTnet.pri",
         "lib/uap10.0.10240/MQTTnet.xml",
-        "mqttnet.4.3.3.952.nupkg.sha512",
+        "mqttnet.4.3.7.1207.nupkg.sha512",
         "mqttnet.nuspec",
         "nuget.png"
       ]
@@ -4990,7 +4990,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "DotNetEnv >= 3.*",
-      "MQTTnet >= 4.3.3.120",
+      "MQTTnet >= 4.3.7.1207",
       "Npgsql >= 9.0.3",
       "System.Device.Gpio >= 4.1.0"
     ]
@@ -5001,13 +5001,14 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\MqttConsoleClient.csproj",
+      "projectUniqueName": "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\MqttConsoleClient.csproj",
       "projectName": "MqttConsoleClient",
-      "projectPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\MqttConsoleClient.csproj",
+      "projectPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\MqttConsoleClient.csproj",
       "packagesPath": "C:\\Users\\Pedro\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Pratica\\Simulador\\obj\\",
+      "outputPath": "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
+        "C:\\Users\\Pedro\\Desktop\\Pedro\\Prática\\Simulador\\NuGet.Config",
         "C:\\Users\\Pedro\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
@@ -5044,7 +5045,7 @@
           },
           "MQTTnet": {
             "target": "Package",
-            "version": "[4.3.3.120, )"
+            "version": "[4.3.7.1207, )"
           },
           "Npgsql": {
             "target": "Package",
@@ -5074,17 +5075,5 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
       }
     }
-  },
-  "logs": [
-    {
-      "code": "NU1603",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "MqttConsoleClient depends on MQTTnet (>= 4.3.3.120) but MQTTnet 4.3.3.120 was not found. MQTTnet 4.3.3.952 was resolved instead.",
-      "libraryId": "MQTTnet",
-      "targetGraphs": [
-        "net8.0"
-      ]
-    }
-  ]
+  }
 }
