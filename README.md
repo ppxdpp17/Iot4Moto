@@ -95,5 +95,5 @@ ip route replace default via 192.168.224.1 dev enxf255284d1129
 * **QoS Strategies:** The Gateway uses MQTT Quality of Service (QoS) 0 for fluid telemetry (e.g., speed) to preserve bandwidth, and QoS 1/2 for critical events (e.g., collision warnings or theft alarms) to guarantee delivery.
 * **TLS Encryption:** All external traffic from the CSVU to the HiveMQ platform is secured using standard `/etc/ssl/certs/ca-certificates.crt`
 
-##📖 Academic Context
+## 📖 Academic Context
 This project was developed as part of a Master's Dissertation in Engineering. The architecture focuses on proving the viability, reliability, and security of integrating modern IoT ecosystems into electric mobility platforms.
