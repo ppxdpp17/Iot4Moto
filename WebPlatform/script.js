@@ -1,3 +1,7 @@
+// ==========================================
+// SECÇÃO 1: CONFIGURAÇÕES E ESTADO GLOBAL
+// ==========================================
+// CRÍTICA: IP hardcoded. Isto devia vir de variáveis de ambiente (.env) ou configuração dinâmica.
 const BROKER_IP = "172.20.0.203"; 
 const PORT = 9001;
 const CLIENT_ID = "Web_Dash_" + Math.random().toString(16).substr(2, 5);
@@ -6,13 +10,19 @@ let currentMode = 'live';
 let routeData = [];
 let currentLat = null;
 let currentLon = null;
-
 let lastLat = null;
 let lastLon = null;
-
 let rainResetTimer;
 
-//Icon da mota
+// Memória do estado LIVE. 
+// CRÍTICA: Manter estado global solto num ficheiro monolítico dificulta a manutenção e escala.
+let liveState = {
+    roll: 0, vel: 0, bat: '--', lat: null, lon: null
+};
+
+// ==========================================
+// SECÇÃO 2: MOTOR DE MAPA (LEAFLET) E GPS
+// ==========================================
 const motoIcon = L.divIcon({
     html: `<img id="moto-marker-icon" src="https://cdn-icons-png.flaticon.com/128/11432/11432322.png" style="width: 32px; height: 32px; transition: transform 1s linear; transform: rotate(180deg);">`,
     className: 'custom-moto-icon',
@@ -20,17 +30,11 @@ const motoIcon = L.divIcon({
     iconAnchor: [16, 16]
 });
 
-//Memória do estado LIVE para restaurar quando voltamos do histórico
-let liveState = {
-    roll: 0, vel: 0, bat: '--', lat: null, lon: null
-};
-
-//Código relativo ao mapa
 let map = L.map('map', { zoomControl: false }).setView([41.3, -7.74], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, theme: 'dark' }).addTo(map);
 let marker = L.marker([41.3, -7.74], {icon: motoIcon}).addTo(map);
 
-//Função para calcular para onde a mota está virada (??)
+// Calcula o ângulo (heading) da mota com base nas últimas coordenadas.
 function calculateBearing(lat1, lon1, lat2, lon2) {
     const toRad = deg => deg * Math.PI / 180;
     const toDeg = rad => rad * 180 / Math.PI;
@@ -46,33 +50,29 @@ function updateMap() {
         let newLatLng = new L.LatLng(currentLat, currentLon);
         marker.setLatLng(newLatLng);
         
-        //Força a câmara do mapa a deslizar durante 1 segundo de forma linear (para movimento mais "fluído")
-        map.panTo(newLatLng, {
-            animate: true,
-            duration: 1.0, 
-            easeLinearity: 1
-        });
+        map.panTo(newLatLng, { animate: true, duration: 1.0, easeLinearity: 1 });
 
+        // Só calcula o ângulo se houver movimento
         if (lastLat !== null && lastLon !== null && (lastLat !== currentLat || lastLon !== currentLon)) {
             let angle = calculateBearing(lastLat, lastLon, currentLat, currentLon);
-            
-            //Subtrai 90º para corrigir a orientação da imagem base
+            // CRÍTICA: Manipulação direta do DOM aqui custa performance. 
             document.getElementById('moto-marker-icon').style.transform = `rotate(${angle - 90}deg)`;
         }
         
-        lastLat = currentLat;
-        lastLon = currentLon;
+        lastLat = currentLat; lastLon = currentLon;
     }
 }
 
-//ALTERNAR MODOS (LIVE / HISTÓRICO)
+// ==========================================
+// SECÇÃO 3: MANIPULAÇÃO DA INTERFACE (UI)
+// ==========================================
+// CRÍTICA: Função massiva e acoplada. Estás a forçar displays inline em vez de alternar uma classe no body (ex: body.classList.toggle('history-mode')).
 function switchMode(mode) {
     currentMode = mode;
     document.getElementById('btn-live').classList.toggle('active', mode === 'live');
     document.getElementById('btn-history').classList.toggle('active', mode === 'history');
     
     const liveCamWrapper = document.getElementById('live-cam-wrapper');            
-    
     const histControls = document.getElementById('history-controls');
     const alertsList = document.getElementById('alerts-list');
     const historyMsg = document.getElementById('history-msg');
@@ -93,6 +93,7 @@ function switchMode(mode) {
         
         fetchRoutes();
     } else {
+        // Restaura estado live
         histControls.style.display = 'none';
         liveCamWrapper.style.display = 'block';
         headerStatus.style.display = 'flex'; 
@@ -105,6 +106,7 @@ function switchMode(mode) {
         historyMsg.style.display = 'none';
         alertsTitle.innerText = "Eventos Recentes";
 
+        // Devolve os últimos valores guardados em memória ao DOM
         document.getElementById("vel-val").innerText = liveState.vel;
         document.getElementById("bat-val").innerText = liveState.bat;
         document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
@@ -113,6 +115,7 @@ function switchMode(mode) {
         currentLat = liveState.lat; currentLon = liveState.lon;
         updateMap();
     }
+    // Hack para forçar o leaflet a redimensionar-se caso estivesse oculto
     setTimeout(() => map.invalidateSize(), 100);
 }
 
@@ -135,10 +138,13 @@ function logEvent(type, message) {
                     <div><span>${message}</span> <span class="time">${time}</span></div>`;
     
     list.prepend(li);
+    // Impede que a lista cresça infinitamente e destrua a RAM do browser
     if (list.children.length > 30) list.lastChild.remove(); 
 }
 
-//---LIGAÇÃO MQTT---
+// ==========================================
+// SECÇÃO 4: INTEGRAÇÃO MQTT (TEMPO REAL)
+// ==========================================
 const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
 
 client.onConnectionLost = () => {
@@ -146,58 +152,50 @@ client.onConnectionLost = () => {
     status.innerText = "Ligação Perdida"; status.style.color = "var(--danger)";
 };
 
+// CRÍTICA: "God function". Este callback faz tudo: gere estado, atualiza DOM e tem lógica de negócio complexa. Devias separar para funções próprias (ex: handleFCW(), handleGPS()).
 client.onMessageArrived = (message) => {
     const topic = message.destinationName;
     const payload = message.payloadString;
 
     try {
+        // Atualiza a memória base (liveState) silenciosamente
         if (topic === "moto/roll") liveState.roll = parseFloat(payload);
         if (topic === "moto/speed") liveState.vel = Math.round(parseFloat(payload));
         if (topic === "moto/battery") liveState.bat = Math.round(parseFloat(payload));
         if (topic === "moto/gps/latitude") liveState.lat = parseFloat(payload);
         if (topic === "moto/gps/longitude") liveState.lon = parseFloat(payload);
+        
+        // Lógica visual do Radar (FCW)
         if (topic === "moto/fcw") {
             const fcwData = JSON.parse(payload);
             const dist = fcwData.dist;
             const ttc = fcwData.ttc;
             
-            // Atualiza os textos
             document.getElementById("fcw-dist").innerText = dist.toFixed(2);
             document.getElementById("fcw-ttc").innerText = ttc < 99 ? ttc.toFixed(1) : "--";
 
             const obstacleBar = document.getElementById("radar-obstacle");
-            
-            // Limites lógicos
             const maxDist = 4.0; 
             const safeDist = Math.min(dist, maxDist);
             
-            // Matemática:
-            // Aos 10m -> right: 0px
-            // Aos 0m  -> right: 100px (Bate de frente na mota)
             const rightPosition = 100 - ((safeDist / maxDist) * 100);
             obstacleBar.style.right = `${rightPosition}px`;
 
-            // Lógica das Cores
-            if (dist > 3.80) {
-                obstacleBar.style.backgroundColor = "#00ff00"; // Verde
-            } else if (dist > 1.50) {
-                obstacleBar.style.backgroundColor = "#ffa500"; // Laranja
-            } else {
-                obstacleBar.style.backgroundColor = "#ff0000"; // Vermelho
-            }
+            if (dist > 3.80) obstacleBar.style.backgroundColor = "#00ff00";
+            else if (dist > 1.50) obstacleBar.style.backgroundColor = "#ffa500";
+            else obstacleBar.style.backgroundColor = "#ff0000";
         }
 
+        // Sistema de Alertas Discretos
         if (topic === "moto/alarm") {
             const alertType = payload.trim().toUpperCase();
             
-            //Trata da limpeza e sai imediatamente
             if (alertType === "RAIN_CLEARED") {
                 document.getElementById("rain-icon").classList.replace("active", "inactive");
                 document.getElementById("rain-text").innerText = "Seco";
-                return; // O código morre aqui. Não há logs para ninguém.
+                return;
             }
 
-            //chega aqui se for um alerta real
             let msg = "Evento registado.";
             if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
             if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
@@ -206,16 +204,17 @@ client.onMessageArrived = (message) => {
             
             logEvent(alertType, msg);
 
-            //Pinta o ícone da chuva, se for o caso
             if (alertType === "RAIN") {
-                document.getElementById("rain-icon").classList.remove("inactive");
+                document.getElementById("rain-icon").classList.remove("inactive", "active");
                 document.getElementById("rain-icon").classList.add("active");
                 document.getElementById("rain-text").innerText = "A Chover";
             }
         }
         
+        // Se estivermos em modo história, ignoramos a atualização do ecrã com dados live
         if (currentMode === 'history') return; 
 
+        // Atualização visual do ecrã (Apenas se em modo Live)
         if (topic === "moto/roll") {
             document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
             document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
@@ -233,6 +232,7 @@ client.onMessageArrived = (message) => {
         else if (topic === "moto/gps/latitude" || topic === "moto/gps/longitude") {
             currentLat = liveState.lat; currentLon = liveState.lon; updateMap();
         }
+    // CRÍTICA: Bloco catch vazio (swallowed errors). Se o JSON der erro, falha silenciosamente. Péssimo para debug.
     } catch (e) {}
 };
 
@@ -257,7 +257,9 @@ client.connect({
     useSSL: false, timeout: 3
 });
 
-//Lógica das Rotas Passadas
+// ==========================================
+// SECÇÃO 5: HISTÓRICO E PLAYBACK (VÍDEO / VIRTUAL)
+// ==========================================
 async function fetchRoutes() {
     try {
         const res = await fetch('./data/index.json');
@@ -266,7 +268,7 @@ async function fetchRoutes() {
         select.innerHTML = '<option value="">Selecione uma rota...</option>';
         window.routesCatalog = routes; 
         routes.forEach(r => select.innerHTML += `<option value="${r.id}">${r.name}</option>`);
-    } catch (e) {}
+    } catch (e) {} // Outro erro engolido.
 }
 
 async function loadRoute() {
@@ -285,10 +287,9 @@ async function loadRoute() {
     vPlaying = false;
     vTimeMs = 0;
     document.getElementById('virtual-play-btn').innerHTML = '<i class="fa-solid fa-play"></i>';
+    document.getElementById('route-stats').innerHTML = `Distância: ${route.distance_km} km | Duração: ${mins}:${secs}`;
 
-    document.getElementById('route-stats').innerHTML = 
-        `Distância: ${route.distance_km} km | Duração: ${mins}:${secs}`;
-
+    // Decide qual player usar com base na existência de um ficheiro de vídeo
     if (route.video_file) {
         videoElement.src = `./videos/${route.video_file.split('/').pop()}`;
         videoElement.style.display = 'block';
@@ -306,15 +307,17 @@ async function loadRoute() {
     routeData = await res.json();
 }
 
-//---SINCRONIZAÇÃO DE TELEMETRIA (SEM VÍDEO)---
+// Injeta os dados da rota passada na UI com base nos milissegundos do player
 function syncTelemetry(currentTimeMs) {
     if(currentMode !== 'history' || routeData.length === 0) return;
     
+    // Procura a frame de dados mais próxima do timestamp atual
     const frame = routeData.find(d => d.t >= currentTimeMs);
     if(frame) {
         document.getElementById("roll-val").innerText = frame.r.toFixed(2);
         document.getElementById("bike-img").style.transform = `rotate(${frame.r}deg)`;
         
+        // CRÍTICA: Inconsistência de esquema JSON de dados. Isto revela falhas no design do backend.
         let speed = frame.speed || frame.v || frame.s || frame.vel || 0;
         document.getElementById("vel-val").innerText = Math.round(speed);
         
@@ -327,11 +330,13 @@ function syncTelemetry(currentTimeMs) {
     }
 }
 
+// Sincroniza dados com o player de VÍDEO nativo do browser
 document.getElementById('route-video').addEventListener('timeupdate', (e) => {
     const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
     syncTelemetry(currentTimeMs);
 });
 
+// === LOGICA DO PLAYER VIRTUAL (Para rotas sem vídeo) ===
 let vTimer = null;
 let vTimeMs = 0;
 let vDurationMs = 0;
