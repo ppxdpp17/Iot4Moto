@@ -8,16 +8,20 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 class MqttManager(private val context: Context) {
 
     private var mqttClient: MqttAsyncClient? = null
+
+    //Permite que o ForegroundService ou um Fragment injete a sua própria lógica de processamento quando chega uma mensagem
     var messageListener: ((String, String) -> Unit)? = null
 
     fun connect(brokerUri: String, clientId: String, onConnected: () -> Unit) {
         try {
+            //MemoryPersistence: Os dados em trânsito não são guardados na flash do telemóvel
             mqttClient = MqttAsyncClient(brokerUri, clientId, MemoryPersistence())
 
             //Ouve tudo o que chega
             mqttClient?.setCallback(object : MqttCallback {
                 override fun connectionLost(cause: Throwable?) {}
                 override fun messageArrived(topic: String?, message: MqttMessage?) {
+                    //Desempacota o payload e envia para quem estiver a escutar
                     messageListener?.invoke(topic!!, String(message!!.payload))
                 }
                 override fun deliveryComplete(token: IMqttDeliveryToken?) {}
@@ -44,6 +48,7 @@ class MqttManager(private val context: Context) {
         } catch (e: Exception) { e.printStackTrace() }
     }
 
+    //Função para publicar mensagens (ON/OFF)
     fun publish(topic: String, payload: String, retain: Boolean = false) {
         try {
             if (mqttClient?.isConnected == true) {
