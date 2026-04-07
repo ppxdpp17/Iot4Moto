@@ -32,6 +32,7 @@ class AlertsFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
 
+        //Inicia o Adapter passando a referência da memória central (Singleton)
         adapter = AlertAdapter(AlertManager.alerts) { alertClicado ->
             showAlertDialog(alertClicado)
         }
@@ -39,8 +40,8 @@ class AlertsFragment : Fragment() {
 
         AlertManager.onAlertAdded = {
             activity?.runOnUiThread {
-                adapter.notifyDataSetChanged()
-                recyclerView.scrollToPosition(0)
+                adapter.notifyDataSetChanged()  //Atualiza os dados visuais
+                recyclerView.scrollToPosition(0)    //Força o scroll para o alerta mais recente
                 checkEmptyState()
             }
         }
@@ -48,6 +49,7 @@ class AlertsFragment : Fragment() {
         checkEmptyState()
     }
 
+    //Função para dizer se não há alertas
     private fun checkEmptyState() {
         if (AlertManager.alerts.isEmpty()) {
             recyclerView.visibility = View.GONE
@@ -77,10 +79,12 @@ class AlertsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        // Garante que se o utilizador abriu a app após receber uma notificação e a lista reflete o estado mais atual da memória
         adapter.notifyDataSetChanged()
         checkEmptyState()
     }
 
+    //Previnir memory leaks
     override fun onDestroyView() {
         super.onDestroyView()
         AlertManager.onAlertAdded = null

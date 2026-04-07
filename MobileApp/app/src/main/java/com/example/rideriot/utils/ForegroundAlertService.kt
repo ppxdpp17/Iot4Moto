@@ -35,7 +35,7 @@ class ForegroundAlertService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
+        return START_STICKY //Garante que se o Android matar este serviço por falta de memória, ele recomeça automaticamente assim que houver RAM livre
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -97,7 +97,8 @@ class ForegroundAlertService : Service() {
     }
 
     private fun showEmergencyNotification(title: String, message: String, alertType: String) {
-
+        //ID estático (9999) para a chuva garante que o alerta de chuva não se duplica
+        //a cada segundo. IDs dinâmicos para roubos/quedas para não sobreporem alertas críticos
         val notificationId = if (alertType == "RAIN") 9999 else System.currentTimeMillis().toInt()
 
         val channelId = when (alertType) {
@@ -108,6 +109,7 @@ class ForegroundAlertService : Service() {
         //Extensor apenas com as funcionalidades básicas necessárias
         val wearableExtender = androidx.core.app.NotificationCompat.WearableExtender()
 
+        //Quando o utilizador clica no pop-up, a app abre diretamente no separador correto (Câmara para Roubo, Histórico de Alertas para o resto).
         val intent = android.content.Intent(this, MainActivity::class.java).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
             val target = if (alertType == "THEFT") "CAMERA" else "ALERTS"
@@ -151,12 +153,12 @@ class ForegroundAlertService : Service() {
                 "moto/alarm" -> {
                     val alertType = payload.trim().uppercase()
 
-                    // 1. ISOLAMENTO TOTAL DA LIMPEZA
+                    //ISOLAMENTO TOTAL DA LIMPEZA
                     if (alertType == "RAIN_CLEARED") {
                         val manager = getSystemService(NotificationManager::class.java)
                         manager?.cancel(9999)
 
-                        // Atualiza o histórico
+                        //Atualiza o histórico
                         AlertManager.resolveLastAlertOfType("RAIN")
 
                         Log.d("SENTINEL", "Chuva parou. Alerta resolvido no histórico.")

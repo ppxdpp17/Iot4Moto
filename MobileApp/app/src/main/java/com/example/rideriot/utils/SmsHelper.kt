@@ -15,9 +15,12 @@ class SmsHelper(private val context: Context) {
             return
         }
 
+        //Eventualmente poderia ser alterado para enviar um link do google maps com as coordenadas
+        //mas por alguma razão o telemóvel não está a deixar enviar links
         val msgBase = prefs.getString("sos_message", "Emergência! Queda de mota.")
         val finalMessage = "$msgBase Localização: $gpsData"
 
+        //Lista de contactos de emergência
         val phones = listOf(
             prefs.getString("phone1", ""),
             prefs.getString("phone2", ""),

@@ -31,6 +31,7 @@ class MapFragment : Fragment() {
     private var currentLon: Double? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        //Iniciar o OSMDroid
         Configuration.getInstance().load(requireContext(), PreferenceManager.getDefaultSharedPreferences(requireContext()))
         return inflater.inflate(R.layout.fragment_map, container, false)
     }
@@ -48,8 +49,8 @@ class MapFragment : Fragment() {
 
     private fun setupMap() {
         map.setMultiTouchControls(true)
-        map.controller.setZoom(20.0)
-        map.controller.setCenter(GeoPoint(41.3000, -7.7400))
+        map.controller.setZoom(20.0)    //Nível de zoom do mapa
+        map.controller.setCenter(GeoPoint(41.3000, -7.7400))    //Coordenadas iniciais hardcoded
     }
 
     private fun setupMqtt() {
@@ -58,7 +59,7 @@ class MapFragment : Fragment() {
         mqttManager.messageListener = { topic, payload ->
             activity?.runOnUiThread {
                 when (topic) {
-                    "sim/motorcycle" -> {
+                    "sim/motorcycle" -> {   //Ligar/Desligar moto
                         val isOn = payload.trim() == "on"
                         if (switchMotor.isChecked != isOn) {
                             switchMotor.setOnCheckedChangeListener(null)
@@ -67,7 +68,7 @@ class MapFragment : Fragment() {
                             setSwitchListener()
                         }
                     }
-                    "moto/gps" -> {
+                    "moto/gps" -> { //Coordenadas da mota
                         try {
                             val json = org.json.JSONObject(payload)
                             currentLat = json.getDouble("lat")
