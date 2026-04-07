@@ -35,23 +35,26 @@
 
 using json = nlohmann::json;
 
-// 1. ESTRUTURA GLOBAL DO ESTADO DA MOTA
+//ESTRUTURA GLOBAL DO ESTADO DA MOTA ("Digital TWIN")
 struct MotoState {
     double lat = 0.0;
     double lon = 0.0;
     int soc = 0;
     int range = 0;
     int speed = 0;
-    bool ignition = true; // Assume true se estiver a emitir CAN
+    bool ignition = true; //Assume true se estiver a emitir CAN
     std::string alert = "NONE";
 };
 
 MotoState currentState;
-std::mutex stateMutex; // Protege a estrutura contra concorrência
+std::mutex stateMutex; //Impede que a thread da Cloud leia a estrutura ao mesmo tempo que a thread do CAN a está a reescrever, evitando dados corrompidos.
 
-// 2. THREAD DO CAN (Atualiza o Estado e o Broker Local)
+//THREAD DO CAN (Atualiza o Estado e o Broker Local)
 void* can_reader(void* arg) {
     auto* client = static_cast<mqtt::async_client*>(arg);
+
+    //Configuração do Socket Raw CAN do Linux (SocketCAN)
+    //Permite interagir com o barramento do veículo como se fosse uma interface de rede normal.
     int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     struct ifreq ifr{};
     strcpy(ifr.ifr_name, "can0");
@@ -60,53 +63,48 @@ void* can_reader(void* arg) {
     addr.can_family = AF_CAN;
     addr.can_ifindex = ifr.ifr_ifindex;
     bind(s, (struct sockaddr*)&addr, sizeof(addr));
+
     auto last_fcw_alarm = std::chrono::steady_clock::now() - std::chrono::seconds(10);
     
     std::cout << "[CAN] A ler dados do Raspberry em can0...\n";
 
     struct can_frame frame{};
+    //Loop que fica à escuta de novos frames no cabo CAN
     while (read(s, &frame, sizeof(frame)) > 0) {
         uint32_t id = frame.can_id & CAN_SFF_MASK;
-        std::lock_guard<std::mutex> lock(stateMutex); // Bloqueia para escrever
+        std::lock_guard<std::mutex> lock(stateMutex);   //Bloqueia a memória para atualizar o estado com segurança
 
-        if (id == 0x200) { 
+        //TRADUÇÃO CAN -> MQTT (LOCAL)
+        //Cada ID corresponde a uma ECU simulada. O Gateway descodifica o payload hexadecimal.
+        if (id == 0x200) {  //Velocidade 
             uint16_t speed = frame.data[0] | (frame.data[1] << 8);
             currentState.speed = speed;
-            client->publish("moto/speed", std::to_string(speed));
+            client->publish("moto/speed", std::to_string(speed));   //Publica para o FED (local)
         }
-        else if (id == 0x201) {
+        else if (id == 0x201) { //Bateria
             currentState.soc = (int)frame.data[0];
             client->publish("moto/battery", std::to_string(currentState.soc), 0, true);
         }
-        else if (id == 0x208) {
+        else if (id == 0x208) { //Autonomia
             currentState.range = frame.data[0]; 
             client->publish("moto/range", std::to_string(currentState.range), 0, true);
         }
-        else if (id == 0x301) {
-            int32_t lat_raw = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
-            int32_t lon_raw = frame.data[4] | (frame.data[5] << 8) | (frame.data[6] << 16) | (frame.data[7] << 24);
-            currentState.lat = lat_raw / 1000000.0;
-            currentState.lon = lon_raw / 1000000.0;
-            
-            json gpsPayload = {{"lat", currentState.lat}, {"lon", currentState.lon}};
-            client->publish("moto/gps", gpsPayload.dump());
-        }
-        else if (id == 0x400) {
+        else if (id == 0x400) { //Alerta de Roubo
             currentState.alert = "ALERTA_MOVIMENTO";
             client->publish("moto/alarm", currentState.alert);
         }
-        else if (id == 0x209) {
+        else if (id == 0x209) { //Total de Kilómetros Percorridos
             uint32_t km = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
             client->publish("moto/total_kilometers", std::to_string(km), 0, true);
         }
-        else if (id == 0x210) {
+        else if (id == 0x210) { //Tempo
             uint8_t horas = frame.data[0];
             uint8_t minutos = frame.data[1];
             char timeBuffer[6];
             snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d", horas, minutos);
             client->publish("moto/time", std::string(timeBuffer), 0, true);
         }
-        else if (id == 0x301) {
+        else if (id == 0x301) { //Coordenadas GPS
             //Reconstrói a Latitude e Longitude
             int32_t lat_raw = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
             int32_t lon_raw = frame.data[4] | (frame.data[5] << 8) | (frame.data[6] << 16) | (frame.data[7] << 24);
@@ -121,7 +119,7 @@ void* can_reader(void* arg) {
             
             client->publish("moto/gps", gpsPayload.dump());
         }
-        else if (id == 0x302) {
+        else if (id == 0x302) { //Dados do Sensor Ultrassom
             //Desempacota os bytes
             uint16_t dist_cm = frame.data[0] | (frame.data[1] << 8);
             uint8_t ttc_ds = frame.data[2];
@@ -144,14 +142,14 @@ void* can_reader(void* arg) {
             if (type_byte == 2) {
                 auto now = std::chrono::steady_clock::now();
                 
-                // Só publica no MQTT se já passaram 5 segundos desde o último alarme
+                //Só publica no MQTT se já passaram 5 segundos desde o último alarme
                 if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
                     last_fcw_alarm = now; //Atualiza o relógio
                     client->publish("moto/alarm", "FCW");
                 }
             }
         }
-        else if (id == 0x401) {
+        else if (id == 0x401) { //Alerta de Chuva
             //Se ainda deteta chuva
             if (frame.data[0] == 0x01) {
                 client->publish("moto/alarm", "RAIN");
@@ -165,7 +163,7 @@ void* can_reader(void* arg) {
     return nullptr;
 }
 
-// 3. THREAD DA CLOUD (Envia via 5G a cada 5 segs)
+//THREAD DA CLOUD (Envio via 5G a cada 5 segs)
 void* cloud_worker(void* arg) {
     const std::string serverURI = "ssl://43694c8e9d834a5ab42e7714b016ae38.s1.eu.hivemq.cloud:8883";
     const std::string clientId = "Mota_CloudSync_" + std::to_string(time(nullptr));
@@ -178,40 +176,49 @@ void* cloud_worker(void* arg) {
     connOpts.set_password("motaAJP123");
     connOpts.set_clean_session(true);
 
-    // TLS Options (Obrigatório para o HiveMQ)
+    //SEGURANÇA TLS
+    //Obrigatório para tráfego via redes públicas (5G). Valida o certificado do HiveMQ 
+    //com base nos certificados raiz do sistema operativo Linux.
     mqtt::ssl_options sslOpts;
     sslOpts.set_enable_server_cert_auth(true);
-    sslOpts.set_trust_store("/etc/ssl/certs/ca-certificates.crt"); // Caminho standard Linux
+    sslOpts.set_trust_store("/etc/ssl/certs/ca-certificates.crt"); //Caminho standard Linux
     connOpts.set_ssl(sslOpts);
 
+    //Loop infinito que roda a cada 5 segundos
     while (true) {
         try {
+            //Gestão automática de reconexão caso a rede 5G falhe
             if (!cloudClient.is_connected()) {
                 std::cout << "[CLOUD] A ligar ao HiveMQ...\n";
                 cloudClient.connect(connOpts)->wait();
                 std::cout << "[CLOUD] Ligado com sucesso!\n";
             }
 
-            // Copia rápida do estado para não bloquear o CAN_Reader
+            //SNAPSHOT DO ESTADO
+            //Bloqueia o "Mutex" apenas durante o tempo necessário para copiar os dados.
+            //Liberta-o imediatamente para não estagnar a thread do CAN que está a correr ao lado.            
             MotoState snapshot;
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 snapshot = currentState;
-                currentState.alert = "NONE"; // Limpa o alerta depois de o capturar
+                currentState.alert = "NONE"; //Limpa o alerta depois de o capturar
             }
 
-            // Monta o JSON compacto
+            //AGREGAÇÃO DE DADOS
+            //Em vez de enviar 10 mensagens MQTT individuais, junta tudo num JSON compacto.
             json payload;
-            payload["ts"] = std::time(nullptr);
-            payload["lat"] = snapshot.lat;
-            payload["lon"] = snapshot.lon;
-            payload["soc"] = snapshot.soc;
-            payload["rng"] = snapshot.range;
-            payload["spd"] = snapshot.speed;
-            payload["ign"] = snapshot.ignition;
-            payload["alr"] = snapshot.alert;
+            payload["ts"] = std::time(nullptr); //Timestamp
+            payload["lat"] = snapshot.lat;      //Latitude
+            payload["lon"] = snapshot.lon;      //Longitude
+            payload["soc"] = snapshot.soc;      //State of Charge
+            payload["rng"] = snapshot.range;    //Autonomia
+            payload["spd"] = snapshot.speed;    //Velocidade
+            payload["ign"] = snapshot.ignition; //Ignição
+            payload["alr"] = snapshot.alert;    //Alertas
 
             std::string msg = payload.dump();
+
+            //Publica na Cloud com QoS 1 (at least once)
             cloudClient.publish(topic, msg, 1, false)->wait();
             std::cout << "[CLOUD] Enviado: " << msg << "\n";
 
@@ -219,14 +226,15 @@ void* cloud_worker(void* arg) {
             std::cerr << "[CLOUD] Erro: " << exc.what() << "\n";
         }
 
+        //Taxa de envio reduzido para poupar largura de banda (aumentar no futuro quando tiver um SIM apropriado)
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
     return nullptr;
 }
 
-// 4. ARRANQUE
+//ARRANQUE
 int main() {
-    // Liga ao broker LOCAL (Mosquitto na CSVU)
+    //Liga ao broker LOCAL (Mosquitto na CSVU) apenas para alimentar o FED
     mqtt::async_client localClient("tcp://127.0.0.1:1883", "CppBroker_V4");
     mqtt::connect_options localConnOpts;
     localConnOpts.set_clean_session(true);
@@ -235,6 +243,7 @@ int main() {
         localClient.connect(localConnOpts)->wait();
         std::cout << "[LOCAL] Ligado ao Broker Local.\n";
 
+        //Instancia as threads
         pthread_t can_tid, cloud_tid;
         pthread_create(&can_tid, nullptr, can_reader, &localClient);
         pthread_create(&cloud_tid, nullptr, cloud_worker, nullptr);
