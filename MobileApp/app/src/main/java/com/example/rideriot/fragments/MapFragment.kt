@@ -93,6 +93,7 @@ class MapFragment : Fragment() {
         setSwitchListener()
     }
 
+    //Função para atualizar a localização do mapa
     private fun updateMapLocation() {
         //Só atualiza se já tiver as duas coordenadas
         val lat = currentLat ?: return
@@ -116,6 +117,7 @@ class MapFragment : Fragment() {
         map.invalidate()
     }
 
+    //Ligar/Desligar a mota via Switch
     private fun setSwitchListener() {
         switchMotor.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
