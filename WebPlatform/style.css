@@ -1,16 +1,18 @@
+/*Variáveis Globais*/
 :root {
-    --bg-dark: #0f1115;
-    --bg-panel: #1a1d24;
+    --bg-dark: #0f1115; /*Fundo Base*/
+    --bg-panel: #1a1d24;    /*Fundo dos Cards*/
     --primary: #00ff88;
-    --fcw: #fbff00;
-    --text-main: #e2e8f0;
-    --text-muted: #94a3b8;
-    --danger: #ff4757;
-    --warning: #ffa502;
+    --fcw: #fbff00;     /*Alerta de FCW*/
+    --text-main: #e2e8f0;  
+    --text-muted: #94a3b8;  
+    --danger: #ff4757;  /*Alerta de Queda*/
+    --warning: #ffa502; /*Alerta de Roubo*/
     --border: #2d323e;
-    --rain: #1492db;
+    --rain: #1492db;    /*Alerta de Chuva*/
 }
 
+/*Reset para garantir renderização consistente entre browsers*/
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 /*Scrollbar dos alertas*/
@@ -47,11 +49,12 @@ body {
     height: 100%; width: 4px; background: var(--primary); border-radius: 4px;
 }
 
+/*Painel de Telemetria Principal*/
 .panel-center {
     padding: 20px; display: flex; flex-direction: column; gap: 20px;
     border-right: 1px solid var(--border); overflow-y: auto;
 }
-
+/*Estado da Conexão MQTT e Estado do Motor*/
 .header-status {
     display: flex; justify-content: space-between; align-items: center;
     background: var(--bg-panel); padding: 15px; border-radius: 12px;
@@ -61,13 +64,14 @@ body {
     padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;
 }
 .state-badge.on { background: rgba(0, 255, 136, 0.2); color: var(--primary); }
-
+/*Cartões de Alta Frequência (Velocidade e Bateria)*/
 .telemetry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .t-card { background: var(--bg-panel); padding: 15px; border-radius: 12px; text-align: center; }
 .t-card i { color: var(--text-muted); font-size: 18px; margin-bottom: 5px; }
 .t-value { font-size: 24px; font-weight: bold; color: var(--primary); }
 .t-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
 
+/*Secção dos Sensores*/
 .imu-module {
     background: var(--bg-panel); border-radius: 12px; padding: 20px;
     display: flex; flex-direction: column; align-items: center;
