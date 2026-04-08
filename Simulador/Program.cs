@@ -17,9 +17,9 @@ namespace Simulador
         public double LngStart { get; set; }
         public double LatEnd { get; set; }
         public double LngEnd { get; set; }
-        public double Distance { get; set; } // em km
+        public double Distance { get; set; } //em km
         public double Heading { get; set; }
-        public double Slope { get; set; } // already exists
+        public double Slope { get; set; } //already exists
     }
 
     static class Program
@@ -193,6 +193,8 @@ namespace Simulador
 
             _ = canService.StartAsync(_cancellationTokenSource.Token);
 
+
+            //SENSORES
             //Arranque do sistema do IMU
             _ = Task.Run(() => imuService.StartAsync(_cancellationTokenSource.Token));
 
@@ -201,6 +203,8 @@ namespace Simulador
 
             //Arranque do sistema de CHUVA
             _ = Task.Run(() => rainService.StartAsync(_cancellationTokenSource.Token));
+
+
 
             // >>> New task: SIMULATE ROUTE (more realistic logic)
             _ = routes.UpdateRouteAsync(sensorService);
