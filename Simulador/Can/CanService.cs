@@ -53,7 +53,7 @@ namespace CAN
             var payload = new { status = perigo, distancia, lado, prioridade };
 
             //Publicação no broker local para o FED
-            await _mqttService.PublishAsync($"sim/can/{algoritmo}", JsonSerializer.Serialize(payload));
+            //await _mqttService.PublishAsync($"sim/can/{algoritmo}", JsonSerializer.Serialize(payload));
         }
 
         public async Task StartAsync(CancellationToken token)

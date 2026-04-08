@@ -14,16 +14,18 @@ public class CloudSyncService
 
     public CloudSyncService(string host, int port, string username, string password, bool useTls, string vin)
     {
+        //Estrutura de tópicos (baseada no VIN)
         _topic = $"motos/{vin}/telemetria";
         var factory = new MqttFactory();
         _mqttClient = factory.CreateMqttClient();
 
+        //Geração de Client ID único para evitar que a Cloud desconecte instâncias concorrentes
         var builder = new MqttClientOptionsBuilder()
             .WithClientId($"Moto_{vin}_{Guid.NewGuid().ToString().Substring(0,5)}")
             .WithTcpServer(host, port);
 
         if (!string.IsNullOrEmpty(username))
-            builder.WithCredentials(username, password);
+            builder.WithCredentials(username, password);    //Obrigatório para comunicação WAN (HiveMQ)
 
         if (useTls)
             builder.WithTls();

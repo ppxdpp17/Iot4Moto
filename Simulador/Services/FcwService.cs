@@ -13,7 +13,7 @@ namespace Simulador.Services
 {
     public class FcwService
     {
-        //Define os pinos onde o sensor liga
+        //Pinos onde o sensor liga
         private const int TRIG_PIN = 23; 
         private const int ECHO_PIN = 24; 
 
@@ -43,12 +43,15 @@ namespace Simulador.Services
                 _gpio.OpenPin(ECHO_PIN, PinMode.Input);
                 _gpio.Write(TRIG_PIN, PinValue.Low);
 
+                //Loop principal de aquisição
                 while (!token.IsCancellationRequested)
                 {
+                    //Poupança de energia/processamento: Só mede se o motor estiver a trabalhar
                     if (SimulationState.IsMotorcycleOn)
                     {
                         double dist = MeasureDistance();
 
+                        //O HC-SR04 só alcança até 4 metros
                         if (dist > 0 && dist < 4) 
                         {
                             ProcessFcwLogic(dist);
@@ -59,7 +62,7 @@ namespace Simulador.Services
                         }
                     }
 
-                    await Task.Delay(100, token); // Loop a 10Hz (100ms)
+                    await Task.Delay(100, token); //Loop a 10Hz (100ms)
                 }
             }
             catch (Exception ex)
@@ -68,7 +71,7 @@ namespace Simulador.Services
             }
             finally
             {
-                _gpio?.Dispose();
+                _gpio?.Dispose();   //Previne hardware locks caso o software vá abaixo
             }
         }
 
@@ -97,6 +100,8 @@ namespace Simulador.Services
             return (elapsedSeconds * 343.0) / 2.0;
         }
 
+
+        //Tomada de decisão
         private void ProcessFcwLogic(double currentDistance)
         {
             var now = DateTime.UtcNow;
@@ -107,6 +112,7 @@ namespace Simulador.Services
             double ttc = 999.0;
             string type = "INFO"; //Por defeito, é apenas informação (para a Web)
 
+            //Requer um mínimo de 3 amostras para calcular uma velocidade com margem de erro reduzida
             if (_history.Count >= 3)
             {
                 var oldest = _history.First();
@@ -115,10 +121,13 @@ namespace Simulador.Services
 
                 if (dt > 0)
                 {
+                    //V = dx/dt (Velocidade Relativa de aproximação)
                     vel = (oldest.Item2 - newest.Item2) / dt;
 
+                    //Se nos estamos a aproximar do obstáculo
                     if (vel > 0.1) 
                     {
+                        //Tempo para Colisão = Distância Atual / Velocidade de Aproximação
                         ttc = currentDistance / vel;
                     }
                 }
@@ -141,6 +150,7 @@ namespace Simulador.Services
             _canService.EnviarFcw(currentDistance, ttc, type);
         }
 
+        //Função utilitária de Busy Waiting (Micro-sleep)
         private void DelayMicroseconds(long microseconds)
         {
             var sw = Stopwatch.StartNew();
