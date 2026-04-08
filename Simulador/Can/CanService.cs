@@ -11,10 +11,10 @@ namespace CAN
 {
     public class CanService
     {
-        private static char[] mserial_port = "/dev/ttyACM0\0".ToCharArray();
-        private static ushort mbitrate = 500;
+        private static char[] mserial_port = "/dev/ttyACM0\0".ToCharArray();    //Porta responsável por passar os dados
+        private static ushort mbitrate = 500;   //Baudrate
         private readonly MqttService _mqttService;
-        private readonly object _canLock = new object();
+        private readonly object _canLock = new object();    //Mutex para proteger a API single-thread do simplyCAN
 
         public CanService(MqttService mqttService)
         {
@@ -27,7 +27,7 @@ namespace CAN
             simply_close();
         }
 
-        // --- RECEÇÃO DE DADOS ---
+        //---RECEÇÃO DE DADOS---
         private async Task InterpretarMensagem(can_msg_t msg)
         {
             if (msg.dlc < 4) return;
@@ -36,6 +36,7 @@ namespace CAN
             int distancia = msg.payload[1] + (msg.payload[2] << 8);
             string lado = msg.payload[3] == 1 ? "Direita" : "Esquerda";
 
+            //Descodificação bit a bit do Identificador CAN (11 bits)
             uint tipoSensor = msg.ident & 0xFF; 
             int prioridade = (int)((msg.ident & 0xF00) >> 8);
             
@@ -51,6 +52,7 @@ namespace CAN
             string perigo = status == 1 ? "PERIGO" : "Seguro";
             var payload = new { status = perigo, distancia, lado, prioridade };
 
+            //Publicação no broker local para o FED
             await _mqttService.PublishAsync($"sim/can/{algoritmo}", JsonSerializer.Serialize(payload));
         }
 
@@ -64,9 +66,10 @@ namespace CAN
 
             Console.WriteLine("[CAN] Ligação iniciada em /dev/ttyACM0.");
 
-            // Inicia o Heartbeat em background
+            //Inicia o Heartbeat em background
             _ = StartHeartbeatAsync(token);
 
+            //Tread dedicada à escuta contínua do barramento
             await Task.Run(async () =>
             {
                 can_msg_t rx = new can_msg_t();
@@ -89,12 +92,12 @@ namespace CAN
             simply_close();
         }
 
-        // --- ENVIO DE DADOS ---
+        //---ENVIO DE DADOS---
         public bool EnviarDadosSimulados(uint id, byte[] data)
         {
-            if (data.Length > 8) return false;
+            if (data.Length > 8) return false;  //Limite estrutural do frame CAN Standard
 
-            lock (_canLock) // Evita colisões no envio
+            lock (_canLock) //Evita colisões no envio
             {
                 can_msg_t txMsg = new can_msg_t
                 {
@@ -112,7 +115,7 @@ namespace CAN
                     success = simply_send(ref txMsg);
                     if (!success)
                     {
-                        // O buffer de hardware está cheio. Dá 2ms para ele despejar dados no cabo.
+                        //Quando o buffer de hardware está cheio, dá 2ms para ele despejar dados no cabo
                         Thread.Sleep(2);
                         tentativas--;
                     }
@@ -120,7 +123,7 @@ namespace CAN
 
                 if (!success) 
                 {
-                    // Lê o erro real para o limpar da memória do dispositivo
+                    //Lê o erro real para o limpar da memória do dispositivo
                     short erro = simply_get_last_error(); 
                     Console.WriteLine($"[CAN] Falha ID 0x{id:X}. Erro interno: {erro}");
                 }
@@ -128,21 +131,21 @@ namespace CAN
             }
         }
 
-        // Métodos de atalho para envio
-        public void EnviarVelocidade(int speed) => 
+        //Métodos de atalho para envio
+        public void EnviarVelocidade(int speed) => //Envio da Velocidade
             EnviarDadosSimulados(0x200, new byte[] { (byte)(speed & 0xFF), (byte)((speed >> 8) & 0xFF) });
 
-        public void EnviarBateria(int battery) => 
+        public void EnviarBateria(int battery) =>   //Envio da Bateria
             EnviarDadosSimulados(0x201, new byte[] { (byte)battery });
 
-        public void EnviarGear(string gear) => 
+        public void EnviarGear(string gear) =>  //Envio do Gear (NEUTRAL; FRONT; BACK; PARK)
             EnviarDadosSimulados(0x202, new byte[] { (byte)(gear.ToLower() switch { "neutral"=>0, "front"=>1, "back"=>2, "park"=>3, _=>0 }) });
 
-        public void EnviarModo(string mode) => 
+        public void EnviarModo(string mode) =>  //Envio do Modo de Condução (STANDARD; ECO; SPORT)
             EnviarDadosSimulados(0x203, new byte[] { (byte)(mode.ToLower() switch { "standard"=>0, "eco"=>1, "sport"=>2, _=>0 }) });
 
-        public void EnviarLuzes() {
-            byte mask = 0;
+        public void EnviarLuzes() { //Envio das luzes (MÉDIOS, PISCAS, MÁXIMOS)
+            byte mask = 0;  //Condensa os 5 bools num único byte
             if (SimulationState.Lights) mask |= 0x01;
             if (SimulationState.MaxLights) mask |= 0x02;
             if (SimulationState.IndicatorLeft) mask |= 0x04;
@@ -151,29 +154,28 @@ namespace CAN
             EnviarDadosSimulados(0x204, new byte[] { mask });
         }
 
-        public void EnviarBrake(bool brake) => 
+        public void EnviarBrake(bool brake) =>  //Envio de Travão (diminuir velocidade)
             EnviarDadosSimulados(0x205, new byte[] { (byte)(brake ? 1 : 0) });
 
-        public void EnviarAbs(bool state) => 
+        public void EnviarAbs(bool state) =>    //Envio de Ligar/Desligar ABS
             EnviarDadosSimulados(0x206, new byte[] { (byte)(state ? 1 : 0) });
 
-        public void EnviarTemperatura(int temp) => 
+        public void EnviarTemperatura(int temp) =>  //Envio de Temperatura
             EnviarDadosSimulados(0x207, new byte[] { (byte)temp });
 
-        public void EnviarAutonomia(double autonomy) {
+        public void EnviarAutonomia(double autonomy) {  //Envio de Autonomia
             int range = (int)Math.Round(autonomy);
             EnviarDadosSimulados(0x208, new byte[] { (byte)(range & 0xFF), (byte)((range >> 8) & 0xFF) });
         }
 
-        public void EnviarTotalKilometers(int km) {
+        public void EnviarTotalKilometers(int km) { //Enviar Kilometragem
             byte[] data = BitConverter.GetBytes(km); 
             EnviarDadosSimulados(0x209, data);
         }
 
-        public void EnviarTempo(int horas, int minutos) {
+        public void EnviarTempo(int horas, int minutos) {   //Enviar Horas
             EnviarDadosSimulados(0x210, new byte[] { (byte)horas, (byte)minutos });
         }
-
 
         //Envio de dados do HC-SR04 (FCW)
         public void EnviarFcw(double distanceMeters, double ttcSeconds, string type)
@@ -204,13 +206,13 @@ namespace CAN
             int lonInt = (int)Math.Round(longitude * 1000000);
 
             byte[] data = new byte[8];
-            // Latitude (4 bytes, Little Endian)
+            //Latitude (4 bytes, Little Endian)
             data[0] = (byte)(latInt & 0xFF);
             data[1] = (byte)((latInt >> 8) & 0xFF);
             data[2] = (byte)((latInt >> 16) & 0xFF);
             data[3] = (byte)((latInt >> 24) & 0xFF);
             
-            // Longitude (4 bytes, Little Endian)
+            //Longitude (4 bytes, Little Endian)
             data[4] = (byte)(lonInt & 0xFF);
             data[5] = (byte)((lonInt >> 8) & 0xFF);
             data[6] = (byte)((lonInt >> 16) & 0xFF);
@@ -222,7 +224,7 @@ namespace CAN
 
 
 
-        // --- O MOTOR DO SIMULADOR (HEARTBEAT) ---
+        //---O MOTOR DO SIMULADOR (HEARTBEAT)---
         public async Task StartHeartbeatAsync(CancellationToken ct)
         {
             using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100)); // Base de 100ms
@@ -230,10 +232,10 @@ namespace CAN
 
             while (await timer.WaitForNextTickAsync(ct))
             {
-                // --- 100ms ---
+                //---100ms---
                 EnviarVelocidade(SimulationState.Speed);
 
-                // --- 200ms ---
+                //---200ms---
                 if (tickCount % 200 == 0)
                 {
                     EnviarGear(SimulationState.Gear);
@@ -243,7 +245,7 @@ namespace CAN
                     EnviarBrake(SimulationState.Brake);
                 }
 
-                // --- 500ms ---
+                //---500ms---
                 if (tickCount % 500 == 0)
                 {
                     EnviarBateria(SimulationState.Battery);
