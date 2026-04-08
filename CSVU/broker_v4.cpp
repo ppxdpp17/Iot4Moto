@@ -163,87 +163,106 @@ void* can_reader(void* arg) {
     return nullptr;
 }
 
-//THREAD DA CLOUD (Envio via 5G a cada 5 segs)
+//THREAD DA CLOUD (Envio via 5G)
 void* cloud_worker(void* arg) {
-    const std::string serverURI = "ssl://43694c8e9d834a5ab42e7714b016ae38.s1.eu.hivemq.cloud:8883";
-    const std::string clientId = "Mota_CloudSync_" + std::to_string(time(nullptr));
-    const std::string topic = "motos/AJP1RB5SXLB123456/telemetria";
-
-    mqtt::async_client cloudClient(serverURI, clientId);
+    const std::string serverURI = "tcp://85.234.145.56:1883";
+    const std::string clientId = "CSVU_AJP_" + std::to_string(time(nullptr));
+    const std::string topic_telemetry = "motos/AJP1RB5SXLB123456/telemetria";
+    const std::string topic_commands = "motos/AJP1RB5SXLB123456/comandos";
     
+    mqtt::async_client cloudClient(serverURI, clientId);
     mqtt::connect_options connOpts;
-    connOpts.set_user_name("mota_AJP");
-    connOpts.set_password("motaAJP123");
     connOpts.set_clean_session(true);
 
-    //SEGURANÇA TLS
-    //Obrigatório para tráfego via redes públicas (5G). Valida o certificado do HiveMQ 
-    //com base nos certificados raiz do sistema operativo Linux.
-    mqtt::ssl_options sslOpts;
-    sslOpts.set_enable_server_cert_auth(true);
-    sslOpts.set_trust_store("/etc/ssl/certs/ca-certificates.crt"); //Caminho standard Linux
-    connOpts.set_ssl(sslOpts);
+    //ABRE SOCKET CAN EXCLUSIVO PARA ESCRITA (DOWNLINK)
+    int s_write = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    struct ifreq ifr{};
+    strcpy(ifr.ifr_name, "can0");
+    ioctl(s_write, SIOCGIFINDEX, &ifr);
+    struct sockaddr_can addr{};
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+    bind(s_write, (struct sockaddr*)&addr, sizeof(addr));
+    
+    
+    // CALLBACK DE RECEÇÃO DE COMANDOS DO SERVIDOR
+    cloudClient.set_message_callback([s_write](mqtt::const_message_ptr msg) {
+        std::string payload = msg->get_payload_str();
+        std::cout << "[DOWNLINK] Comando recebido do Servidor: " << payload << "\n";
 
-    //Loop infinito que roda a cada 5 segundos
+        try {
+            json cmdJson = json::parse(payload);
+            if (cmdJson.contains("cmd")) {
+                std::string action = cmdJson["cmd"];
+                
+                // Constrói frame CAN para a VCU arrancar/desligar
+                struct can_frame tx_frame{};
+                tx_frame.can_id = 0x105; 
+                tx_frame.can_dlc = 1;
+
+                if (action == "ign_on") tx_frame.data[0] = 0x01;
+                else if (action == "ign_off") tx_frame.data[0] = 0x00;
+
+                write(s_write, &tx_frame, sizeof(struct can_frame));
+                std::cout << "[CAN TX] Ordem de ignição (" << action << ") injetada no barramento.\n";
+            }
+        } catch (...) {
+            std::cout << "[ERRO] Falha ao ler JSON do comando.\n";
+        }
+    });
+
     while (true) {
         try {
-            //Gestão automática de reconexão caso a rede 5G falhe
             if (!cloudClient.is_connected()) {
-                std::cout << "[CLOUD] A ligar ao HiveMQ...\n";
+                std::cout << "[CLOUD] A ligar ao Servidor (" << serverURI << ")...\n";
                 cloudClient.connect(connOpts)->wait();
-                std::cout << "[CLOUD] Ligado com sucesso!\n";
+                std::cout << "[CLOUD] Ligado! A subscrever comandos...\n";
+                
+                // Só subscreve depois de estar ligado
+                cloudClient.subscribe(topic_commands, 1)->wait();
             }
 
-            //SNAPSHOT DO ESTADO
-            //Bloqueia o "Mutex" apenas durante o tempo necessário para copiar os dados.
-            //Liberta-o imediatamente para não estagnar a thread do CAN que está a correr ao lado.            
             MotoState snapshot;
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 snapshot = currentState;
-                currentState.alert = "NONE"; //Limpa o alerta depois de o capturar
+                currentState.alert = "NONE"; 
             }
 
-            //AGREGAÇÃO DE DADOS
-            //Em vez de enviar 10 mensagens MQTT individuais, junta tudo num JSON compacto.
             json payload;
-            payload["ts"] = std::time(nullptr); //Timestamp
-            payload["lat"] = snapshot.lat;      //Latitude
-            payload["lon"] = snapshot.lon;      //Longitude
-            payload["soc"] = snapshot.soc;      //State of Charge
-            payload["rng"] = snapshot.range;    //Autonomia
-            payload["spd"] = snapshot.speed;    //Velocidade
-            payload["ign"] = snapshot.ignition; //Ignição
-            payload["alr"] = snapshot.alert;    //Alertas
+            payload["ts"] = std::time(nullptr);
+            payload["lat"] = snapshot.lat;
+            payload["lon"] = snapshot.lon;
+            payload["soc"] = snapshot.soc;
+            payload["rng"] = snapshot.range;
+            payload["spd"] = snapshot.speed;
+            payload["ign"] = snapshot.ignition;
+            payload["alr"] = snapshot.alert;
 
             std::string msg = payload.dump();
-
-            //Publica na Cloud com QoS 1 (at least once)
-            cloudClient.publish(topic, msg, 1, false)->wait();
-            std::cout << "[CLOUD] Enviado: " << msg << "\n";
+            cloudClient.publish(topic_telemetry, msg, 1, false)->wait();
 
         } catch (const mqtt::exception& exc) {
-            std::cerr << "[CLOUD] Erro: " << exc.what() << "\n";
+            std::cerr << "[CLOUD] Erro de ligação: " << exc.what() << "\n";
         }
 
-        //Taxa de envio reduzido para poupar largura de banda (aumentar no futuro quando tiver um SIM apropriado)
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
+    
+    close(s_write);
     return nullptr;
 }
 
-//ARRANQUE
+//Arranque
 int main() {
-    //Liga ao broker LOCAL (Mosquitto na CSVU) apenas para alimentar o FED
     mqtt::async_client localClient("tcp://127.0.0.1:1883", "CppBroker_V4");
     mqtt::connect_options localConnOpts;
     localConnOpts.set_clean_session(true);
 
     try {
         localClient.connect(localConnOpts)->wait();
-        std::cout << "[LOCAL] Ligado ao Broker Local.\n";
+        std::cout << "[LOCAL] Ligado ao Broker Local da Mota.\n";
 
-        //Instancia as threads
         pthread_t can_tid, cloud_tid;
         pthread_create(&can_tid, nullptr, can_reader, &localClient);
         pthread_create(&cloud_tid, nullptr, cloud_worker, nullptr);
