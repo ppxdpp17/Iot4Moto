@@ -1,37 +1,28 @@
 package com.example.rideriot.fragments
 
+import android.graphics.Color
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.example.rideriot.MainActivity
 import com.example.rideriot.R
+import com.example.rideriot.utils.AlertManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 
-// Imports das classes gRPC geradas
-import com.example.rideriot.StreamRequest
-import com.example.rideriot.TelemetriaData
-import com.example.rideriot.MotorcycleServiceGrpcKt
-import io.grpc.ManagedChannelBuilder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-
 class MapFragment : Fragment() {
 
     private lateinit var map: MapView
     private lateinit var tvStatus: TextView
     private lateinit var switchMotor: SwitchMaterial
-
     private var motoMarker: Marker? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -46,10 +37,25 @@ class MapFragment : Fragment() {
         switchMotor = view.findViewById(R.id.switchMotor)
 
         setupMap()
-        setSwitchListener()
 
-        // Inicia a escuta de dados via gRPC Stream
-        observarTelemetria()
+        // 1. Sincronização Imediata ao abrir o ecrã
+        atualizarTextoStatus(AlertManager.connectionStatus)
+        if (AlertManager.lastLat != 0.0) {
+            atualizarPosicaoMapa(AlertManager.lastLat, AlertManager.lastLon)
+        }
+
+        // 2. Listeners para atualizações enquanto o ecrã estiver aberto
+        AlertManager.onStatusChanged = { novoStatus ->
+            activity?.runOnUiThread { atualizarTextoStatus(novoStatus) }
+        }
+
+        AlertManager.onLocationChanged = { lat, lon ->
+            activity?.runOnUiThread { atualizarPosicaoMapa(lat, lon) }
+        }
+
+        switchMotor.setOnCheckedChangeListener { _, isChecked ->
+            (requireActivity() as MainActivity).enviarComandoMota(isChecked)
+        }
     }
 
     private fun setupMap() {
@@ -58,57 +64,31 @@ class MapFragment : Fragment() {
         map.controller.setCenter(GeoPoint(41.3000, -7.7400))
     }
 
-    private fun observarTelemetria() {
-        // O lifecycleScope garante que a stream fecha quando sais do Fragment
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val channel = ManagedChannelBuilder.forAddress("85.234.145.56", 50051)
-                    .usePlaintext()
-                    .build()
-
-                val stub = MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub(channel)
-                val request = StreamRequest.newBuilder().setVin("AJP1RB5SXLB123456").build()
-
-                // O 'collect' fica bloqueado à espera de dados do servidor (Stream)
-                stub.streamTelemetria(request).collect { data ->
-                    // Volta para a UI thread para atualizar o mapa
-                    launch(Dispatchers.Main) {
-                        atualizarInterface(data.lat, data.lon, data.alert)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("gRPC_Stream", "Erro na stream: ${e.message}")
-            }
-        }
+    private fun atualizarTextoStatus(status: String) {
+        tvStatus.text = "Estado: $status"
+        tvStatus.setTextColor(if (status.contains("Ligado")) Color.GREEN else Color.WHITE)
     }
 
-    private fun atualizarInterface(lat: Double, lon: Double, alerta: String) {
+    private fun atualizarPosicaoMapa(lat: Double, lon: Double) {
+        // Agora mostramos a mota mesmo que esteja em 0.0 para saberes que os dados estão a chegar
         val point = GeoPoint(lat, lon)
 
-        // Atualiza Marcador
         if (motoMarker == null) {
             motoMarker = Marker(map)
-            motoMarker?.icon = androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.moto_icon)
+            motoMarker?.icon = ContextCompat.getDrawable(requireContext(), R.drawable.moto_icon)
+            motoMarker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             map.overlays.add(motoMarker)
         }
+
         motoMarker?.position = point
         map.controller.animateTo(point)
-
-        // Atualiza Status/Alertas
-        if (alerta.isNotEmpty() && alerta != "NONE") {
-            tvStatus.text = "ALERTA: $alerta ⚠️"
-        } else {
-            tvStatus.text = "Mota em segurança ✅"
-        }
-
         map.invalidate()
     }
 
-    private fun setSwitchListener() {
-        switchMotor.setOnCheckedChangeListener { _, isChecked ->
-            // Continua a usar o método que já criámos na MainActivity (gRPC Unário)
-            (requireActivity() as MainActivity).enviarComandoMota(isChecked)
-        }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        AlertManager.onStatusChanged = null
+        AlertManager.onLocationChanged = null
     }
 
     override fun onResume() { super.onResume(); map.onResume() }

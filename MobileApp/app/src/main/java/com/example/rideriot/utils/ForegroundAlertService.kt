@@ -51,35 +51,28 @@ class ForegroundAlertService : Service() {
 
     private fun iniciarStreamGrpc() {
         serviceScope.launch {
-            while (isActive) { // Loop de reconexão caso a rede caia
+            while (isActive) {
                 try {
-                    // ATENÇÃO: METE O TEU IP AQUI
-                    val channel = ManagedChannelBuilder.forAddress("85.xxx.xxx.xxx", 50051)
+                    AlertManager.updateStatus("A aguardar ligação... 🔴")
+
+                    val channel = ManagedChannelBuilder.forAddress("85.234.145.56", 50051)
                         .usePlaintext()
                         .build()
 
                     val stub = MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub(channel)
                     val request = StreamRequest.newBuilder().setVin("AJP1RB5SXLB123456").build()
 
+                    // O collect bloqueia aqui e fica à espera de dados
                     stub.streamTelemetria(request).collect { data ->
-                        // 1. Atualiza as coordenadas para uso local
-                        lastLat = data.lat
-                        lastLon = data.lon
+                        // Mal recebe o PRIMEIRO pacote, assume que está ligado
+                        AlertManager.updateStatus("Ligado 🟢")
 
-                        // 2. Broadcast para o MapFragment apanhar o GPS em tempo real
-                        val mapIntent = Intent("UPDATE_MAP_LOCATION").apply {
-                            putExtra("LAT", data.lat)
-                            putExtra("LON", data.lon)
-                            putExtra("ALERT", data.alert)
-                        }
-                        sendBroadcast(mapIntent)
-
-                        // 3. Processa os alertas
+                        AlertManager.updateLocation(data.lat, data.lon)
                         processarAlerta(data.alert)
                     }
                 } catch (e: Exception) {
-                    Log.e("SENTINEL", "Stream falhou, a tentar reconectar em 5s: ${e.message}")
-                    delay(5000) // Espera antes de tentar ligar de novo
+                    AlertManager.updateStatus("Erro: A aguardar ligação... 🔴")
+                    delay(5000)
                 }
             }
         }
