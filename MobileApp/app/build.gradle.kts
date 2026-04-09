@@ -1,18 +1,21 @@
+import com.google.protobuf.gradle.*
+
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.protobuf)
 }
 
 android {
     namespace = "com.example.rideriot"
-    compileSdk {
-        version = release(36)
-    }
+    // SINTAXE CORRETA:
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.rideriot"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -59,8 +62,41 @@ dependencies {
     //Para o OSMDroid;
     implementation("org.osmdroid:osmdroid-android:6.1.18")
 
-    //Para o MQTT;
+    //Para o MQTT; (Aviso: Se vais usar gRPC, este código do Paho MQTT está só a fazer lixo)
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation("org.eclipse.paho:org.eclipse.paho.android.service:1.1.1")
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+
+    //Para receber via gRPC
+    implementation("io.grpc:grpc-okhttp:1.62.0")
+    implementation("io.grpc:grpc-protobuf-lite:1.62.0")
+    implementation("io.grpc:grpc-stub:1.62.0")
+    implementation("io.grpc:grpc-kotlin-stub:1.4.1")
+    implementation("javax.annotation:javax.annotation-api:1.3.2")
+}
+
+// Configuração para gerar o código Kotlin a partir do .proto
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.1"
+    }
+    plugins {
+        id("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.62.0"
+        }
+        id("grpckotlin") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:1.4.1:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.plugins {
+                id("grpc")
+                id("grpckotlin")
+            }
+            task.builtins {
+                id("java") { option("lite") }
+            }
+        }
+    }
 }
