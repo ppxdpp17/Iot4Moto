@@ -9,13 +9,12 @@ plugins {
 
 android {
     namespace = "com.example.rideriot"
-    // SINTAXE CORRETA:
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.rideriot"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -35,8 +34,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
     buildFeatures {
         compose = true
+    }
+    sourceSets {
+        getByName("main") {
+            java {
+                srcDir("build/generated/source/proto/debug/java")
+                srcDir("build/generated/source/proto/debug/grpc")
+                srcDir("build/generated/source/proto/debug/grpckotlin")
+            }
+        }
     }
 }
 
@@ -68,11 +79,14 @@ dependencies {
     implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
 
     //Para receber via gRPC
-    implementation("io.grpc:grpc-okhttp:1.62.0")
-    implementation("io.grpc:grpc-protobuf-lite:1.62.0")
-    implementation("io.grpc:grpc-stub:1.62.0")
-    implementation("io.grpc:grpc-kotlin-stub:1.4.1")
+    implementation("io.grpc:grpc-okhttp:1.62.2")
+    implementation("io.grpc:grpc-protobuf-lite:1.62.2")
+    implementation("io.grpc:grpc-stub:1.62.2")
+    implementation("io.grpc:grpc-kotlin-stub:1.4.1") // Este fica igual
     implementation("javax.annotation:javax.annotation-api:1.3.2")
+
+    implementation("io.grpc:grpc-android:1.62.2")
+    implementation("io.grpc:grpc-api:1.62.2")
 }
 
 // Configuração para gerar o código Kotlin a partir do .proto
@@ -82,7 +96,7 @@ protobuf {
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.62.0"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.62.2"
         }
         id("grpckotlin") {
             artifact = "io.grpc:protoc-gen-grpc-kotlin:1.4.1:jdk8@jar"
@@ -91,8 +105,12 @@ protobuf {
     generateProtoTasks {
         all().forEach { task ->
             task.plugins {
-                id("grpc")
-                id("grpckotlin")
+                id("grpc") {
+                    option("lite")
+                }
+                id("grpckotlin") {
+                    option("lite")
+                }
             }
             task.builtins {
                 id("java") { option("lite") }
