@@ -2,20 +2,28 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "com.example.rideriot";
-option java_outer_classname = "MotorcycleProto";
-
 package motorcycle;
 
 service MotorcycleService {
-    rpc SendCommand (CommandRequest) returns (CommandReply);
+  // Comando único (o que já tens)
+  rpc SendCommand (CommandRequest) returns (CommandReply);
+
+  // Fluxo de dados (A App liga-se e fica a ouvir)
+  rpc StreamTelemetria (StreamRequest) returns (stream TelemetriaData);
 }
 
-message CommandRequest {
-    string vin = 1;
-    string action = 2;
+message StreamRequest {
+  string vin = 1;
 }
 
-message CommandReply {
-    bool success = 1;
-    string message = 2;
+message TelemetriaData {
+  double lat = 1;
+  double lon = 2;
+  int32 soc = 3;
+  int32 speed = 4;
+  string alert = 5;
+  int64 ts = 6;
 }
+
+message CommandRequest { string vin = 1; string action = 2; }
+message CommandReply { bool success = 1; string message = 2; }

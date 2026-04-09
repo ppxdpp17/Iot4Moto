@@ -2,34 +2,37 @@ package com.example.rideriot.fragments
 
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import com.example.rideriot.MainActivity // Importa a tua MainActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.rideriot.MainActivity
 import com.example.rideriot.R
-import com.example.rideriot.utils.MqttManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 
+// Imports das classes gRPC geradas
+import com.example.rideriot.StreamRequest
+import com.example.rideriot.TelemetriaData
+import com.example.rideriot.MotorcycleServiceGrpcKt
+import io.grpc.ManagedChannelBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+
 class MapFragment : Fragment() {
 
     private lateinit var map: MapView
     private lateinit var tvStatus: TextView
     private lateinit var switchMotor: SwitchMaterial
-    private lateinit var mqttManager: MqttManager
 
-    private val BROKER_URL = "tcp://85.234.145.56:1883"
-    private val CLIENT_ID = "AndroidApp_Map_${System.currentTimeMillis()}"
-
-    // Variáveis para o GPS
     private var motoMarker: Marker? = null
-    private var currentLat: Double? = null
-    private var currentLon: Double? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         Configuration.getInstance().load(requireContext(), PreferenceManager.getDefaultSharedPreferences(requireContext()))
@@ -38,100 +41,76 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         map = view.findViewById(R.id.mapView)
         tvStatus = view.findViewById(R.id.tvStatus)
         switchMotor = view.findViewById(R.id.switchMotor)
 
         setupMap()
-        setupMqtt()
-        setSwitchListener() // Inicia o listener do gRPC
+        setSwitchListener()
+
+        // Inicia a escuta de dados via gRPC Stream
+        observarTelemetria()
     }
 
     private fun setupMap() {
         map.setMultiTouchControls(true)
-        map.controller.setZoom(20.0)
+        map.controller.setZoom(18.0)
         map.controller.setCenter(GeoPoint(41.3000, -7.7400))
     }
 
-    private fun setupMqtt() {
-        mqttManager = MqttManager(requireContext())
+    private fun observarTelemetria() {
+        // O lifecycleScope garante que a stream fecha quando sais do Fragment
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val channel = ManagedChannelBuilder.forAddress("85.234.145.56", 50051)
+                    .usePlaintext()
+                    .build()
 
-        mqttManager.messageListener = { topic, payload ->
-            activity?.runOnUiThread {
-                when (topic) {
-                    // (Opcional) Podemos ouvir a telemetria completa aqui se precisares de atualizar a UI
-                    "moto/gps" -> {
-                        try {
-                            val json = org.json.JSONObject(payload)
-                            currentLat = json.getDouble("lat")
-                            currentLon = json.getDouble("lon")
-                            updateMapLocation()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+                val stub = MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub(channel)
+                val request = StreamRequest.newBuilder().setVin("AJP1RB5SXLB123456").build()
+
+                // O 'collect' fica bloqueado à espera de dados do servidor (Stream)
+                stub.streamTelemetria(request).collect { data ->
+                    // Volta para a UI thread para atualizar o mapa
+                    launch(Dispatchers.Main) {
+                        atualizarInterface(data.lat, data.lon, data.alert)
                     }
                 }
-            }
-        }
-
-        mqttManager.connect(BROKER_URL, CLIENT_ID) {
-            activity?.runOnUiThread {
-                tvStatus.text = "Estado: Ligado à mota \uD83D\uDFE2"
-                // A App agora só subscreve telemetria. Os comandos descem via gRPC!
-                mqttManager.subscribe("motos/AJP1RB5SXLB123456/telemetria")
+            } catch (e: Exception) {
+                Log.e("gRPC_Stream", "Erro na stream: ${e.message}")
             }
         }
     }
 
-    private fun updateMapLocation() {
-        val lat = currentLat ?: return
-        val lon = currentLon ?: return
+    private fun atualizarInterface(lat: Double, lon: Double, alerta: String) {
         val point = GeoPoint(lat, lon)
 
+        // Atualiza Marcador
         if (motoMarker == null) {
             motoMarker = Marker(map)
-            val customIcon = androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.moto_icon)
-            motoMarker?.icon = customIcon
-            motoMarker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            motoMarker?.title = "Mota"
+            motoMarker?.icon = androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.moto_icon)
             map.overlays.add(motoMarker)
         }
-
         motoMarker?.position = point
-        map.controller.setCenter(point)
+        map.controller.animateTo(point)
+
+        // Atualiza Status/Alertas
+        if (alerta.isNotEmpty() && alerta != "NONE") {
+            tvStatus.text = "ALERTA: $alerta ⚠️"
+        } else {
+            tvStatus.text = "Mota em segurança ✅"
+        }
+
         map.invalidate()
     }
 
-    // =======================================================
-    // A MAGIA DO gRPC ACONTECE AQUI
-    // =======================================================
     private fun setSwitchListener() {
         switchMotor.setOnCheckedChangeListener { _, isChecked ->
-            // Chama a função da MainActivity que vai disparar o pedido gRPC para a porta 50051
-            if (isChecked) {
-                (requireActivity() as MainActivity).enviarComandoMota(true)
-                tvStatus.text = "Motor: ON"
-            } else {
-                (requireActivity() as MainActivity).enviarComandoMota(false)
-                tvStatus.text = "Motor: OFF"
-            }
+            // Continua a usar o método que já criámos na MainActivity (gRPC Unário)
+            (requireActivity() as MainActivity).enviarComandoMota(isChecked)
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        map.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        map.onPause()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        mqttManager.disconnect()
-        map.onDetach()
-    }
+    override fun onResume() { super.onResume(); map.onResume() }
+    override fun onPause() { super.onPause(); map.onPause() }
 }
