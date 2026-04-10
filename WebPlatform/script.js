@@ -1,7 +1,7 @@
-//CONFIGURAÇÕES E ESTADO GLOBAL
-const BROKER_IP = "172.20.0.203"; 
-const PORT = 9001;
-const CLIENT_ID = "Web_Dash_" + Math.random().toString(16).substr(2, 5);
+// ==========================================
+// 1. CONFIGURAÇÕES E ESTADO GLOBAL
+// ==========================================
+const SERVER_STREAM_URL = "http://85.xxx.xxx.xxx:5000/api/stream"; // <--- ALTERA ISTO PARA O TEU IP
 
 let currentMode = 'live';
 let routeData = [];
@@ -9,14 +9,15 @@ let currentLat = null;
 let currentLon = null;
 let lastLat = null;
 let lastLon = null;
-let rainResetTimer;
+let ultimoAlertaWeb = "NONE";
 
-//Memória do estado "LIVE".
 let liveState = {
     roll: 0, vel: 0, bat: '--', lat: null, lon: null
 };
 
-//MAP ENGINE (LEAFLET) E GPS
+// ==========================================
+// 2. MOTOR DO MAPA (LEAFLET)
+// ==========================================
 const motoIcon = L.divIcon({
     html: `<img id="moto-marker-icon" src="https://cdn-icons-png.flaticon.com/128/11432/11432322.png" style="width: 32px; height: 32px; transition: transform 1s linear; transform: rotate(180deg);">`,
     className: 'custom-moto-icon',
@@ -28,7 +29,6 @@ let map = L.map('map', { zoomControl: false }).setView([41.3, -7.74], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, theme: 'dark' }).addTo(map);
 let marker = L.marker([41.3, -7.74], {icon: motoIcon}).addTo(map);
 
-//Calcula o ângulo (heading) da mota com base nas últimas coordenadas
 function calculateBearing(lat1, lon1, lat2, lon2) {
     const toRad = deg => deg * Math.PI / 180;
     const toDeg = rad => rad * 180 / Math.PI;
@@ -39,26 +39,24 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
     return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
-//Função para mota no mapa ser mais "fluída"
 function updateMap() {
-    if (currentLat !== null && currentLon !== null) {
+    if (currentLat !== null && currentLon !== null && currentLat !== 0) {
         let newLatLng = new L.LatLng(currentLat, currentLon);
         marker.setLatLng(newLatLng);
         
         map.panTo(newLatLng, { animate: true, duration: 1.0, easeLinearity: 1 });
 
-        //Só calcula o ângulo se houver movimento
         if (lastLat !== null && lastLon !== null && (lastLat !== currentLat || lastLon !== currentLon)) {
             let angle = calculateBearing(lastLat, lastLon, currentLat, currentLon); 
             document.getElementById('moto-marker-icon').style.transform = `rotate(${angle - 90}deg)`;
         }
-        
         lastLat = currentLat; lastLon = currentLon;
     }
 }
 
-
-//MUDANÇAS DE INTERFACES (UI)
+// ==========================================
+// 3. GESTÃO DE INTERFACE (UI) E ALERTAS
+// ==========================================
 function switchMode(mode) {
     currentMode = mode;
     document.getElementById('btn-live').classList.toggle('active', mode === 'live');
@@ -82,10 +80,8 @@ function switchMode(mode) {
         alertsTitle.innerText = "Histórico de Rota";
         if (fcwCard) fcwCard.style.display = 'none';
         if (rainCard) rainCard.style.display = 'none';
-        
         fetchRoutes();
     } else {
-        //Restaura estado live
         histControls.style.display = 'none';
         liveCamWrapper.style.display = 'block';
         headerStatus.style.display = 'flex'; 
@@ -98,7 +94,7 @@ function switchMode(mode) {
         historyMsg.style.display = 'none';
         alertsTitle.innerText = "Eventos Recentes";
 
-        //Devolve os últimos valores guardados em memória ao DOM
+        // Restaura a UI para o último estado conhecido
         document.getElementById("vel-val").innerText = liveState.vel;
         document.getElementById("bat-val").innerText = liveState.bat;
         document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
@@ -107,8 +103,6 @@ function switchMode(mode) {
         currentLat = liveState.lat; currentLon = liveState.lon;
         updateMap();
     }
-
-    //Forçar o leaflet a redimensionar-se caso estivesse oculto
     setTimeout(() => map.invalidateSize(), 100);
 }
 
@@ -131,123 +125,111 @@ function logEvent(type, message) {
                     <div><span>${message}</span> <span class="time">${time}</span></div>`;
     
     list.prepend(li);
-    //Impede que a lista cresça infinitamente
     if (list.children.length > 30) list.lastChild.remove(); 
 }
 
-
-//INTEGRAÇÃO MQTT (TEMPO REAL)
-const client = new Paho.MQTT.Client(BROKER_IP, PORT, CLIENT_ID);
-
-client.onConnectionLost = () => {
+// ==========================================
+// 4. INTEGRAÇÃO SSE (TEMPO REAL C#)
+// ==========================================
+function iniciarStreamServidor() {
     const status = document.getElementById("conn-status");
-    status.innerText = "Ligação Perdida"; status.style.color = "var(--danger)";
-};
+    status.innerText = "A ligar..."; 
+    status.style.color = "var(--warning)";
 
-client.onMessageArrived = (message) => {
-    const topic = message.destinationName;
-    const payload = message.payloadString;
+    const eventSource = new EventSource(SERVER_STREAM_URL);
 
-    try {
-        //Atualiza a memória base (liveState)
-        if (topic === "moto/roll") liveState.roll = parseFloat(payload);
-        if (topic === "moto/speed") liveState.vel = Math.round(parseFloat(payload));
-        if (topic === "moto/battery") liveState.bat = Math.round(parseFloat(payload));
-        if (topic === "moto/gps/latitude") liveState.lat = parseFloat(payload);
-        if (topic === "moto/gps/longitude") liveState.lon = parseFloat(payload);
-        
-        //Lógica visual do FCW
-        if (topic === "moto/fcw") {
-            const fcwData = JSON.parse(payload);
-            const dist = fcwData.dist;
-            const ttc = fcwData.ttc;
-            
-            document.getElementById("fcw-dist").innerText = dist.toFixed(2);
-            document.getElementById("fcw-ttc").innerText = ttc < 99 ? ttc.toFixed(1) : "--";
+    eventSource.onopen = () => {
+        status.innerText = "Online"; 
+        status.style.color = "var(--primary)";
+    };
 
-            const obstacleBar = document.getElementById("radar-obstacle");
-            const maxDist = 4.0; 
-            const safeDist = Math.min(dist, maxDist);
-            
-            const rightPosition = 100 - ((safeDist / maxDist) * 100);
-            obstacleBar.style.right = `${rightPosition}px`;
+    eventSource.onerror = () => {
+        status.innerText = "Falha de Rede"; 
+        status.style.color = "var(--danger)";
+    };
 
-            if (dist > 3.80) obstacleBar.style.backgroundColor = "#00ff00";
-            else if (dist > 1.50) obstacleBar.style.backgroundColor = "#ffa500";
-            else obstacleBar.style.backgroundColor = "#ff0000";
-        }
+    eventSource.onmessage = (event) => {
+        if (currentMode === 'history') return;
 
-        //Sistema de Alertas
-        if (topic === "moto/alarm") {
-            const alertType = payload.trim().toUpperCase();
-            
-            if (alertType === "RAIN_CLEARED") {
-                document.getElementById("rain-icon").classList.replace("active", "inactive");
-                document.getElementById("rain-text").innerText = "Seco";
-                return;
-            }
+        try {
+            const data = JSON.parse(event.data);
+            if (Object.keys(data).length === 0) return;
 
-            let msg = "Evento registado.";
-            if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
-            if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
-            if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
-            if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
-            
-            logEvent(alertType, msg);
+            // Memória
+            if (data.r !== undefined) liveState.roll = data.r;
+            if (data.spd !== undefined) liveState.vel = data.spd;
+            if (data.soc !== undefined) liveState.bat = data.soc;
+            if (data.lat !== undefined && data.lat !== 0) liveState.lat = data.lat;
+            if (data.lon !== undefined && data.lon !== 0) liveState.lon = data.lon;
 
-            if (alertType === "RAIN") {
-                document.getElementById("rain-icon").classList.remove("inactive", "active");
-                document.getElementById("rain-icon").classList.add("active");
-                document.getElementById("rain-text").innerText = "A Chover";
-            }
-        }
-        
-        //Se estivermos em modo de histórico, ignora a atualização do ecrã com dados live
-        if (currentMode === 'history') return; 
-
-        //Atualização visual do ecrã (Apenas se em modo Live)
-        if (topic === "moto/roll") {
+            // UI
+            document.getElementById("vel-val").innerText = liveState.vel;
+            document.getElementById("bat-val").innerText = liveState.bat;
             document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
             document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
-        }
-        else if (topic === "sim/motorcycle") {
+
             const stateBadge = document.getElementById("moto-state");
-            if (payload === "on") {
+            if (data.ign === true) {
                 stateBadge.innerText = "ON"; stateBadge.classList.add('on');
-            } else {
+            } else if (data.ign === false) {
                 stateBadge.innerText = "OFF"; stateBadge.classList.remove('on');
             }
-        }
-        else if (topic === "moto/speed") document.getElementById("vel-val").innerText = liveState.vel;
-        else if (topic === "moto/battery") document.getElementById("bat-val").innerText = liveState.bat;
-        else if (topic === "moto/gps/latitude" || topic === "moto/gps/longitude") {
-            currentLat = liveState.lat; currentLon = liveState.lon; updateMap();
-        }
-    } catch (e) {}
-};
 
-client.connect({
-    onSuccess: () => {
-        const status = document.getElementById("conn-status");
-        status.innerText = "Online"; status.style.color = "var(--primary)";
-        
-        client.subscribe("moto/roll");
-        client.subscribe("sim/motorcycle");
-        client.subscribe("moto/gps/latitude");
-        client.subscribe("moto/gps/longitude");
-        client.subscribe("moto/speed");
-        client.subscribe("moto/battery");
-        client.subscribe("moto/alarm");
-        client.subscribe("moto/fcw");
-    },
-    onFailure: () => {
-        const status = document.getElementById("conn-status");
-        status.innerText = "Falha de Rede"; status.style.color = "var(--danger)";
-    },
-    useSSL: false, timeout: 3
-});
+            // Mapa
+            currentLat = liveState.lat; currentLon = liveState.lon;
+            updateMap();
 
-//HISTÓRICO
+            // Alertas
+            const alertType = data.alr || "NONE";
+            if (alertType !== "NONE") {
+                if (alertType === "RAIN_CLEARED") {
+                    document.getElementById("rain-icon").classList.replace("active", "inactive");
+                    document.getElementById("rain-text").innerText = "Seco";
+                } else if (alertType !== ultimoAlertaWeb) {
+                    ultimoAlertaWeb = alertType;
+                    let msg = "Evento registado.";
+                    if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
+                    if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
+                    if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
+                    if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
+                    
+                    logEvent(alertType, msg);
+                    setTimeout(() => { ultimoAlertaWeb = "NONE"; }, 10000);
+
+                    if (alertType === "RAIN") {
+                        document.getElementById("rain-icon").classList.remove("inactive", "active");
+                        document.getElementById("rain-icon").classList.add("active");
+                        document.getElementById("rain-text").innerText = "A Chover";
+                    }
+                }
+            }
+
+            // FCW (Se existir)
+            if (data.fcw) {
+                const dist = data.fcw.dist;
+                const ttc = data.fcw.ttc;
+                document.getElementById("fcw-dist").innerText = dist.toFixed(2);
+                document.getElementById("fcw-ttc").innerText = ttc < 99 ? ttc.toFixed(1) : "--";
+                
+                const obstacleBar = document.getElementById("radar-obstacle");
+                const safeDist = Math.min(dist, 4.0);
+                obstacleBar.style.right = `${100 - ((safeDist / 4.0) * 100)}px`;
+                
+                if (dist > 3.80) obstacleBar.style.backgroundColor = "#00ff00";
+                else if (dist > 1.50) obstacleBar.style.backgroundColor = "#ffa500";
+                else obstacleBar.style.backgroundColor = "#ff0000";
+            }
+        } catch (e) {
+            console.error("Erro a processar JSON:", e);
+        }
+    };
+}
+
+iniciarStreamServidor();
+
+// ==========================================
+// 5. MOTOR DE HISTÓRICO E SIMULAÇÃO
+// ==========================================
 async function fetchRoutes() {
     try {
         const res = await fetch('./data/index.json');
@@ -277,7 +259,6 @@ async function loadRoute() {
     document.getElementById('virtual-play-btn').innerHTML = '<i class="fa-solid fa-play"></i>';
     document.getElementById('route-stats').innerHTML = `Distância: ${route.distance_km} km | Duração: ${mins}:${secs}`;
 
-    //Decide qual player usar com base na existência de um ficheiro de vídeo
     if (route.video_file) {
         videoElement.src = `./videos/${route.video_file.split('/').pop()}`;
         videoElement.style.display = 'block';
@@ -286,7 +267,6 @@ async function loadRoute() {
         videoElement.src = "";
         videoElement.style.display = 'none';
         virtualPlayer.style.display = 'block';
-        
         vDurationMs = route.duration_sec * 1000;
         updateVirtualUI();
     }
@@ -295,11 +275,9 @@ async function loadRoute() {
     routeData = await res.json();
 }
 
-//Injeta os dados da rota passada na UI com base nos milissegundos do player
 function syncTelemetry(currentTimeMs) {
     if(currentMode !== 'history' || routeData.length === 0) return;
     
-    //Procura o frame de dados mais próximo do timestamp atual
     const frame = routeData.find(d => d.t >= currentTimeMs);
     if(frame) {
         document.getElementById("roll-val").innerText = frame.r.toFixed(2);
@@ -307,7 +285,6 @@ function syncTelemetry(currentTimeMs) {
         
         let speed = frame.speed || frame.v || frame.s || frame.vel || 0;
         document.getElementById("vel-val").innerText = Math.round(speed);
-        
         document.getElementById("bat-val").innerText = frame.bat !== undefined ? Math.round(frame.bat) : "--";
 
         if(frame.la && frame.lo) {
@@ -317,13 +294,11 @@ function syncTelemetry(currentTimeMs) {
     }
 }
 
-//Sincroniza dados com o player de vídeo do browser
 document.getElementById('route-video').addEventListener('timeupdate', (e) => {
     const currentTimeMs = Math.floor(e.target.currentTime * 10) * 100;
     syncTelemetry(currentTimeMs);
 });
 
-//LOGICA DO PLAYER VIRTUAL (Para a rota sem vídeo)
 let vTimer = null;
 let vTimeMs = 0;
 let vDurationMs = 0;
