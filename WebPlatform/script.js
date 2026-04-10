@@ -1,7 +1,7 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E ESTADO GLOBAL
 // ==========================================
-const SERVER_STREAM_URL = "http://85.xxx.xxx.xxx:5000/api/stream"; // <--- ALTERA ISTO PARA O TEU IP
+const SERVER_STREAM_URL = "http://85.234.145.56:5000/api/stream";
 
 let currentMode = 'live';
 let routeData = [];
@@ -40,7 +40,7 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
 }
 
 function updateMap() {
-    if (currentLat !== null && currentLon !== null && currentLat !== 0) {
+    if (currentLat !== null && currentLon !== null) {
         let newLatLng = new L.LatLng(currentLat, currentLon);
         marker.setLatLng(newLatLng);
         
@@ -159,8 +159,8 @@ function iniciarStreamServidor() {
             if (data.r !== undefined) liveState.roll = data.r;
             if (data.spd !== undefined) liveState.vel = data.spd;
             if (data.soc !== undefined) liveState.bat = data.soc;
-            if (data.lat !== undefined && data.lat !== 0) liveState.lat = data.lat;
-            if (data.lon !== undefined && data.lon !== 0) liveState.lon = data.lon;
+            if (data.lat !== undefined) liveState.lat = data.lat;
+            if (data.lon !== undefined) liveState.lon = data.lon;
 
             // UI
             document.getElementById("vel-val").innerText = liveState.vel;
