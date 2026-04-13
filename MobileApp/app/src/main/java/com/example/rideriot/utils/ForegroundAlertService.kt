@@ -16,6 +16,7 @@ import com.example.rideriot.models.Alert
 // Imports gRPC e Coroutines
 import com.example.rideriot.StreamRequest
 import com.example.rideriot.MotorcycleServiceGrpcKt
+import com.example.rideriot.R
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
@@ -145,9 +146,9 @@ class ForegroundAlertService : Service() {
             getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
         }
         val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("RiderIoT Ativo")
-            .setContentText("A comunicar via gRPC...")
-            .setSmallIcon(android.R.drawable.ic_menu_compass) // Usa o teu icone aqui
+            .setContentTitle("RiderIoT em Execução")
+            .setContentText("Toque para obter mais informações ou para parar a app.")
+            .setSmallIcon(R.drawable.ic_moto_notif)
             .build()
         startForeground(1, notification)
     }
