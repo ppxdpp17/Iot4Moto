@@ -200,8 +200,18 @@ void* cloud_worker(void* arg) {
                 tx_frame.can_id = 0x105; 
                 tx_frame.can_dlc = 1;
 
-                if (action == "ign_on") tx_frame.data[0] = 0x01;
-                else if (action == "ign_off") tx_frame.data[0] = 0x00;
+                if (action == "ign_on") {
+                    tx_frame.data[0] = 0x01;
+                    // Atualiza o estado interno com bloqueio de memória
+                    std::lock_guard<std::mutex> lock(stateMutex);
+                    currentState.ignition = true;
+                }
+                else if (action == "ign_off") {
+                    tx_frame.data[0] = 0x00;
+                    // Atualiza o estado interno com bloqueio de memória
+                    std::lock_guard<std::mutex> lock(stateMutex);
+                    currentState.ignition = false;
+                }
 
                 write(s_write, &tx_frame, sizeof(struct can_frame));
                 std::cout << "[CAN TX] Ordem de ignição (" << action << ") injetada no barramento.\n";

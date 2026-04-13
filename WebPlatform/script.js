@@ -101,12 +101,14 @@ function switchMode(mode) {
         document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
         
         const stateBadge = document.getElementById("moto-state");
-        if (liveState.ign) {
+        const isLigada = (liveState.ign === true || liveState.ign === "true" || liveState.ign === "on");
+
+        if (isLigada) {
             stateBadge.innerText = "ON"; 
-            stateBadge.classList.add('on');
+            stateBadge.style.backgroundColor = "#28a745"; // Verde
         } else {
             stateBadge.innerText = "OFF"; 
-            stateBadge.classList.remove('on');
+            stateBadge.style.backgroundColor = "#dc3545"; // Vermelho
         }
 
         currentLat = liveState.lat; currentLon = liveState.lon;
@@ -170,16 +172,18 @@ function iniciarStreamServidor() {
             if (data.soc !== undefined) liveState.bat = data.soc;
             if (data.lat !== undefined) liveState.lat = data.lat;
             if (data.lon !== undefined) liveState.lon = data.lon;
+
             if (data.ign !== undefined) {
-                liveState.ign = data.ign; // Guarda na memória
-                const stateBadge = document.getElementById("moto-state");
+                // Forçamos a leitura quer venha como boolean (true) ou string ("true" / "on")
+                liveState.ign = (data.ign === true || data.ign === "true" || data.ign === "on");
                 
-                if (liveState.ign === true) {
+                const stateBadge = document.getElementById("moto-state");
+                if (liveState.ign) {
                     stateBadge.innerText = "ON"; 
-                    stateBadge.classList.add('on');
+                    stateBadge.style.backgroundColor = "#28a745"; // Verde
                 } else {
                     stateBadge.innerText = "OFF"; 
-                    stateBadge.classList.remove('on');
+                    stateBadge.style.backgroundColor = "#dc3545"; // Vermelho
                 }
             }
 
@@ -190,11 +194,6 @@ function iniciarStreamServidor() {
             document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
 
             const stateBadge = document.getElementById("moto-state");
-            if (data.ign === true) {
-                stateBadge.innerText = "ON"; stateBadge.classList.add('on');
-            } else if (data.ign === false) {
-                stateBadge.innerText = "OFF"; stateBadge.classList.remove('on');
-            }
 
             // Mapa
             currentLat = liveState.lat; currentLon = liveState.lon;
