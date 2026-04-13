@@ -12,7 +12,7 @@ let lastLon = null;
 let ultimoAlertaWeb = "NONE";
 
 let liveState = {
-    roll: 0, vel: 0, bat: '--', lat: null, lon: null, ign: false
+    roll: 0, vel: 0, bat: '--', lat: null, lon: null
 };
 
 // ==========================================
@@ -100,17 +100,6 @@ function switchMode(mode) {
         document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
         document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
         
-        const stateBadge = document.getElementById("moto-state");
-        const isLigada = (liveState.ign === true || liveState.ign === "true" || liveState.ign === "on");
-
-        if (isLigada) {
-            stateBadge.innerText = "ON"; 
-            stateBadge.style.backgroundColor = "#28a745"; // Verde
-        } else {
-            stateBadge.innerText = "OFF"; 
-            stateBadge.style.backgroundColor = "#dc3545"; // Vermelho
-        }
-
         currentLat = liveState.lat; currentLon = liveState.lon;
         updateMap();
     }
@@ -173,20 +162,6 @@ function iniciarStreamServidor() {
             if (data.lat !== undefined) liveState.lat = data.lat;
             if (data.lon !== undefined) liveState.lon = data.lon;
 
-            if (data.ign !== undefined) {
-                // Forçamos a leitura quer venha como boolean (true) ou string ("true" / "on")
-                liveState.ign = (data.ign === true || data.ign === "true" || data.ign === "on");
-                
-                const stateBadge = document.getElementById("moto-state");
-                if (liveState.ign) {
-                    stateBadge.innerText = "ON"; 
-                    stateBadge.style.backgroundColor = "#28a745"; // Verde
-                } else {
-                    stateBadge.innerText = "OFF"; 
-                    stateBadge.style.backgroundColor = "#dc3545"; // Vermelho
-                }
-            }
-
             // UI
             document.getElementById("vel-val").innerText = liveState.vel;
             document.getElementById("bat-val").innerText = liveState.bat;
@@ -194,6 +169,11 @@ function iniciarStreamServidor() {
             document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
 
             const stateBadge = document.getElementById("moto-state");
+            if (data.ign === true) {
+                stateBadge.innerText = "ON"; stateBadge.classList.add('on');
+            } else if (data.ign === false) {
+                stateBadge.innerText = "OFF"; stateBadge.classList.remove('on');
+            }
 
             // Mapa
             currentLat = liveState.lat; currentLon = liveState.lon;
@@ -219,6 +199,7 @@ function iniciarStreamServidor() {
                     if (alertType === "RAIN") {
                         document.getElementById("rain-icon").classList.remove("inactive", "active");
                         document.getElementById("rain-icon").classList.add("active");
+                        document.getElementById("rain-text").innerText = "A Chover";
                     }
                 }
             }
