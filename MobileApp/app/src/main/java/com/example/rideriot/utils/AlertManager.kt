@@ -14,6 +14,8 @@ object AlertManager {
     // Callbacks para avisar a UI
     var onStatusChanged: ((String) -> Unit)? = null
     var onLocationChanged: ((Double, Double) -> Unit)? = null
+    var ignitionState: Boolean = false
+    var onIgnitionChanged: ((Boolean) -> Unit)? = null
 
     fun updateStatus(newStatus: String) {
         connectionStatus = newStatus
@@ -38,5 +40,10 @@ object AlertManager {
             it.title = "${it.title} (Resolvido)"
             onAlertAdded?.invoke()
         }
+    }
+
+    fun updateIgnition(isLigada: Boolean) {
+        ignitionState = isLigada
+        onIgnitionChanged?.invoke(isLigada)
     }
 }

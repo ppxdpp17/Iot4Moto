@@ -23,6 +23,7 @@ message TelemetriaData {
   int32 speed = 4;
   string alert = 5;
   int64 ts = 6;
+  bool ign = 7;
 }
 
 message CommandRequest { string vin = 1; string action = 2; }

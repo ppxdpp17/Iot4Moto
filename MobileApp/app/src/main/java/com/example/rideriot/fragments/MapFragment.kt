@@ -40,6 +40,11 @@ class MapFragment : Fragment() {
 
         // 1. Sincronização Imediata ao abrir o ecrã
         atualizarTextoStatus(AlertManager.connectionStatus)
+        atualizarSwitchIgnicao(AlertManager.ignitionState)
+        AlertManager.onIgnitionChanged = { isLigada ->
+            activity?.runOnUiThread { atualizarSwitchIgnicao(isLigada) }
+        }
+
         if (AlertManager.lastLat != 0.0) {
             atualizarPosicaoMapa(AlertManager.lastLat, AlertManager.lastLon)
         }
@@ -56,6 +61,8 @@ class MapFragment : Fragment() {
         switchMotor.setOnCheckedChangeListener { _, isChecked ->
             (requireActivity() as MainActivity).enviarComandoMota(isChecked)
         }
+
+        setSwitchListener()
     }
 
     private fun setupMap() {
@@ -83,6 +90,20 @@ class MapFragment : Fragment() {
         motoMarker?.position = point
         map.controller.animateTo(point)
         map.invalidate()
+    }
+
+    private fun atualizarSwitchIgnicao(isLigada: Boolean) {
+        if (switchMotor.isChecked != isLigada) {
+            switchMotor.setOnCheckedChangeListener(null) // 1. Fica surdo a cliques
+            switchMotor.isChecked = isLigada             // 2. Muda o botão visualmente
+            setSwitchListener()                          // 3. Volta a ouvir os teus cliques
+        }
+    }
+
+    private fun setSwitchListener() {
+        switchMotor.setOnCheckedChangeListener { _, isChecked ->
+            (requireActivity() as MainActivity).enviarComandoMota(isChecked)
+        }
     }
 
     override fun onDestroyView() {
