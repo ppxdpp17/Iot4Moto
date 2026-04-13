@@ -141,6 +141,17 @@ class ForegroundAlertService : Service() {
 
     private fun startForegroundServiceNotification() {
         val channelId = "rideriot_sentinel_channel"
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("TARGET_FRAGMENT", "MAP")
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            this, 0, intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(channelId, "Monitorização", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
@@ -149,6 +160,7 @@ class ForegroundAlertService : Service() {
             .setContentTitle("RiderIoT em Execução")
             .setContentText("Toque para obter mais informações ou para parar a app.")
             .setSmallIcon(R.drawable.ic_moto_notif)
+            .setContentIntent(pendingIntent)
             .build()
         startForeground(1, notification)
     }
