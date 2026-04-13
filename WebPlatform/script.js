@@ -12,7 +12,7 @@ let lastLon = null;
 let ultimoAlertaWeb = "NONE";
 
 let liveState = {
-    roll: 0, vel: 0, bat: '--', lat: null, lon: null
+    roll: 0, vel: 0, bat: '--', lat: null, lon: null, ign: false
 };
 
 // ==========================================
@@ -100,6 +100,15 @@ function switchMode(mode) {
         document.getElementById("roll-val").innerText = liveState.roll.toFixed(2);
         document.getElementById("bike-img").style.transform = `rotate(${liveState.roll}deg)`;
         
+        const stateBadge = document.getElementById("moto-state");
+        if (liveState.ign) {
+            stateBadge.innerText = "ON"; 
+            stateBadge.classList.add('on');
+        } else {
+            stateBadge.innerText = "OFF"; 
+            stateBadge.classList.remove('on');
+        }
+
         currentLat = liveState.lat; currentLon = liveState.lon;
         updateMap();
     }
@@ -161,6 +170,18 @@ function iniciarStreamServidor() {
             if (data.soc !== undefined) liveState.bat = data.soc;
             if (data.lat !== undefined) liveState.lat = data.lat;
             if (data.lon !== undefined) liveState.lon = data.lon;
+            if (data.ign !== undefined) {
+                liveState.ign = data.ign; // Guarda na memória
+                const stateBadge = document.getElementById("moto-state");
+                
+                if (liveState.ign === true) {
+                    stateBadge.innerText = "ON"; 
+                    stateBadge.classList.add('on');
+                } else {
+                    stateBadge.innerText = "OFF"; 
+                    stateBadge.classList.remove('on');
+                }
+            }
 
             // UI
             document.getElementById("vel-val").innerText = liveState.vel;
@@ -199,7 +220,6 @@ function iniciarStreamServidor() {
                     if (alertType === "RAIN") {
                         document.getElementById("rain-icon").classList.remove("inactive", "active");
                         document.getElementById("rain-icon").classList.add("active");
-                        document.getElementById("rain-text").innerText = "A Chover";
                     }
                 }
             }

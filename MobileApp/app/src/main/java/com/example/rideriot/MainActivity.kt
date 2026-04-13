@@ -84,7 +84,6 @@ class MainActivity : AppCompatActivity() {
     private suspend fun executarChamadaGrpc(ligar: Boolean): String {
         return withContext(Dispatchers.IO) {
             try {
-                // ATENÇÃO: SUBSTITUI PELO TEU IP UBUNTU
                 val channel = ManagedChannelBuilder.forAddress("85.234.145.56", 50051)
                     .usePlaintext()
                     .build()
@@ -101,7 +100,11 @@ class MainActivity : AppCompatActivity() {
 
                 channel.shutdown()
 
-                if (response.success) "Servidor: ${response.message}" else "Falha no servidor"
+                if (response.success) {
+                    if (ligar) "Mota ligada com sucesso!" else "Mota desligada com sucesso!"
+                } else {
+                    "Falha no servidor"
+                }
 
             } catch (e: Exception) {
                 "Erro de Rede: ${e.message}"
