@@ -73,7 +73,7 @@ class MapFragment : Fragment() {
 
     private fun atualizarTextoStatus(status: String) {
         tvStatus.text = "Estado: $status"
-        tvStatus.setTextColor(if (status.contains("Ligado")) Color.GREEN else Color.WHITE)
+        tvStatus.setTextColor(if (status.contains("Online")) Color.GREEN else Color.WHITE)
     }
 
     private fun atualizarPosicaoMapa(lat: Double, lon: Double) {

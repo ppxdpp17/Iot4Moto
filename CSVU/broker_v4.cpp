@@ -44,6 +44,7 @@ struct MotoState {
     int speed = 0;
     bool ignition = true; //Assume true se estiver a emitir CAN
     std::string alert = "NONE";
+    double roll = 0.0;
 };
 
 MotoState currentState;
@@ -84,6 +85,31 @@ void* can_reader(void* arg) {
         else if (id == 0x201) { //Bateria
             currentState.soc = (int)frame.data[0];
             client->publish("moto/battery", std::to_string(currentState.soc), 0, true);
+        }
+        else if (id == 0x202) { //Mudança
+            std::string gear = (frame.data[0] == 1) ? "F" : (frame.data[0] == 2) ? "R" : (frame.data[0] == 3) ? "P" : "N";
+            client->publish("moto/gear", gear);
+        }
+        else if (id == 0x203) { //Modo de condução
+            std::string mode = (frame.data[0] == 1) ? "ECO" : (frame.data[0] == 2) ? "SPORT" : "STD";
+            client->publish("moto/drive_mode", mode);
+        }   
+        else if (id == 0x204) { //Luzes
+            uint8_t mask = frame.data[0];
+            client->publish("moto/lights",          (mask & 0x01) ? "true" : "false");
+            client->publish("moto/maxlights",       (mask & 0x02) ? "true" : "false");
+            client->publish("moto/indicator_left",  (mask & 0x04) ? "true" : "false");
+            client->publish("moto/indicator_right", (mask & 0x08) ? "true" : "false");
+            client->publish("moto/danger-lights",   (mask & 0x10) ? "true" : "false");
+        }
+        else if (id == 0x205) { //Travão
+            client->publish("moto/brake", (frame.data[0] == 1) ? "true" : "false");
+        }
+        else if (id == 0x206) { //ABS
+            client->publish("moto/abs", (frame.data[0] == 1) ? "true" : "false");
+        }
+        else if (id == 0x207) { //Temperatura
+            client->publish("moto/temperature", std::to_string((int)frame.data[0]));
         }
         else if (id == 0x208) { //Autonomia
             currentState.range = frame.data[0]; 
@@ -148,6 +174,18 @@ void* can_reader(void* arg) {
                     client->publish("moto/alarm", "FCW");
                 }
             }
+        }
+        else if (id == 0x303) { //IMU - Ângulo de Inclinação (Roll)
+            // Lemos 2 bytes como um inteiro com sinal (int16_t) para permitir ângulos negativos
+            int16_t raw_roll = frame.data[0] | (frame.data[1] << 8);
+
+            // Divide por 100.0 para restaurar as casas decimais
+            double roll_deg = raw_roll / 100.0;
+
+            currentState.roll = roll_deg;
+
+            // Opcional: Publicar localmente se tiveres o broker a alimentar um ecrã físico na mota
+            client->publish("moto/roll", std::to_string(roll_deg));
         }
         else if (id == 0x401) { //Alerta de Chuva
             //Se ainda deteta chuva
@@ -220,6 +258,8 @@ void* cloud_worker(void* arg) {
             std::cout << "[ERRO] Falha ao ler JSON do comando.\n";
         }
     });
+    
+    int tick = 0;
 
     while (true) {
         try {
@@ -227,8 +267,6 @@ void* cloud_worker(void* arg) {
                 std::cout << "[CLOUD] A ligar ao Servidor (" << serverURI << ")...\n";
                 cloudClient.connect(connOpts)->wait();
                 std::cout << "[CLOUD] Ligado! A subscrever comandos...\n";
-                
-                // Só subscreve depois de estar ligado
                 cloudClient.subscribe(topic_commands, 1)->wait();
             }
 
@@ -236,18 +274,29 @@ void* cloud_worker(void* arg) {
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 snapshot = currentState;
-                currentState.alert = "NONE"; 
+                currentState.alert = "NONE"; // Limpa após leitura
             }
 
             json payload;
+
+            // DADOS RÁPIDOS: Enviados sempre (5x por segundo / 200ms)
             payload["ts"] = std::time(nullptr);
-            payload["lat"] = snapshot.lat;
-            payload["lon"] = snapshot.lon;
-            payload["soc"] = snapshot.soc;
-            payload["rng"] = snapshot.range;
             payload["spd"] = snapshot.speed;
+            payload["r"] = snapshot.roll;
             payload["ign"] = snapshot.ignition;
-            payload["alr"] = snapshot.alert;
+            
+            // Força o envio do alerta imediatamente se houver um
+            if (snapshot.alert != "NONE") {
+                payload["alr"] = snapshot.alert;
+            }
+
+            // DADOS LENTOS: Enviados apenas a cada 5 ticks (1 segundo)
+            if (tick % 5 == 0) {
+                payload["lat"] = snapshot.lat;
+                payload["lon"] = snapshot.lon;
+                payload["soc"] = snapshot.soc;
+                payload["rng"] = snapshot.range;
+            }
 
             std::string msg = payload.dump();
             cloudClient.publish(topic_telemetry, msg, 1, false)->wait();
@@ -256,7 +305,9 @@ void* cloud_worker(void* arg) {
             std::cerr << "[CLOUD] Erro de ligação: " << exc.what() << "\n";
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        tick++;
+        //Espera apenas 200ms em vez de 5 segundos
+        std::this_thread::sleep_for(std::chrono::milliseconds(200)); 
     }
     
     close(s_write);

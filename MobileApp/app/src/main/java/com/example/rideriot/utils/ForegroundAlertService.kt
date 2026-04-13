@@ -66,7 +66,7 @@ class ForegroundAlertService : Service() {
                     // O collect bloqueia aqui e fica à espera de dados
                     stub.streamTelemetria(request).collect { data ->
                         // Mal recebe o PRIMEIRO pacote, assume que está ligado
-                        AlertManager.updateStatus("Ligado 🟢")
+                        AlertManager.updateStatus("Online 🟢")
                         AlertManager.updateIgnition(data.ign)
                         AlertManager.updateLocation(data.lat, data.lon)
                         processarAlerta(data.alert)
