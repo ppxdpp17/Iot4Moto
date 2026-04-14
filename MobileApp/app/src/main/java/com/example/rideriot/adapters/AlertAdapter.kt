@@ -27,7 +27,6 @@ class AlertAdapter(private val alerts: MutableList<Alert>, private val onItemCli
         holder.tvTime.text = alert.timestamp
         holder.tvMessage.text = alert.message
 
-        //Click no card
         holder.itemView.setOnClickListener {
             onItemClick(alert)
         }
@@ -35,9 +34,8 @@ class AlertAdapter(private val alerts: MutableList<Alert>, private val onItemCli
 
     override fun getItemCount() = alerts.size
 
-    //Função para adicionar alertas novos ao TOPO da lista
-    fun addAlert(alert: Alert) {
-        alerts.add(0, alert)
+    // CORREÇÃO: O Manager já adicionou à lista. Nós só fazemos a animação visual.
+    fun notifyNewAlertAtTop() {
         notifyItemInserted(0)
     }
 }

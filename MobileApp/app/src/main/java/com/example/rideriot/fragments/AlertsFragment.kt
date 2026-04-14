@@ -38,11 +38,19 @@ class AlertsFragment : Fragment() {
         }
         recyclerView.adapter = adapter
 
+        // Ouve apenas Inserções novas (Super Leve)
         AlertManager.onAlertAdded = {
             activity?.runOnUiThread {
-                adapter.notifyDataSetChanged()  //Atualiza os dados visuais
-                recyclerView.scrollToPosition(0)    //Força o scroll para o alerta mais recente
+                adapter.notifyNewAlertAtTop()
+                recyclerView.scrollToPosition(0)
                 checkEmptyState()
+            }
+        }
+
+        // Ouve apenas Atualizações (Ex: A chuva parou)
+        AlertManager.onAlertUpdated = {
+            activity?.runOnUiThread {
+                adapter.notifyDataSetChanged()
             }
         }
 

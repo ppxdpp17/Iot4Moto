@@ -1,4 +1,13 @@
 import com.google.protobuf.gradle.*
+import java.util.Properties
+import java.io.FileInputStream
+
+// 1. LER O FICHEIRO local.properties ANTES DE TUDO O RESTO
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -19,6 +28,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 2. INJETAR O IP LIDO PARA A CLASSE BuildConfig
+        val serverIp = localProperties.getProperty("SERVER_IP") ?: "\"127.0.0.1\""
+        buildConfigField("String", "SERVER_IP", serverIp)
     }
 
     buildTypes {
@@ -39,6 +52,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // 3. ATIVAR A GERAÇÃO DO BuildConfig (OBRIGATÓRIO)
+        buildConfig = true
     }
     sourceSets {
         getByName("main") {
@@ -73,23 +88,19 @@ dependencies {
     //Para o OSMDroid;
     implementation("org.osmdroid:osmdroid-android:6.1.18")
 
-    //Para o MQTT; (Aviso: Se vais usar gRPC, este código do Paho MQTT está só a fazer lixo)
-    implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
-    implementation("org.eclipse.paho:org.eclipse.paho.android.service:1.1.1")
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
 
     //Para receber via gRPC
     implementation("io.grpc:grpc-okhttp:1.62.2")
     implementation("io.grpc:grpc-protobuf-lite:1.62.2")
     implementation("io.grpc:grpc-stub:1.62.2")
-    implementation("io.grpc:grpc-kotlin-stub:1.4.1") // Este fica igual
+    implementation("io.grpc:grpc-kotlin-stub:1.4.1")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
     implementation("io.grpc:grpc-android:1.62.2")
     implementation("io.grpc:grpc-api:1.62.2")
 }
 
-// Configuração para gerar o código Kotlin a partir do .proto
+// Configuração para gerar o código Kotlin a partir do .proto (INTACTA)
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.25.1"

@@ -88,7 +88,7 @@ class MapFragment : Fragment() {
         }
 
         motoMarker?.position = point
-        map.controller.animateTo(point)
+        map.controller.setCenter(point)
         map.invalidate()
     }
 

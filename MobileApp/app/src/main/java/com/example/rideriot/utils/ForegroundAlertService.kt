@@ -18,6 +18,7 @@ import com.example.rideriot.StreamRequest
 import com.example.rideriot.MotorcycleServiceGrpcKt
 import com.example.rideriot.R
 import io.grpc.ManagedChannelBuilder
+import com.example.rideriot.BuildConfig
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -52,28 +53,37 @@ class ForegroundAlertService : Service() {
 
     private fun iniciarStreamGrpc() {
         serviceScope.launch {
-            while (isActive) {
-                try {
-                    AlertManager.updateStatus("A aguardar ligação... 🔴")
+            // CORREÇÃO CRÍTICA: Criamos o canal UMA ÚNICA VEZ antes do loop infinito
+            val channel = ManagedChannelBuilder.forAddress(BuildConfig.SERVER_IP, 50051)
+                .usePlaintext()
+                .build()
 
-                    val channel = ManagedChannelBuilder.forAddress("85.234.145.56", 50051)
-                        .usePlaintext()
-                        .build()
+            val stub = MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub(channel)
 
-                    val stub = MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub(channel)
-                    val request = StreamRequest.newBuilder().setVin("AJP1RB5SXLB123456").build()
+            try {
+                while (isActive) {
+                    try {
+                        AlertManager.updateStatus("A aguardar ligação... 🔴")
+                        val request = StreamRequest.newBuilder().setVin("AJP1RB5SXLB123456").build()
 
-                    // O collect bloqueia aqui e fica à espera de dados
-                    stub.streamTelemetria(request).collect { data ->
-                        // Mal recebe o PRIMEIRO pacote, assume que está ligado
-                        AlertManager.updateStatus("Online 🟢")
-                        AlertManager.updateIgnition(data.ign)
-                        AlertManager.updateLocation(data.lat, data.lon)
-                        processarAlerta(data.alert)
+                        // O .collect bloqueia aqui.
+                        stub.streamTelemetria(request).collect { data ->
+                            AlertManager.updateStatus("Online 🟢")
+                            AlertManager.updateIgnition(data.ign)
+                            AlertManager.updateLocation(data.lat, data.lon)
+                            processarAlerta(data.alert)
+                        }
+                    } catch (e: Exception) {
+                        // Se a net falhar, avisa, espera 5 segundos, e o while() tenta de novo
+                        // USANDO A MESMA LIGAÇÃO, sem criar lixo na memória.
+                        AlertManager.updateStatus("A aguardar ligação... 🔴")
+                        delay(5000)
                     }
-                } catch (e: Exception) {
-                    AlertManager.updateStatus("A aguardar ligação... 🔴")
-                    delay(5000)
+                }
+            } finally {
+                // LIMPEZA: Se o Android matar este Vigia, garantimos que a rede desliga
+                if (!channel.isShutdown) {
+                    channel.shutdownNow()
                 }
             }
         }
