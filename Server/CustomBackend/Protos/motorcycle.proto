@@ -25,5 +25,12 @@ message TelemetriaData {
     bool ign = 7;
 }
 
-message CommandRequest { string vin = 1; string action = 2; }
-message CommandReply { bool success = 1; string message = 2; }
+message CommandRequest { 
+    string vin = 1; 
+    string action = 2; 
+}
+
+message CommandReply { 
+    bool success = 1;
+    string message = 2; 
+}

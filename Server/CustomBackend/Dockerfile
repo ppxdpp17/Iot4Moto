@@ -13,5 +13,6 @@ RUN dotnet publish "CustomBackend.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 EXPOSE 50051
+EXPOSE 5000
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "CustomBackend.dll"]

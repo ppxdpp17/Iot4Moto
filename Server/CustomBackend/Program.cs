@@ -33,11 +33,28 @@ app.MapGet("/api/stream", async (HttpContext context) => {
     context.Response.Headers["Cache-Control"] = "no-cache";
     context.Response.Headers["Connection"] = "keep-alive";
 
-    while (!context.RequestAborted.IsCancellationRequested) {
-        await context.Response.WriteAsync($"data: {MqttBridgeService.UltimoJsonRaw}\n\n");
-        await context.Response.Body.FlushAsync();
-        
-        await Task.Delay(500); 
+    //Cria o tubo (Channel)
+    var channel = System.Threading.Channels.Channel.CreateUnbounded<string>();
+
+    //Define a função que empurra os dados para o tubo
+    void AoReceberDados(string novoJson) {
+        channel.Writer.TryWrite(novoJson);
+    }
+
+    //Subscreve ao evento do Singleton
+    MqttBridgeService.OnNovoJson += AoReceberDados;
+
+    try {
+        //O loop fica a dormir. O CPU fica a 0%. 
+        //Quando entra um JSON no tubo, ele acorda, escreve na Web, e volta a dormir.
+        await foreach (var json in channel.Reader.ReadAllAsync(context.RequestAborted)) {
+            await context.Response.WriteAsync($"data: {json}\n\n");
+            await context.Response.Body.FlushAsync();
+        }
+    } 
+    finally {
+        //IMPORTANTE: Se o utilizador fechar a página Web, remove a subscrição para não esgotar a RAM
+        MqttBridgeService.OnNovoJson -= AoReceberDados;
     }
 });
 
@@ -49,20 +66,25 @@ app.Run();
 // --- PONTE MQTT ---
 public class MqttBridgeService {
     public static TelemetriaData UltimoEstado = new TelemetriaData { Lat = 0, Lon = 0, Alert = "NONE" };
-    public static string UltimoJsonRaw = "{}"; 
+    
+    // O Evento (a campainha) que vai avisar o SSE e a App que há dados novos
+    public static event Action<string> OnNovoJson; 
+    public static event Action<TelemetriaData> OnNovoEstado;
+
+    private IMqttClient _mqttClient; // Guardamos o cliente aqui!
 
     public MqttBridgeService() { Task.Run(ConnectMqtt); }
 
     private async Task ConnectMqtt() {
         var mqttFactory = new MqttFactory();
-        var mqttClient = mqttFactory.CreateMqttClient();
+        _mqttClient = mqttFactory.CreateMqttClient();
         var options = new MqttClientOptionsBuilder().WithTcpServer("mosquitto", 1883).Build();
 
-        mqttClient.ApplicationMessageReceivedAsync += e => {
+        _mqttClient.ApplicationMessageReceivedAsync += e => {
             var payload = System.Text.Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
             
-            // Guarda para a Web
-            UltimoJsonRaw = payload;
+            // Dispara o evento em vez de gravar numa variável morta
+            OnNovoJson?.Invoke(payload); 
             
             try {
                 var data = JsonDocument.Parse(payload).RootElement;
@@ -79,11 +101,26 @@ public class MqttBridgeService {
                         UltimoEstado.Ign = ignProp.GetBoolean();
                     }
                 }
-            } catch { /* Erro ignorado */ }
+                OnNovoEstado?.Invoke(UltimoEstado);
+            } catch (Exception ex) { 
+                Console.WriteLine($"[MQTT ERRO] JSON inválido: {ex.Message}"); 
+            }
             return Task.CompletedTask;
         };
 
         await mqttClient.ConnectAsync(options);
         await mqttClient.SubscribeAsync("motos/AJP1RB5SXLB123456/telemetria");
+    }
+
+    //O gRPC vai chamar isto para enviar o comando pela ligação partilhada
+    public async Task PublicarComandoAsync(string topic, string payload) {
+        if (_mqttClient != null && _mqttClient.IsConnected) {
+            var msg = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(payload)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+            await _mqttClient.PublishAsync(msg);
+        }
     }
 }
