@@ -32,6 +32,7 @@
 #include <mutex>
 #include "mqtt/async_client.h"
 #include <nlohmann/json.hpp>
+#include <thread>
 
 using json = nlohmann::json;
 
@@ -79,11 +80,17 @@ void* can_reader(void* arg) {
         //Cada ID corresponde a uma ECU simulada. O Gateway descodifica o payload hexadecimal.
         if (id == 0x200) {  //Velocidade 
             uint16_t speed = frame.data[0] | (frame.data[1] << 8);
-            currentState.speed = speed;
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.speed = speed;
+            }
             client->publish("moto/speed", std::to_string(speed));   //Publica para o FED (local)
         }
         else if (id == 0x201) { //Bateria
-            currentState.soc = (int)frame.data[0];
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.soc = (int)frame.data[0];
+            }
             client->publish("moto/battery", std::to_string(currentState.soc), 0, true);
         }
         else if (id == 0x202) { //Mudança
@@ -112,11 +119,17 @@ void* can_reader(void* arg) {
             client->publish("moto/temperature", std::to_string((int)frame.data[0]));
         }
         else if (id == 0x208) { //Autonomia
-            currentState.range = frame.data[0]; 
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.range = frame.data[0];
+            } 
             client->publish("moto/range", std::to_string(currentState.range), 0, true);
         }
         else if (id == 0x400) { //Alerta de Roubo
-            currentState.alert = "ALERTA_MOVIMENTO";
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.alert = "ALERTA_MOVIMENTO";
+            }
             client->publish("moto/alarm", currentState.alert);
         }
         else if (id == 0x209) { //Total de Kilómetros Percorridos
@@ -144,6 +157,12 @@ void* can_reader(void* arg) {
             gpsPayload["lon"] = lon;
             
             client->publish("moto/gps", gpsPayload.dump());
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.lat = lat;
+                currentState.lon = lon;            
+            }
+
         }
         else if (id == 0x302) { //Dados do Sensor Ultrassom
             //Desempacota os bytes
@@ -182,7 +201,11 @@ void* can_reader(void* arg) {
             // Divide por 100.0 para restaurar as casas decimais
             double roll_deg = raw_roll / 100.0;
 
-            currentState.roll = roll_deg;
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.roll = roll_deg;
+            }
+            
 
             // Opcional: Publicar localmente se tiveres o broker a alimentar um ecrã físico na mota
             client->publish("moto/roll", std::to_string(roll_deg));
@@ -203,7 +226,8 @@ void* can_reader(void* arg) {
 
 //THREAD DA CLOUD (Envio via 5G)
 void* cloud_worker(void* arg) {
-    const std::string serverURI = "tcp://85.234.145.56:1883";
+    const char* env_ip = std::getenv("SERVER_IP")
+    const std::string serverURI = env_ip ? std::string("tcp://") + env_ip + ":1883";
     const std::string clientId = "CSVU_AJP_" + std::to_string(time(nullptr));
     const std::string topic_telemetry = "motos/AJP1RB5SXLB123456/telemetria";
     const std::string topic_commands = "motos/AJP1RB5SXLB123456/comandos";
@@ -299,8 +323,7 @@ void* cloud_worker(void* arg) {
             }
 
             std::string msg = payload.dump();
-            cloudClient.publish(topic_telemetry, msg, 1, false)->wait();
-
+            cloudClient.publish(topic_telemetry, msg, 0, false)->wait();
         } catch (const mqtt::exception& exc) {
             std::cerr << "[CLOUD] Erro de ligação: " << exc.what() << "\n";
         }
@@ -324,11 +347,11 @@ int main() {
         localClient.connect(localConnOpts)->wait();
         std::cout << "[LOCAL] Ligado ao Broker Local da Mota.\n";
 
-        pthread_t can_tid, cloud_tid;
-        pthread_create(&can_tid, nullptr, can_reader, &localClient);
-        pthread_create(&cloud_tid, nullptr, cloud_worker, nullptr);
+        std::thread t_can(can_reader, &localClient);
+        std::thread t_cloud(cloud_worker, nullptr);
 
-        while(true) { std::this_thread::sleep_for(std::chrono::hours(1)); }
+        t_can.join();
+        t_cloud.join();
     }
     catch(const mqtt::exception &ex) {
         std::cerr << "Erro Fatal: " << ex.what() << std::endl;
