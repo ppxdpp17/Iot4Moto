@@ -1,7 +1,7 @@
 // ==========================================
 // 1. CONFIGURAÇÕES E ESTADO GLOBAL
 // ==========================================
-const SERVER_STREAM_URL = "http://85.234.145.56:5000/api/stream";
+const SERVER_STREAM_URL = `${window.ENV.SERVER_IP}/api/stream`;
 
 let currentMode = 'live';
 let routeData = [];
@@ -204,7 +204,7 @@ function iniciarStreamServidor() {
                 }
             }
 
-            // FCW (Se existir)
+            //FCW
             if (data.fcw) {
                 const dist = data.fcw.dist;
                 const ttc = data.fcw.ttc;
