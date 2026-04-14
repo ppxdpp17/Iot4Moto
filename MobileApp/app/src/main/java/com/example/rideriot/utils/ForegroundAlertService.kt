@@ -72,7 +72,7 @@ class ForegroundAlertService : Service() {
                         processarAlerta(data.alert)
                     }
                 } catch (e: Exception) {
-                    AlertManager.updateStatus("Erro: A aguardar ligação... 🔴")
+                    AlertManager.updateStatus("A aguardar ligação... 🔴")
                     delay(5000)
                 }
             }
