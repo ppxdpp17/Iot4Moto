@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option csharp_namespace = "motorcycle";
+option java_multiple_files = true;
+option java_package = "com.example.rideriot";
+
+package motorcycle;
+
+service MotorcycleService {
+    rpc SendCommand (CommandRequest) returns (CommandReply);
+    rpc StreamTelemetria (StreamRequest) returns (stream TelemetriaData);
+}
+
+message StreamRequest {
+    string vin = 1;
+}
+
+message TelemetriaData {
+    double lat = 1;
+    double lon = 2;
+    int32 soc = 3;
+    int32 speed = 4;
+    string alert = 5;
+    int64 ts = 6;
+    bool ign = 7;
+}
+
+message CommandRequest { string vin = 1; string action = 2; }
+message CommandReply { bool success = 1; string message = 2; }
