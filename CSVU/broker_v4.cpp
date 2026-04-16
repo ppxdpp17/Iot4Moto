@@ -46,6 +46,8 @@ struct MotoState {
     bool ignition = true; //Assume true se estiver a emitir CAN
     std::string alert = "NONE";
     double roll = 0.0;
+    double fcw_dist = 0.0;
+    double fcw_ttc = 99.9;
 };
 
 MotoState currentState;
@@ -189,17 +191,23 @@ void* can_reader(void* arg) {
 
             client->publish("moto/fcw", fcwPayload.dump());
 
-            //Se for crítico, dispara o alarme genérico para a App Android te notificar
-            if (type_byte == 2) {
-                auto now = std::chrono::steady_clock::now();
-                
-                //Só publica no MQTT se já passaram 5 segundos desde o último alarme
-                if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
-                    last_fcw_alarm = now; //Atualiza o relógio
-                    client->publish("moto/alarm", "FCW");
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.fcw_dist = dist_m;
+                currentState.fcw_ttc = ttc_s;
 
-                    std::lock_guard<std::mutex> lock(stateMutex);
-                    currentState.alert = "FCW";
+                //Se for crítico, dispara o alarme genérico para a App Android te notificar
+                if (type_byte == 2) {
+                    auto now = std::chrono::steady_clock::now();
+                    
+                    //Só publica no MQTT se já passaram 5 segundos desde o último alarme
+                    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
+                        last_fcw_alarm = now; //Atualiza o relógio
+                        client->publish("moto/alarm", "FCW");
+
+                        std::lock_guard<std::mutex> lock(stateMutex);
+                        currentState.alert = "FCW";
+                    }
                 }
             }
         }
@@ -324,6 +332,8 @@ void* cloud_worker(void* arg) {
             payload["spd"] = snapshot.speed;
             payload["r"] = snapshot.roll;
             payload["ign"] = snapshot.ignition;
+            payload["fcw"]["dist"] = snapshot.fcw_dist;
+            payload["fcw"]["ttc"] = snapshot.fcw_ttc;
             
             // Força o envio do alerta imediatamente se houver um
             if (snapshot.alert != "NONE") {
