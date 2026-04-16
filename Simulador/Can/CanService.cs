@@ -30,6 +30,14 @@ namespace CAN
         //---RECEÇÃO DE DADOS---
         private async Task InterpretarMensagem(can_msg_t msg)
         {
+            if (msg.ident == 0x105 && msg.dlc >= 1)
+            {
+                bool ligar = msg.payload[0] == 0x01;
+                SimulationState.IsMotorcycleOn = ligar;
+                Console.WriteLine($"[CAN RX] Ordem Remota recebida: Ignição {(ligar ? "ON" : "OFF")}");
+                return; // Já processou, pode sair
+            }
+
             if (msg.dlc < 4) return;
 
             byte status = msg.payload[0];
@@ -177,6 +185,10 @@ namespace CAN
             EnviarDadosSimulados(0x210, new byte[] { (byte)horas, (byte)minutos });
         }
 
+        public void EnviarIgnicaoStatus() { 
+            EnviarDadosSimulados(0x106, new byte[] { (byte)(SimulationState.IsMotorcycleOn ? 1 : 0) });
+        }
+
         //Envio de dados do HC-SR04 (FCW)
         public void EnviarFcw(double distanceMeters, double ttcSeconds, string type)
         {
@@ -267,6 +279,7 @@ namespace CAN
                 //---500ms---
                 if (tickCount % 500 == 0)
                 {
+                    EnviarIgnicaoStatus();
                     EnviarBateria(SimulationState.Battery);
                     EnviarTemperatura(SimulationState.Temperature);
                     EnviarAutonomia(SimulationState.Autonomy);

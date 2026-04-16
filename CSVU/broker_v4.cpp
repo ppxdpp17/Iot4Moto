@@ -243,6 +243,13 @@ void* can_reader(void* arg) {
                 currentState.alert = "RAIN_CLEARED";
             }
         }
+        else if (id == 0x106) { // Estado Real da Ignição
+            bool motorLigado = (frame.data[0] == 0x01);
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.ignition = motorLigado;
+            }
+        }
     }
     return nullptr;
 }
