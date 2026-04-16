@@ -91,7 +91,7 @@ namespace Simulador.Services
                         if (recentImpact && isTippedOver && !SimulationState.FallDetected)
                         {
                             SimulationState.FallDetected = true;
-                            await _mqttService.PublishAsync("moto/alarm", "FALL");
+                            _canService.EnviarAlertaQueda();
 
                             _ = Task.Run(async () => {
                                 await Task.Delay(10000); //Dá mais tempo antes de dar reset (10s)
@@ -105,7 +105,7 @@ namespace Simulador.Services
                         if (svm > 1.6 && !SimulationState.TheftAlarmActive)
                         {
                             SimulationState.TheftAlarmActive = true;
-                            await _mqttService.PublishAsync("moto/alarm", "THEFT");
+                            _canService.EnviarAlertaRoubo();
 
                             _ = Task.Run(async () => {
                                 await Task.Delay(5000);

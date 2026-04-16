@@ -180,7 +180,7 @@ function iniciarStreamServidor() {
             updateMap();
 
             // Alertas
-            const alertType = data.alr || "NONE";
+            const alertType = data.alert || data.alr || "NONE";
             if (alertType !== "NONE") {
                 if (alertType === "RAIN_CLEARED") {
                     document.getElementById("rain-icon").classList.replace("active", "inactive");

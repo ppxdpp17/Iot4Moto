@@ -127,9 +127,16 @@ void* can_reader(void* arg) {
         else if (id == 0x400) { //Alerta de Roubo
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
-                currentState.alert = "ALERTA_MOVIMENTO";
+                currentState.alert = "THEFT";
             }
-            client->publish("moto/alarm", currentState.alert);
+            client->publish("moto/alarm", "THEFT");
+        }
+        else if (id == 0x402) { // Alerta de Queda (FALL)
+            {
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.alert = "FALL"; 
+            }
+            client->publish("moto/alarm", "FALL"); // Tablet local
         }
         else if (id == 0x209) { //Total de Kilómetros Percorridos
             uint32_t km = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
@@ -190,6 +197,9 @@ void* can_reader(void* arg) {
                 if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
                     last_fcw_alarm = now; //Atualiza o relógio
                     client->publish("moto/alarm", "FCW");
+
+                    std::lock_guard<std::mutex> lock(stateMutex);
+                    currentState.alert = "FCW";
                 }
             }
         }
@@ -225,8 +235,9 @@ void* can_reader(void* arg) {
 
 //THREAD DA CLOUD (Envio via 5G)
 void* cloud_worker(void* arg) {
-    const char* env_ip = std::getenv("SERVER_IP");
-    const std::string serverURI = env_ip ? (std::string("tcp://") + env_ip + ":1883") : "tcp://85.234.145.56:1883";
+    //const char* env_ip = std::getenv("SERVER_IP");
+    //const std::string serverURI = env_ip ? (std::string("tcp://") + env_ip + ":1883") : "tcp://85.234.145.56:1883";
+    const std::string serverURI = "tcp://85.234.145.56:1883";
     const std::string clientId = "CSVU_AJP_" + std::to_string(time(nullptr));
     const std::string topic_telemetry = "motos/AJP1RB5SXLB123456/telemetria";
     const std::string topic_commands = "motos/AJP1RB5SXLB123456/comandos";

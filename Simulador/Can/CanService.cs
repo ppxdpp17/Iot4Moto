@@ -198,6 +198,25 @@ namespace CAN
             EnviarDadosSimulados(0x302, data);
         }
 
+        //Envio de Alerta de Roubo (ID 0x400)
+        public void EnviarAlertaRoubo()
+        {
+            EnviarDadosSimulados(0x400, new byte[] { 0x01 });
+        }
+
+        //Envio de Alerta de Chuva (ID 0x401)
+        public void EnviarChuva(bool estaAChover)
+        {
+            //O C++ lê o data[0] para saber se começou (0x01) ou parou (0x00)
+            byte estado = (byte)(estaAChover ? 0x01 : 0x00);
+            EnviarDadosSimulados(0x401, new byte[] { estado });
+        }
+
+        public void EnviarAlertaQueda()
+        {
+            EnviarDadosSimulados(0x402, new byte[] { 0x01 });
+        }
+
         //SIMULADOR A GERAR DADOS DE GPS (ESTÁTICOS) - MAIS TARDE RETIRAR ISTO, JÁ QUE OS DADOS GPS
         //SERÃO "GERADOS" DIRETAMENTE NA CSVU ATRAVÉS DO MODEM
         public void EnviarGPS(double latitude, double longitude)
