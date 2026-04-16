@@ -220,13 +220,19 @@ void* can_reader(void* arg) {
             client->publish("moto/roll", std::to_string(roll_deg));
         }
         else if (id == 0x401) { //Alerta de Chuva
-            //Se ainda deteta chuva
             if (frame.data[0] == 0x01) {
-                client->publish("moto/alarm", "RAIN");
+                client->publish("moto/alarm", "RAIN"); // Tablet local
+                
+                // CRÍTICO: Guardar na memória para a Cloud ler!
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.alert = "RAIN";
             } 
-            //Se parou de detetar chuva
             else if (frame.data[0] == 0x00) {
-                client->publish("moto/alarm", "RAIN_CLEARED");
+                client->publish("moto/alarm", "RAIN_CLEARED"); // Tablet local
+                
+                // CRÍTICO: Atualizar a memória para a Cloud avisar que parou
+                std::lock_guard<std::mutex> lock(stateMutex);
+                currentState.alert = "RAIN_CLEARED";
             }
         }
     }
