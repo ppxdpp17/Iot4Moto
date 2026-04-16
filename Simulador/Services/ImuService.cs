@@ -73,7 +73,7 @@ namespace Simulador.Services
                     byte[] canData = new byte[2];
                     canData[0] = (byte)(rollInt & 0xFF);
                     canData[1] = (byte)((rollInt >> 8) & 0xFF);
-                    _canService.EnviarDadosSimulados(0x300, canData);
+                    _canService.EnviarDadosSimulados(0x303, canData);
 
                     //Máquina de Estados (Mota Ligada vs Desligada)
                     if (SimulationState.IsMotorcycleOn)
