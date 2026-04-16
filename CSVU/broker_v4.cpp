@@ -74,7 +74,6 @@ void* can_reader(void* arg) {
     //Loop que fica à escuta de novos frames no cabo CAN
     while (read(s, &frame, sizeof(frame)) > 0) {
         uint32_t id = frame.can_id & CAN_SFF_MASK;
-        std::lock_guard<std::mutex> lock(stateMutex);   //Bloqueia a memória para atualizar o estado com segurança
 
         //TRADUÇÃO CAN -> MQTT (LOCAL)
         //Cada ID corresponde a uma ECU simulada. O Gateway descodifica o payload hexadecimal.
@@ -226,8 +225,8 @@ void* can_reader(void* arg) {
 
 //THREAD DA CLOUD (Envio via 5G)
 void* cloud_worker(void* arg) {
-    const char* env_ip = std::getenv("SERVER_IP")
-    const std::string serverURI = env_ip ? std::string("tcp://") + env_ip + ":1883";
+    const char* env_ip = std::getenv("SERVER_IP");
+    const std::string serverURI = env_ip ? (std::string("tcp://") + env_ip + ":1883") : "tcp://85.234.145.56:1883";
     const std::string clientId = "CSVU_AJP_" + std::to_string(time(nullptr));
     const std::string topic_telemetry = "motos/AJP1RB5SXLB123456/telemetria";
     const std::string topic_commands = "motos/AJP1RB5SXLB123456/comandos";
