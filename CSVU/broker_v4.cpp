@@ -245,6 +245,7 @@ void* can_reader(void* arg) {
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 currentState.ignition = motorLigado;
+                if (!motorLigado) currentState.speed = 0;
             }
         }
     }
@@ -301,6 +302,7 @@ void* cloud_worker(void* arg) {
                     // Atualiza o estado interno com bloqueio de memória
                     std::lock_guard<std::mutex> lock(stateMutex);
                     currentState.ignition = false;
+                    currentState.speed = 0;
                 }
 
                 write(s_write, &tx_frame, sizeof(struct can_frame));

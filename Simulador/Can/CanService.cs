@@ -34,6 +34,10 @@ namespace CAN
             {
                 bool ligar = msg.payload[0] == 0x01;
                 SimulationState.IsMotorcycleOn = ligar;
+                if (!ligar) 
+                {
+                    SimulationState.Speed = 0;
+                }
                 Console.WriteLine($"[CAN RX] Ordem Remota recebida: Ignição {(ligar ? "ON" : "OFF")}");
                 return; // Já processou, pode sair
             }
