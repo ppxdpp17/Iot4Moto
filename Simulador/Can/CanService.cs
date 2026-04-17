@@ -11,7 +11,7 @@ namespace CAN
 {
     public class CanService
     {
-        private static char[] mserial_port = "/dev/ttyACM0\0".ToCharArray();    //Porta responsável por passar os dados
+        private static char[] mserial_port = "/dev/ttyACM1\0".ToCharArray();    //Porta responsável por passar os dados
         private static ushort mbitrate = 500;   //Baudrate
         private readonly MqttService _mqttService;
         private readonly object _canLock = new object();    //Mutex para proteger a API single-thread do simplyCAN
@@ -267,17 +267,20 @@ namespace CAN
 
             while (await timer.WaitForNextTickAsync(ct))
             {
-                //---100ms---
-                EnviarVelocidade(SimulationState.Speed);
+                if (!SimulationState.IsMotorcycleOn)
+                {
+                    SimulationState.Speed = 0;
+                }
 
-                //---200ms---
-                if (tickCount % 200 == 0)
+                //---100ms---
+                if (tickCount % 100 == 0)
                 {
                     EnviarGear(SimulationState.Gear);
                     EnviarModo(SimulationState.DriveMode);
                     EnviarLuzes(); //Inclui Piscas e DangerLights
                     EnviarAbs(SimulationState.Abs);
                     EnviarBrake(SimulationState.Brake);
+                    EnviarVelocidade(SimulationState.Speed);
                 }
 
                 //---500ms---

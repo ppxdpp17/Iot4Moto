@@ -328,9 +328,12 @@ void* cloud_worker(void* arg) {
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 snapshot = currentState;
-                if (currentState.alert == "THEFT" || currentState.alert == "FALL" || currentState.alert == "FCW") {
-                    currentState.alert = "NONE";
-                }           
+                if (currentState.alert == "THEFT" || currentState.alert == "FALL" || 
+                currentState.alert == "FCW" || currentState.alert == "RAIN" || 
+                currentState.alert == "RAIN_CLEARED") {
+                
+                currentState.alert = "NONE";
+                }          
             }
 
             json payload;

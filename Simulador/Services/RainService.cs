@@ -13,6 +13,7 @@ namespace Simulador.Services
         private readonly CanService _canService;
         private GpioController _gpio;
         private bool _isRaining = false;
+        private bool _arranque = true; // Garante o silêncio no primeiro arranque
 
         public RainService(CanService canService)
         {
@@ -25,28 +26,36 @@ namespace Simulador.Services
         {
             while (!token.IsCancellationRequested)
             {
-                //A mota só avalia a chuva se estiver estacionada
+                // A mota só avalia a chuva se estiver estacionada (desligada)
                 if (!SimulationState.IsMotorcycleOn)
                 {
                     var isWet = _gpio.Read(RAIN_PIN) == PinValue.High;
 
+                    // 1. Fase de Calibração Inicial: Absorve o estado atual sem enviar CAN
+                    if (_arranque)
+                    {
+                        _isRaining = isWet;
+                        _arranque = false;
+                        await Task.Delay(2000, token);
+                        continue; // Salta para a próxima iteração
+                    }
+
+                    // 2. Deteção de Mudança de Estado (Edge Detection)
                     if (isWet && !_isRaining) 
                     {
                         _isRaining = true;
-                        //Program.WriteMessage("\n[SENTINELA] Chuva detetada!");
+                        Program.WriteMessage("[SENTINELA] Chuva detetada! Injetando 0x401 (0x01).");
                         _canService.EnviarDadosSimulados(0x401, new byte[] { 0x01 });
                     }
                     else if (!isWet && _isRaining)
                     {
                         _isRaining = false;
-                        //Program.WriteMessage("\n[SENTINELA] Sensor seco. Alerta desativado.");
-                        //Envia 0x00 para sinalizar que o perigo passou
+                        Program.WriteMessage("[SENTINELA] Sensor seco. Injetando 0x401 (0x00).");
                         _canService.EnviarDadosSimulados(0x401, new byte[] { 0x00 }); 
                     }
                 }
                 
-                //Intervalo rápido de 2 segundos. 
-                //A máquina de estados (variável _isRaining) garante que não há spam na rede.
+                // Intervalo de 2 segundos de amostragem
                 await Task.Delay(2000, token); 
             }
         }

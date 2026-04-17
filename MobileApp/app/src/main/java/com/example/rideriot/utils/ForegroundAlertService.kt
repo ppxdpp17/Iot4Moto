@@ -53,7 +53,6 @@ class ForegroundAlertService : Service() {
 
     private fun iniciarStreamGrpc() {
         serviceScope.launch {
-            // CORREÇÃO CRÍTICA: Criamos o canal UMA ÚNICA VEZ antes do loop infinito
             val channel = ManagedChannelBuilder.forAddress(BuildConfig.SERVER_IP, 50051)
                 .usePlaintext()
                 .build()
@@ -63,25 +62,25 @@ class ForegroundAlertService : Service() {
             try {
                 while (isActive) {
                     try {
-                        AlertManager.updateStatus("A aguardar ligação... 🔴")
+                        AlertManager.updateStatus("A aguardar ligação... \uD83D\uDD34")
                         val request = StreamRequest.newBuilder().setVin("AJP1RB5SXLB123456").build()
 
-                        // O .collect bloqueia aqui.
                         stub.streamTelemetria(request).collect { data ->
-                            AlertManager.updateStatus("Online 🟢")
+                            AlertManager.updateStatus("Online \uD83D\uDFE2")
                             AlertManager.updateIgnition(data.ign)
                             AlertManager.updateLocation(data.lat, data.lon)
+                            if (data.lat != 0.0 && data.lon != 0.0) {
+                                lastLat = data.lat
+                                lastLon = data.lon
+                            }
                             processarAlerta(data.alert)
                         }
                     } catch (e: Exception) {
-                        // Se a net falhar, avisa, espera 5 segundos, e o while() tenta de novo
-                        // USANDO A MESMA LIGAÇÃO, sem criar lixo na memória.
-                        AlertManager.updateStatus("A aguardar ligação... 🔴")
+                        AlertManager.updateStatus("A aguardar ligação... \uD83D\uDD34")
                         delay(5000)
                     }
                 }
             } finally {
-                // LIMPEZA: Se o Android matar este Vigia, garantimos que a rede desliga
                 if (!channel.isShutdown) {
                     channel.shutdownNow()
                 }
@@ -90,21 +89,22 @@ class ForegroundAlertService : Service() {
     }
 
     private fun processarAlerta(alertType: String) {
-        // Lógica de limpeza: Se antes chovia e agora diz "NONE", resolve o alerta
-        if (ultimoAlertaRecebido == "RAIN" && alertType == "NONE") {
-            getSystemService(NotificationManager::class.java)?.cancel(9999)
+        // 1. Deteção explícita de "Perigo Resolvido" (Chuva parou)
+        if (alertType == "RAIN_CLEARED") {
+            showResolvedRainNotification()
             AlertManager.resolveLastAlertOfType("RAIN")
             ultimoAlertaRecebido = "NONE"
-            Log.d("SENTINEL", "Chuva parou. Alerta resolvido no histórico.")
+            Log.d("SENTINEL", "Chuva parou. Notificação atualizada para RESOLVIDO.")
             return
         }
 
+        // 2. Limpeza de estado vinda da CSVU
         if (alertType == "NONE") {
             ultimoAlertaRecebido = "NONE"
             return
         }
 
-        // Bloqueio Anti-Spam: Ignora alertas repetidos num espaço de 10 segundos
+        // 3. Bloqueio Anti-Spam: Ignora alertas repetidos num espaço de 10 segundos
         val tempoAtual = System.currentTimeMillis()
         if (alertType == ultimoAlertaRecebido && (tempoAtual - ultimoTempoAlerta) < 10000) {
             return
@@ -142,7 +142,7 @@ class ForegroundAlertService : Service() {
                 else    -> "Informação" to "Evento: $alertType"
             }
 
-            // Grava no histórico (UI atualiza automaticamente)
+            // Grava no histórico
             val newAlert = Alert(titulo, descricao, currentTime, alertType)
             AlertManager.addAlert(newAlert)
             showEmergencyNotification(titulo, descricao, alertType)
@@ -168,7 +168,7 @@ class ForegroundAlertService : Service() {
         }
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("RiderIoT em Execução")
-            .setContentText("Toque para obter mais informações ou para parar a app.")
+            .setContentText("A monitorizar sensores do motociclo.")
             .setSmallIcon(R.drawable.ic_moto_notif)
             .setContentIntent(pendingIntent)
             .build()
@@ -176,7 +176,6 @@ class ForegroundAlertService : Service() {
     }
 
     private fun createAlertNotificationChannel() {
-        // (O TEU CÓDIGO INTACTO AQUI)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = getSystemService(NotificationManager::class.java)
             val safetyChannel = NotificationChannel("rideriot_safety_channel", "Segurança", NotificationManager.IMPORTANCE_HIGH).apply {
@@ -193,7 +192,7 @@ class ForegroundAlertService : Service() {
     }
 
     private fun showEmergencyNotification(title: String, message: String, alertType: String) {
-        // (O TEU CÓDIGO INTACTO AQUI)
+        // CRÍTICO: ID 9999 fixo para a chuva para permitir sobrescrever no futuro
         val notificationId = if (alertType == "RAIN") 9999 else System.currentTimeMillis().toInt()
         val channelId = if (alertType in listOf("FCW", "FALL", "THEFT")) "rideriot_safety_channel" else "rideriot_env_channel"
 
@@ -214,8 +213,30 @@ class ForegroundAlertService : Service() {
         getSystemService(NotificationManager::class.java)?.notify(notificationId, notification)
     }
 
+    // NOVA FUNÇÃO: Substitui a notificação da Chuva em vez de criar uma nova
+    private fun showResolvedRainNotification() {
+        val channelId = "rideriot_env_channel"
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("TARGET_FRAGMENT", "ALERTS")
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(this, 0, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Alerta de Chuva - RESOLVIDO")
+            .setContentText("O sensor deixou de detetar precipitação.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        // Usar o ID 9999 substitui a caixa de alerta vermelha anterior sem fazer spam
+        getSystemService(NotificationManager::class.java)?.notify(9999, notification)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.cancel() // Mata as coroutines quando o serviço for destruído
+        serviceScope.cancel()
     }
 }
