@@ -44,13 +44,11 @@ namespace Simulador.Services
                     if (isWet && !_isRaining) 
                     {
                         _isRaining = true;
-                        Program.WriteMessage("[SENTINELA] Chuva detetada! Injetando 0x401 (0x01).");
                         _canService.EnviarDadosSimulados(0x401, new byte[] { 0x01 });
                     }
                     else if (!isWet && _isRaining)
                     {
                         _isRaining = false;
-                        Program.WriteMessage("[SENTINELA] Sensor seco. Injetando 0x401 (0x00).");
                         _canService.EnviarDadosSimulados(0x401, new byte[] { 0x00 }); 
                     }
                 }

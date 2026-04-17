@@ -262,12 +262,16 @@ namespace CAN
         //---O MOTOR DO SIMULADOR (HEARTBEAT)---
         public async Task StartHeartbeatAsync(CancellationToken ct)
         {
-            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100)); // Base de 100ms
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
             int tickCount = 0;
 
             while (await timer.WaitForNextTickAsync(ct))
             {
-                if (!SimulationState.IsMotorcycleOn)
+                // Guarda o estado localmente para esta iteração ser atómica
+                bool isLigada = SimulationState.IsMotorcycleOn;
+
+                // Tenta forçar a variável global a zero para as outras threads lerem
+                if (!isLigada)
                 {
                     SimulationState.Speed = 0;
                 }
@@ -275,12 +279,16 @@ namespace CAN
                 //---100ms---
                 if (tickCount % 100 == 0)
                 {
-                    EnviarGear(SimulationState.Gear);
+                    // Força a mudança para Neutral se a mota for desligada
+                    EnviarGear(isLigada ? SimulationState.Gear : "neutral"); 
                     EnviarModo(SimulationState.DriveMode);
-                    EnviarLuzes(); //Inclui Piscas e DangerLights
+                    EnviarLuzes(); 
                     EnviarAbs(SimulationState.Abs);
                     EnviarBrake(SimulationState.Brake);
-                    EnviarVelocidade(SimulationState.Speed);
+                    
+                    // A MURALHA: Lê, avalia e envia na mesma instrução. 
+                    // Se a thread do GPS injetou 55 no milissegundo anterior, isto ignora e manda 0.
+                    EnviarVelocidade(isLigada ? SimulationState.Speed : 0);
                 }
 
                 //---500ms---
@@ -292,7 +300,7 @@ namespace CAN
                     EnviarAutonomia(SimulationState.Autonomy);
                 }
 
-                //Intervalo de 1s porque não precisa de atualizar com grande velocidade
+                //---1000ms---
                 if (tickCount % 1000 == 0)
                 {
                     EnviarGPS(SimulationState.Latitude, SimulationState.Longitude);

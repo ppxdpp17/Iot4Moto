@@ -346,6 +346,9 @@ void* cloud_worker(void* arg) {
             payload["fcw"]["dist"] = snapshot.fcw_dist;
             payload["fcw"]["ttc"] = snapshot.fcw_ttc;
             payload["alr"] = snapshot.alert;
+            payload["lat"] = snapshot.lat;
+            payload["lon"] = snapshot.lon;
+            
             
             // Força o envio do alerta imediatamente se houver um
             if (snapshot.alert != "NONE") {
@@ -354,8 +357,6 @@ void* cloud_worker(void* arg) {
 
             // DADOS LENTOS: Enviados apenas a cada 5 ticks (1 segundo)
             if (tick % 5 == 0) {
-                payload["lat"] = snapshot.lat;
-                payload["lon"] = snapshot.lon;
                 payload["soc"] = snapshot.soc;
                 payload["rng"] = snapshot.range;
             }
