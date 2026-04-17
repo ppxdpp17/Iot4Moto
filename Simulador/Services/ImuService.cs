@@ -108,7 +108,7 @@ namespace Simulador.Services
                             _canService.EnviarAlertaRoubo();
 
                             _ = Task.Run(async () => {
-                                await Task.Delay(5000);
+                                await Task.Delay(10000);
                                 SimulationState.TheftAlarmActive = false;
                             });
                         }

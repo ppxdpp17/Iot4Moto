@@ -172,41 +172,38 @@ void* can_reader(void* arg) {
             }
 
         }
-        else if (id == 0x302) { //Dados do Sensor Ultrassom
-            //Desempacota os bytes
+        else if (id == 0x302) { // Dados do Sensor Ultrassom (FCW)
             uint16_t dist_cm = frame.data[0] | (frame.data[1] << 8);
             uint8_t ttc_ds = frame.data[2];
             uint8_t type_byte = frame.data[3];
 
-            //Reconstrói os valores reais
             double dist_m = dist_cm / 100.0;
             double ttc_s = ttc_ds / 10.0;
             std::string type_str = (type_byte == 2) ? "CRITICAL" : (type_byte == 1) ? "WARNING" : "INFO";
 
-            //Monta o JSON para a Plataforma Web
             json fcwPayload;
             fcwPayload["dist"] = dist_m;
             fcwPayload["ttc"] = ttc_s;
             fcwPayload["type"] = type_str;
 
-            client->publish("moto/fcw", fcwPayload.dump());
+            client->publish("moto/fcw", fcwPayload.dump()); // Tablet local
 
+            // BLOQUEIO ÚNICO DE MEMÓRIA PARA ESTE EVENTO CAN
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
+                
+                // Grava os valores contínuos
                 currentState.fcw_dist = dist_m;
                 currentState.fcw_ttc = ttc_s;
 
-                //Se for crítico, dispara o alarme genérico para a App Android te notificar
+                // Se houver perigo crítico, grava também o alerta
                 if (type_byte == 2) {
                     auto now = std::chrono::steady_clock::now();
-                    
-                    //Só publica no MQTT se já passaram 5 segundos desde o último alarme
                     if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
-                        last_fcw_alarm = now; //Atualiza o relógio
-                        client->publish("moto/alarm", "FCW");
-
-                        std::lock_guard<std::mutex> lock(stateMutex);
-                        currentState.alert = "FCW";
+                        last_fcw_alarm = now;
+                        client->publish("moto/alarm", "FCW"); // Tablet
+                        
+                        currentState.alert = "FCW"; // Atualizado sem criar outro lock
                     }
                 }
             }
@@ -329,7 +326,9 @@ void* cloud_worker(void* arg) {
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 snapshot = currentState;
-                currentState.alert = "NONE"; // Limpa após leitura
+                if (currentState.alert == "THEFT" || currentState.alert == "FALL" || currentState.alert == "FCW") {
+                    currentState.alert = "NONE";
+                }           
             }
 
             json payload;
@@ -341,6 +340,7 @@ void* cloud_worker(void* arg) {
             payload["ign"] = snapshot.ignition;
             payload["fcw"]["dist"] = snapshot.fcw_dist;
             payload["fcw"]["ttc"] = snapshot.fcw_ttc;
+            payload["alr"] = snapshot.alert;
             
             // Força o envio do alerta imediatamente se houver um
             if (snapshot.alert != "NONE") {

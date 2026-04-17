@@ -131,6 +131,9 @@ function logEvent(type, message) {
 // ==========================================
 // 4. INTEGRAÇÃO SSE (TEMPO REAL C#)
 // ==========================================
+// ==========================================
+// 4. INTEGRAÇÃO SSE (TEMPO REAL C#)
+// ==========================================
 function iniciarStreamServidor() {
     const status = document.getElementById("conn-status");
     status.innerText = "A ligar..."; 
@@ -179,12 +182,17 @@ function iniciarStreamServidor() {
             currentLat = liveState.lat; currentLon = liveState.lon;
             updateMap();
 
-            // Alertas
+            // Alertas (Aceita tanto a versão C# como a raw)
             const alertType = data.alert || data.alr || "NONE";
-            if (alertType !== "NONE") {
+
+            if (alertType === "NONE") {
+                // O servidor confirmou que não há perigo. Limpa a cache visual.
+                ultimoAlertaWeb = "NONE";
+            } else {
                 if (alertType === "RAIN_CLEARED") {
                     document.getElementById("rain-icon").classList.replace("active", "inactive");
                     document.getElementById("rain-text").innerText = "Seco";
+                    ultimoAlertaWeb = "NONE";
                 } else if (alertType !== ultimoAlertaWeb) {
                     ultimoAlertaWeb = alertType;
                     let msg = "Evento registado.";
@@ -194,7 +202,6 @@ function iniciarStreamServidor() {
                     if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
                     
                     logEvent(alertType, msg);
-                    setTimeout(() => { ultimoAlertaWeb = "NONE"; }, 10000);
 
                     if (alertType === "RAIN") {
                         document.getElementById("rain-icon").classList.remove("inactive", "active");
