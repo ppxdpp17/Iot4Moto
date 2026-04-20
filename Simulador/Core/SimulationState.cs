@@ -27,5 +27,7 @@ namespace Simulador.Core
         public static double Pitch { get; set; } = 0.0;
         public static bool FallDetected { get; set; } = false;
         public static bool TheftAlarmActive { get; set; } = false;
+
+        public static bool HasCrashed { get; set; } = false;
     }
 }

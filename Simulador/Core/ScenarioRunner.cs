@@ -54,6 +54,7 @@ namespace Simulador.Core
             }
 
             IsRunning = true;
+            SimulationState.HasCrashed = false;
             _cts = new CancellationTokenSource();
             Program.WriteMessage($"[CENÁRIO] A iniciar {fileName}...");
 
@@ -78,11 +79,23 @@ namespace Simulador.Core
                     double roll = double.Parse(parts[5], CultureInfo.InvariantCulture);
                     string alert = parts[6].Trim().ToUpper();
 
-                    // 2. Atualiza a memória global da VCU (o teu CanService já deve ler o SimulationState ciclicamente)
-                    SimulationState.Latitude = lat;
-                    SimulationState.Longitude = lon;
-                    SimulationState.Speed = speed;
-                    SimulationState.Battery = battery;
+
+                    if (SimulationState.HasCrashed)
+                    {
+                        // Mota no chão: forçamos a velocidade a zero. 
+                        // Ignoramos o lat e lon do ficheiro CSV, o que congela a mota no mapa.
+                        SimulationState.Speed = 0;
+                        SimulationState.Battery = battery; // Bateria continua a drenar
+                        Program.WriteMessage("[DEBUG-MOTOR] Mota bloqueada no chão! Ignorando GPS do CSV...");
+                    }
+                    else
+                    {
+                        // Condução normal
+                        SimulationState.Latitude = lat;
+                        SimulationState.Longitude = lon;
+                        SimulationState.Speed = speed;
+                        SimulationState.Battery = battery;
+                    }
 
                     // 3. Injeção de alertas diretos para o cabo CAN
                     TriggerAlerts(alert);

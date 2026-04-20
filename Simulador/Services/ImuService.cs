@@ -92,6 +92,8 @@ namespace Simulador.Services
                         {
                             SimulationState.FallDetected = true;
                             _canService.EnviarAlertaQueda();
+                            SimulationState.HasCrashed = true;
+                            Program.WriteMessage("[DEBUG-IMU] ACIDENTE DETETADO P PELO SENSOR! FLAG ATIVADA!");
 
                             _ = Task.Run(async () => {
                                 await Task.Delay(10000); //Dá mais tempo antes de dar reset (10s)
