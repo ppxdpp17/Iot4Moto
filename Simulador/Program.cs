@@ -96,7 +96,7 @@ namespace Simulador
             var auxiliar = new Auxiliares(mqttService, loggingService, dashboard, canService); 
             var sensorService = new SensorService(sensorMappings, mqttService, loggingService, canService);
             
-
+            var scenarioRunner = new ScenarioRunner(canService);
             
             var startAndUpdate = new StartAndUpdate(mqttService, loggingService, null);
             var chargingMethods = new ChargingMethods(mqttService, loggingService, dashboard);
@@ -205,6 +205,8 @@ namespace Simulador
             //Arranque do sistema de CHUVA
             _ = Task.Run(() => rainService.StartAsync(_cancellationTokenSource.Token));
 
+
+            var scenarioRunner = new ScenarioRunner(canService);
 
 
             // >>> New task: SIMULATE ROUTE (more realistic logic)
@@ -327,14 +329,27 @@ namespace Simulador
                     case "auto":
                         if (parts.Length == 2)
                         {
-                            string routeName = parts[1].ToLower();
-                            // Launch the automatic scenario
-                            _ = Task.Run(() => backgroundUpdated.AutoSimulateAsync(routeName));
+                            string arg = parts[1].ToLower();
 
+                            if (arg == "stop")
+                            {
+                                // Pára o cenário balístico (routePedroX)
+                                scenarioRunner.Stop();
+                            }
+                            else if (arg.StartsWith("routepedro"))
+                            {
+                                // Inicia o cenário determinístico da tese
+                                _ = Task.Run(() => scenarioRunner.RunAsync(arg));
+                            }
+                            else
+                            {
+                                // Lança o cenário automático antigo (rota1, rota2, etc)
+                                _ = Task.Run(() => backgroundUpdated.AutoSimulateAsync(arg));
+                            }
                         }
                         else
                         {
-                            Program.WriteMessage("Usage: auto <route1|route2|route3>");
+                            Program.WriteMessage("Usage: auto <route1|route2|routepedro1...> ou 'auto stop'");
                         }
                         break;
 

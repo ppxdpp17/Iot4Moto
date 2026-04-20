@@ -508,12 +508,3 @@ namespace Simulador.Core
     }
 
 }
-
-
-
-
-
-
-
-
-
