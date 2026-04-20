@@ -96,6 +96,10 @@ dependencies {
     implementation("io.grpc:grpc-kotlin-stub:1.4.1")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
+    implementation("androidx.media3:media3-exoplayer:1.2.0")
+    implementation("androidx.media3:media3-exoplayer-rtsp:1.2.0")
+    implementation("androidx.media3:media3-ui:1.2.0")
+
     implementation("io.grpc:grpc-android:1.62.2")
     implementation("io.grpc:grpc-api:1.62.2")
 }

@@ -11,7 +11,7 @@ namespace CAN
 {
     public class CanService
     {
-        private static char[] mserial_port = "/dev/ttyACM1\0".ToCharArray();    //Porta responsável por passar os dados
+        private static char[] mserial_port = "/dev/ttyACM0\0".ToCharArray();    //Porta responsável por passar os dados
         private static ushort mbitrate = 500;   //Baudrate
         private readonly MqttService _mqttService;
         private readonly object _canLock = new object();    //Mutex para proteger a API single-thread do simplyCAN
