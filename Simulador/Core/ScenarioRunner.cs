@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CAN;
 
 namespace Simulador.Core
 {
@@ -40,10 +41,9 @@ namespace Simulador.Core
             // Mapeia os teus comandos para ficheiros reais
             string fileName = scenarioName.ToLower() switch
             {
-                "routepedro1" => "cenario_queda.csv",
-                "routepedro2" => "cenario_chuva.csv",
-                "routepedro3" => "cenario_roubo.csv",
-                "routepedro4" => "cenario_fcw.csv",
+                "routepedro1" => "rota_hibrida_fall.csv",
+                "routepedro2" => "rota_hibrida_fcw.csv",
+                "routepedro3" => "rota_real.csv",
                 _ => null
             };
 
@@ -125,7 +125,7 @@ namespace Simulador.Core
                     break;
                 case "FCW":
                     Program.WriteMessage("[!!!] A injetar Aproximação Frontal no CAN [!!!]");
-                    _canService.EnviarFcw();
+                    _canService.EnviarFcw(15.0, 1.5, "CRITICAL");
                     break;
             }
         }

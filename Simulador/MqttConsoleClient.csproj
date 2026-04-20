@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="cenario_*.csv">
+    <None Update="*.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <PackageReference Include="DotNetEnv" Version="3.*" />

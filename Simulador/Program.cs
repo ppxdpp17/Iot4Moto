@@ -206,9 +206,6 @@ namespace Simulador
             _ = Task.Run(() => rainService.StartAsync(_cancellationTokenSource.Token));
 
 
-            var scenarioRunner = new ScenarioRunner(canService);
-
-
             // >>> New task: SIMULATE ROUTE (more realistic logic)
             _ = routes.UpdateRouteAsync(sensorService);
 
