@@ -95,6 +95,7 @@ namespace Simulador
             var dashboard = new Dashboard(mqttService, loggingService);
             var auxiliar = new Auxiliares(mqttService, loggingService, dashboard, canService); 
             var sensorService = new SensorService(sensorMappings, mqttService, loggingService, canService);
+            
 
             
             var startAndUpdate = new StartAndUpdate(mqttService, loggingService, null);
