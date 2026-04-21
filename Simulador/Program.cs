@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -350,7 +351,24 @@ namespace Simulador
                         }
                         break;
 
+                    case "stress":
+                        // Certifica-te de que a variável canService está acessível neste contexto.
+                        // Se a instanciaste no início do Program.cs, basta passá-la.
+                        _ = Task.Run(() => ExecutarTesteStress(canService));
+                        break;
 
+                    case "stress_rain":
+                        _ = Task.Run(() => ExecutarTesteStress("RAIN", canService.EnviarAlertaChuva));
+                        break;
+
+                    case "stress_fcw":
+                        _ = Task.Run(() => ExecutarTesteStress("FCW", canService.EnviarAlertaColisao));
+                        break;
+                    
+                    case "stress_theft":
+                        _ = Task.Run(() => ExecutarTesteStress("THEFT", canService.EnviarAlertaRoubo));
+                        break;
+                    
                     // Check if the motorcycle is on before processing other commands
                     case "battery":
                     case "speed":
@@ -571,6 +589,30 @@ namespace Simulador
 
             await mqttService.DisconnectAsync();
             Console.WriteLine("Desconectado do broker. Encerrando programa.");
+        }
+
+        public static async Task ExecutarTesteStress(string tipoAlerta, Action dispararCan)
+        {
+            Program.WriteMessage($"[STRESS] A iniciar 50 disparos automáticos para {tipoAlerta}...");
+            string ficheiro = $"vcu_tempos_envio_{tipoAlerta.ToLower()}.csv";
+            
+            using (StreamWriter writer = new StreamWriter(ficheiro, false))
+            {
+                writer.WriteLine($"ID,TS_VCU"); 
+                
+                for (int i = 1; i <= 50; i++)
+                {
+                    long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    writer.WriteLine($"{i},{tsOrigem}");
+                    writer.Flush(); 
+                    
+                    dispararCan(); // Executa o método CAN passado por parâmetro
+                    Program.WriteMessage($"[STRESS] {tipoAlerta} {i}/50 efetuado. Aguarda 10s...");
+                    
+                    await Task.Delay(10000); 
+                }
+            }
+            Program.WriteMessage($"[STRESS] {tipoAlerta} concluído! Saca o ficheiro {ficheiro}.");
         }
 
     }

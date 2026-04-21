@@ -124,19 +124,21 @@ class ForegroundAlertService : Service() {
         }
 
         if (isEnabled) {
+            // 1. Regista o Timestamp IMEDIATAMENTE e dinamicamente para qualquer alerta recebido
+            val tsRececao = System.currentTimeMillis()
+            Log.e("ALERTA_$alertType", "$tsRececao")
+
+            // 2. Trata do SMS APENAS se for queda (mantém comentado durante os 50 testes!)
             if (alertType == "FALL") {
                 try {
-                    val tsRececao = System.currentTimeMillis()
-                    val smsHelper = SmsHelper(this@ForegroundAlertService)
-                    //smsHelper.triggerEmergencySms("$tsRececao,$lastLon")
-                    smsHelper.triggerEmergencySms("$lastLat,$lastLon")
-                    Log.e("ALERTA_QUEDA", "$tsRececao")
-                    //Log.e("TESTETESTE", "Teste de impressão no logcat")
+                    // val smsHelper = SmsHelper(this@ForegroundAlertService)
+                    // smsHelper.triggerEmergencySms("$lastLat,$lastLon")
                 } catch (e: Exception) {
                     Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
                 }
             }
 
+            // 3. Lógica das notificações (não mexes em nada, manténs como estava)
             val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val (titulo, descricao) = when (alertType) {
                 "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."

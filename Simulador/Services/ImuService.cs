@@ -95,8 +95,8 @@ namespace Simulador.Services
                             SimulationState.HasCrashed = true;
 
                             // Regista o tempo absoluto localmente
-                            long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                            Program.WriteMessage($"[TESTE-LATÊNCIA] Alerta injetado no CAN: {tsOrigem}");
+                            //long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                            //Program.WriteMessage($"[TESTE-LATÊNCIA] Alerta injetado no CAN: {tsOrigem}");
 
                             _ = Task.Run(async () => {
                                 await Task.Delay(10000);
