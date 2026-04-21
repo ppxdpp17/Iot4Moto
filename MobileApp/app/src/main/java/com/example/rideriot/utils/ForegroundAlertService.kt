@@ -128,8 +128,10 @@ class ForegroundAlertService : Service() {
                 try {
                     val tsRececao = System.currentTimeMillis()
                     val smsHelper = SmsHelper(this@ForegroundAlertService)
-                    smsHelper.triggerEmergencySms("$tsRececao,$lastLon")
-                    Log.e("ALERTA QUEDA", "$tsRececao")
+                    //smsHelper.triggerEmergencySms("$tsRececao,$lastLon")
+                    smsHelper.triggerEmergencySms("$lastLat,$lastLon")
+                    Log.e("ALERTA_QUEDA", "$tsRececao")
+                    //Log.e("TESTETESTE", "Teste de impressão no logcat")
                 } catch (e: Exception) {
                     Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
                 }
