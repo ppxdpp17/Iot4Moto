@@ -196,7 +196,12 @@ function iniciarStreamServidor() {
                 } else if (alertType !== ultimoAlertaWeb) {
                     ultimoAlertaWeb = alertType;
                     let msg = "Evento registado.";
-                    if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
+                    if (alertType === "FALL") 
+                    {
+                        msg = "Queda detetada! Risco de acidente.";
+                        let tsRececao = Date.now();
+                        console.log(`[TESTE-LATÊNCIA] Alerta chegou à Web: ${tsRececao}`);
+                    }
                     if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
                     if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
                     if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";

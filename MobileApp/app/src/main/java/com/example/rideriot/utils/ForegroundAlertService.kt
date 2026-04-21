@@ -126,8 +126,10 @@ class ForegroundAlertService : Service() {
         if (isEnabled) {
             if (alertType == "FALL") {
                 try {
+                    val tsRececao = System.currentTimeMillis()
                     val smsHelper = SmsHelper(this@ForegroundAlertService)
-                    smsHelper.triggerEmergencySms("$lastLat,$lastLon")
+                    smsHelper.triggerEmergencySms("$tsRececao,$lastLon")
+                    Log.e("ALERTA QUEDA", "$tsRececao")
                 } catch (e: Exception) {
                     Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
                 }

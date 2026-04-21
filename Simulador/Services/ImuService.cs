@@ -93,10 +93,13 @@ namespace Simulador.Services
                             SimulationState.FallDetected = true;
                             _canService.EnviarAlertaQueda();
                             SimulationState.HasCrashed = true;
-                            Program.WriteMessage("[DEBUG-IMU] ACIDENTE DETETADO P PELO SENSOR! FLAG ATIVADA!");
+
+                            // Regista o tempo absoluto localmente
+                            long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                            Program.WriteMessage($"[TESTE-LATÊNCIA] Alerta injetado no CAN: {tsOrigem}");
 
                             _ = Task.Run(async () => {
-                                await Task.Delay(10000); //Dá mais tempo antes de dar reset (10s)
+                                await Task.Delay(10000);
                                 SimulationState.FallDetected = false;
                             });
                         }

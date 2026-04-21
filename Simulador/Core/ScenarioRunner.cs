@@ -86,7 +86,6 @@ namespace Simulador.Core
                         // Ignoramos o lat e lon do ficheiro CSV, o que congela a mota no mapa.
                         SimulationState.Speed = 0;
                         SimulationState.Battery = battery; // Bateria continua a drenar
-                        Program.WriteMessage("[DEBUG-MOTOR] Mota bloqueada no chão! Ignorando GPS do CSV...");
                     }
                     else
                     {
