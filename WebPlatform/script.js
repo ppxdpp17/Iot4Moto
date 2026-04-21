@@ -11,7 +11,9 @@ let lastLat = null;
 let lastLon = null;
 let ultimoAlertaWeb = "NONE";
 
+
 let logLatencias = { "FALL": [], "RAIN": [], "FCW": [], "THEFT": [] };
+
 
 let liveState = {
     roll: 0, vel: 0, bat: '--', lat: null, lon: null
@@ -187,20 +189,17 @@ function iniciarStreamServidor() {
             // Alertas (Aceita tanto a versão C# como a raw)
             const alertType = data.alert || data.alr || "NONE";
 
-            //INICIO DO REGISTO DE LATÊNCIA
             if (alertType !== "NONE" && alertType !== "RAIN_CLEARED") {
-                // Regista todos os disparos que chegam, independentemente de serem repetidos
                 if (logLatencias[alertType] !== undefined) {
                     let tsRececao = Date.now();
                     logLatencias[alertType].push(tsRececao);
-                    console.log(`[STRESS] ${alertType} ${logLatencias[alertType].length}/50 recebido: ${tsRececao}`);
+                    console.log(`[STRESS] ${alertType} ${logLatencias[alertType].length}/50 -> ${tsRececao}`);
 
                     if (logLatencias[alertType].length === 50) {
                         exportarLatencia(alertType);
                     }
                 }
             }
-            //FIM DO REGISTO DE LATÊNCIA
 
             if (alertType === "NONE") {
                 // O servidor confirmou que não há perigo. Limpa a cache visual.
@@ -213,19 +212,7 @@ function iniciarStreamServidor() {
                 } else if (alertType !== ultimoAlertaWeb) {
                     ultimoAlertaWeb = alertType;
                     let msg = "Evento registado.";
-                    if (alertType === "FALL") 
-                    {
-                        msg = "Queda detetada! Risco de acidente.";
-                        let tsRececao = Date.now();
-                        logLatenciaWeb.push(tsRececao); // Guarda no array
-                        
-                        console.log(`[STRESS] Alerta ${logLatenciaWeb.length}/50 recebido: ${tsRececao}`);
-
-                        // Quando bater no 50º teste, faz o download automático do CSV
-                        if (logLatenciaWeb.length === 50) {
-                            exportarLatenciaWeb();
-                        }
-                    }
+                    if (alertType === "FALL") msg = "Queda detetada! Risco de acidente.";
                     if (alertType === "THEFT") msg = "Movimento suspeito! Possível roubo.";
                     if (alertType === "FCW") msg = "Perigo Iminente! Aviso de colisão frontal.";
                     if (alertType === "RAIN") msg = "Chuva detetada. Cubra a mota.";
@@ -385,23 +372,14 @@ function seekVirtual() {
 
 function exportarLatencia(tipo) {
     let conteudoCSV = "data:text/csv;charset=utf-8,ID,TS_WEB\n";
+    logLatencias[tipo].forEach((ts, index) => { conteudoCSV += `${index + 1},${ts}\n`; });
     
-    logLatencias[tipo].forEach((ts, index) => {
-        conteudoCSV += `${index + 1},${ts}\n`;
-    });
-    
-    let uriCodificado = encodeURI(conteudoCSV);
     let link = document.createElement("a");
-    link.setAttribute("href", uriCodificado);
-    
-    // O nome do ficheiro muda automaticamente (ex: web_tempos_rececao_fcw.csv)
+    link.setAttribute("href", encodeURI(conteudoCSV));
     link.setAttribute("download", `web_tempos_rececao_${tipo.toLowerCase()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    console.log(`[STRESS] CSV da Web para ${tipo} transferido com sucesso!`);
-    
-    // Esvazia o array para poderes repetir o teste mais tarde sem teres de fazer F5
-    logLatencias[tipo] = []; 
+    logLatencias[tipo] = []; // Limpa para o próximo teste
 }

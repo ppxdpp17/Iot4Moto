@@ -233,6 +233,9 @@ namespace CAN
             EnviarDadosSimulados(0x402, new byte[] { 0x01 });
         }
 
+        public void EnviarAlertaChuva() { EnviarChuva(true); }
+        public void EnviarAlertaColisao() { EnviarFcw(1.0, 0.5, "CRITICAL"); }
+
         //SIMULADOR A GERAR DADOS DE GPS (ESTÁTICOS) - MAIS TARDE RETIRAR ISTO, JÁ QUE OS DADOS GPS
         //SERÃO "GERADOS" DIRETAMENTE NA CSVU ATRAVÉS DO MODEM
         public void EnviarGPS(double latitude, double longitude)

@@ -94,7 +94,7 @@ class ForegroundAlertService : Service() {
             showResolvedRainNotification()
             AlertManager.resolveLastAlertOfType("RAIN")
             ultimoAlertaRecebido = "NONE"
-            Log.d("SENTINEL", "Chuva parou. Notificação atualizada para RESOLVIDO.")
+            Log.d("SENTINEL", "Chuva parou.")
             return
         }
 
@@ -104,9 +104,13 @@ class ForegroundAlertService : Service() {
             return
         }
 
-        // 3. Bloqueio Anti-Spam: Ignora alertas repetidos num espaço de 10 segundos
+        // REGISTO DE LATÊNCIA EXATO (Sem lixo de NONEs)
+        val tsRececao = System.currentTimeMillis()
+        Log.e("ALERTA_$alertType", "$tsRececao")
+
+        // 3. Bloqueio Anti-Spam: MUDADO PARA 2 SEGUNDOS PARA OS TESTES!
         val tempoAtual = System.currentTimeMillis()
-        if (alertType == ultimoAlertaRecebido && (tempoAtual - ultimoTempoAlerta) < 10000) {
+        if (alertType == ultimoAlertaRecebido && (tempoAtual - ultimoTempoAlerta) < 2000) {
             return
         }
 
@@ -124,21 +128,7 @@ class ForegroundAlertService : Service() {
         }
 
         if (isEnabled) {
-            // 1. Regista o Timestamp IMEDIATAMENTE e dinamicamente para qualquer alerta recebido
-            val tsRececao = System.currentTimeMillis()
-            Log.e("ALERTA_$alertType", "$tsRececao")
-
-            // 2. Trata do SMS APENAS se for queda (mantém comentado durante os 50 testes!)
-            if (alertType == "FALL") {
-                try {
-                    // val smsHelper = SmsHelper(this@ForegroundAlertService)
-                    // smsHelper.triggerEmergencySms("$lastLat,$lastLon")
-                } catch (e: Exception) {
-                    Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
-                }
-            }
-
-            // 3. Lógica das notificações (não mexes em nada, manténs como estava)
+            // SMS continua comentado. Apaguei o Log "ALERTA_QUEDA" duplicado daqui.
             val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val (titulo, descricao) = when (alertType) {
                 "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
@@ -148,7 +138,6 @@ class ForegroundAlertService : Service() {
                 else    -> "Informação" to "Evento: $alertType"
             }
 
-            // Grava no histórico
             val newAlert = Alert(titulo, descricao, currentTime, alertType)
             AlertManager.addAlert(newAlert)
             showEmergencyNotification(titulo, descricao, alertType)

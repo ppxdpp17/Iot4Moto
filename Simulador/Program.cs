@@ -351,24 +351,18 @@ namespace Simulador
                         }
                         break;
 
-                    case "stress":
-                        // Certifica-te de que a variável canService está acessível neste contexto.
-                        // Se a instanciaste no início do Program.cs, basta passá-la.
-                        _ = Task.Run(() => ExecutarTesteStress(canService));
+                    case "stress_fall":
+                        _ = Task.Run(() => ExecutarTesteStress("FALL", canService.EnviarAlertaQueda));
                         break;
-
                     case "stress_rain":
                         _ = Task.Run(() => ExecutarTesteStress("RAIN", canService.EnviarAlertaChuva));
                         break;
-
                     case "stress_fcw":
                         _ = Task.Run(() => ExecutarTesteStress("FCW", canService.EnviarAlertaColisao));
                         break;
-                    
                     case "stress_theft":
                         _ = Task.Run(() => ExecutarTesteStress("THEFT", canService.EnviarAlertaRoubo));
                         break;
-                    
                     // Check if the motorcycle is on before processing other commands
                     case "battery":
                     case "speed":
@@ -598,21 +592,19 @@ namespace Simulador
             
             using (StreamWriter writer = new StreamWriter(ficheiro, false))
             {
-                writer.WriteLine($"ID,TS_VCU"); 
-                
+                writer.WriteLine("ID,TS_VCU"); 
                 for (int i = 1; i <= 50; i++)
                 {
                     long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                     writer.WriteLine($"{i},{tsOrigem}");
                     writer.Flush(); 
                     
-                    dispararCan(); // Executa o método CAN passado por parâmetro
+                    dispararCan(); 
                     Program.WriteMessage($"[STRESS] {tipoAlerta} {i}/50 efetuado. Aguarda 10s...");
-                    
                     await Task.Delay(10000); 
                 }
             }
-            Program.WriteMessage($"[STRESS] {tipoAlerta} concluído! Saca o ficheiro {ficheiro}.");
+            Program.WriteMessage($"[STRESS] {tipoAlerta} concluído! Ficheiro: {ficheiro}");
         }
 
     }
