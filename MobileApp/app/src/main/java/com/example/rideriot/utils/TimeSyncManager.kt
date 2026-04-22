@@ -12,7 +12,7 @@ object TimeSyncManager {
     private var isSynced = false
 
     // O IP do Raspberry Pi na sua VPN. Confirme se é mesmo o .1
-    private const val RPI_VPN_IP = "192.168.158.1"
+    private const val RPI_VPN_IP = "172.20.0.154"
 
     suspend fun sync() {
         withContext(Dispatchers.IO) {
