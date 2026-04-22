@@ -102,6 +102,8 @@ dependencies {
 
     implementation("io.grpc:grpc-android:1.62.2")
     implementation("io.grpc:grpc-api:1.62.2")
+
+    implementation("commons-net:commons-net:3.10.0")
 }
 
 // Configuração para gerar o código Kotlin a partir do .proto (INTACTA)

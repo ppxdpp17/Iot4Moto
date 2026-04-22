@@ -41,6 +41,10 @@ class ForegroundAlertService : Service() {
         createAlertNotificationChannel()
         startForegroundServiceNotification()
 
+        serviceScope.launch {
+            TimeSyncManager.sync()
+        }
+
         // Arranca a torneira gRPC
         iniciarStreamGrpc()
     }
@@ -105,7 +109,7 @@ class ForegroundAlertService : Service() {
         }
 
         // REGISTO DE LATÊNCIA EXATO (Sem lixo de NONEs)
-        val tsRececao = System.currentTimeMillis()
+        val tsRececao = TimeSyncManager.getTrueTime()
         Log.e("ALERTA_$alertType", "$tsRececao")
 
         // 3. Bloqueio Anti-Spam: MUDADO PARA 2 SEGUNDOS PARA OS TESTES!

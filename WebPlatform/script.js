@@ -207,7 +207,6 @@ function iniciarStreamServidor() {
             } else {
                 if (alertType === "RAIN_CLEARED") {
                     document.getElementById("rain-icon").classList.replace("active", "inactive");
-                    document.getElementById("rain-text").innerText = "Seco";
                     ultimoAlertaWeb = "NONE";
                 } else if (alertType !== ultimoAlertaWeb) {
                     ultimoAlertaWeb = alertType;
