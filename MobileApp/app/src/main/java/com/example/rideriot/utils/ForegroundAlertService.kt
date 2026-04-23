@@ -132,7 +132,15 @@ class ForegroundAlertService : Service() {
         }
 
         if (isEnabled) {
-            // SMS continua comentado. Apaguei o Log "ALERTA_QUEDA" duplicado daqui.
+            if (alertType == "FALL") {
+                try {
+                    val smsHelper = SmsHelper(this@ForegroundAlertService)
+                    smsHelper.triggerEmergencySms("$lastLat,$lastLon")
+                } catch (e: Exception) {
+                    Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
+                }
+            }
+            
             val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val (titulo, descricao) = when (alertType) {
                 "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
