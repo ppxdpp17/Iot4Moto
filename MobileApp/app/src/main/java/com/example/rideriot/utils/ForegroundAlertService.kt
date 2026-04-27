@@ -140,7 +140,7 @@ class ForegroundAlertService : Service() {
                     Log.e("SENTINEL", "Erro a enviar SMS: ${e.message}")
                 }
             }
-            
+
             val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val (titulo, descricao) = when (alertType) {
                 "THEFT" -> "Alerta de Roubo!" to "Movimento detetado com a mota estacionada."
