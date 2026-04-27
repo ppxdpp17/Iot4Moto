@@ -21,6 +21,7 @@
 ::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
+/*Cores gerais do ficheiro*/
 body { 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
     background: var(--bg-dark); 
@@ -64,6 +65,7 @@ body {
     padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;
 }
 .state-badge.on { background: rgba(0, 255, 136, 0.2); color: var(--primary); }
+
 /*Cartões de Alta Frequência (Velocidade e Bateria)*/
 .telemetry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .t-card { background: var(--bg-panel); padding: 15px; border-radius: 12px; text-align: center; }
