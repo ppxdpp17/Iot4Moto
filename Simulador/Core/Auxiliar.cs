@@ -47,7 +47,7 @@ namespace Simulador.Core
             await _mqttService.PublishAsync("sim/autonomy", SimulationState.Autonomy.ToString("F2"));
             await _mqttService.PublishAsync("sim/brake", SimulationState.Brake.ToString());
             
-            SyncTelemetryToCan();
+            //SyncTelemetryToCan();
         }
 
         private static Random _rand = new Random();
@@ -115,7 +115,7 @@ namespace Simulador.Core
                 }
                 
                 SimulationState.Speed = nextSpeed;
-                SyncTelemetryToCan();
+                //SyncTelemetryToCan();
                 _canService.EnviarVelocidade(nextSpeed);
                 await Task.Delay(updateInterval);
             }
@@ -238,7 +238,7 @@ namespace Simulador.Core
                 }
                 
                 SimulationState.Speed = nextSpeed;
-                SyncTelemetryToCan();
+                //SyncTelemetryToCan();
 
                 await Task.Delay(updateInterval);
             }
@@ -270,7 +270,7 @@ namespace Simulador.Core
             };
         }
         
-        private void SyncTelemetryToCan()
+        /* private void SyncTelemetryToCan()
         {
             byte[] data = new byte[4];
             data[0] = (byte)(SimulationState.Speed & 0xFF);
@@ -279,7 +279,7 @@ namespace Simulador.Core
             data[3] = SimulationState.Brake ? (byte)1 : (byte)0;
 
             _canService.EnviarDadosSimulados(0x200, data);
-        }
+        } */
     }
 
 }

@@ -104,36 +104,20 @@ namespace Simulador.Services
         //Tomada de decisão
         private void ProcessFcwLogic(double currentDistance)
         {
-            var now = DateTime.UtcNow;
-            _history.Enqueue(new Tuple<DateTime, double>(now, currentDistance));
-            if (_history.Count > MAX_HISTORY) _history.Dequeue();
-
-            double vel = 0.0;
             double ttc = 999.0;
-            string type = "INFO"; //Por defeito, é apenas informação (para a Web)
+            string type = "INFO"; 
 
-            //Requer um mínimo de 3 amostras para calcular uma velocidade com margem de erro reduzida
-            if (_history.Count >= 3)
+            // Converte a velocidade do simulador de km/h para metros por segundo
+            double speedMetersPerSecond = SimulationState.Speed / 3.6;
+
+            // Se a mota estiver parada ou a andar muito devagar, não há colisão iminente
+            if (speedMetersPerSecond > 0.1) 
             {
-                var oldest = _history.First();
-                var newest = _history.Last();
-                double dt = (newest.Item1 - oldest.Item1).TotalSeconds;
-
-                if (dt > 0)
-                {
-                    //V = dx/dt (Velocidade Relativa de aproximação)
-                    vel = (oldest.Item2 - newest.Item2) / dt;
-
-                    //Se nos estamos a aproximar do obstáculo
-                    if (vel > 0.1) 
-                    {
-                        //Tempo para Colisão = Distância Atual / Velocidade de Aproximação
-                        ttc = currentDistance / vel;
-                    }
-                }
+                // TTC = Distância / Velocidade
+                ttc = currentDistance / speedMetersPerSecond;
             }
 
-            //Só gera alarmes se a mota estiver a 30 km/h ou mais
+            // Mantém a tua regra de negócio: só avisa acima de 30 km/h
             if (SimulationState.Speed >= 30)
             {
                 if (ttc < 1.0)
@@ -146,7 +130,6 @@ namespace Simulador.Services
                 }
             }
 
-            //Envia sempre os dados para o CAN (e consequentemente para a Web)
             _canService.EnviarFcw(currentDistance, ttc, type);
         }
 
