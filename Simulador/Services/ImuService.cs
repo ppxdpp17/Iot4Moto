@@ -94,10 +94,6 @@ namespace Simulador.Services
                             _canService.EnviarAlertaQueda();
                             SimulationState.HasCrashed = true;
 
-                            // Regista o tempo absoluto localmente
-                            //long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                            //Program.WriteMessage($"[TESTE-LATÊNCIA] Alerta injetado no CAN: {tsOrigem}");
-
                             _ = Task.Run(async () => {
                                 await Task.Delay(10000);
                                 SimulationState.FallDetected = false;
