@@ -38,7 +38,7 @@ class MapFragment : Fragment() {
 
         setupMap()
 
-        // 1. Sincronização Imediata ao abrir o ecrã
+        //Sincronização imediata ao abrir o ecrã
         atualizarTextoStatus(AlertManager.connectionStatus)
         atualizarSwitchIgnicao(AlertManager.ignitionState)
         AlertManager.onIgnitionChanged = { isLigada ->
@@ -49,7 +49,7 @@ class MapFragment : Fragment() {
             atualizarPosicaoMapa(AlertManager.lastLat, AlertManager.lastLon)
         }
 
-        // 2. Listeners para atualizações enquanto o ecrã estiver aberto
+        //Listeners para atualizações enquanto o ecrã estiver aberto
         AlertManager.onStatusChanged = { novoStatus ->
             activity?.runOnUiThread { atualizarTextoStatus(novoStatus) }
         }
@@ -77,7 +77,7 @@ class MapFragment : Fragment() {
     }
 
     private fun atualizarPosicaoMapa(lat: Double, lon: Double) {
-        // Agora mostramos a mota mesmo que esteja em 0.0 para saberes que os dados estão a chegar
+        //A mota é mostrada mesmo que esteja em 0.0 para saber se os dados estão a chegar
         val point = GeoPoint(lat, lon)
 
         if (motoMarker == null) {
@@ -94,9 +94,9 @@ class MapFragment : Fragment() {
 
     private fun atualizarSwitchIgnicao(isLigada: Boolean) {
         if (switchMotor.isChecked != isLigada) {
-            switchMotor.setOnCheckedChangeListener(null) // 1. Fica surdo a cliques
-            switchMotor.isChecked = isLigada             // 2. Muda o botão visualmente
-            setSwitchListener()                          // 3. Volta a ouvir os teus cliques
+            switchMotor.setOnCheckedChangeListener(null) //Fica "surdo" a cliques
+            switchMotor.isChecked = isLigada             //Muda o botão visualmente
+            setSwitchListener()                          //Volta a ouvir os cliques
         }
     }
 

@@ -127,14 +127,12 @@ namespace Simulador
                 {
                     if (payload == "on" && !SimulationState.IsMotorcycleOn)
                     {
-                        //Program.WriteMessage("[Remoto] Comando LIGAR recebido.");
                         await startAndUpdate.StartMotorcycleAsync();
                         SimulationState.IsMotorcycleOn = true;
                         dashboard.DisplayDashboard();
                     }
                     else if (payload == "off" && SimulationState.IsMotorcycleOn)
                     {
-                        //Program.WriteMessage("[Remoto] Comando DESLIGAR recebido.");
                         await startAndUpdate.StopMotorcycleAsync();
                         SimulationState.IsMotorcycleOn = false;
                         Console.Clear();
@@ -144,7 +142,6 @@ namespace Simulador
             };
             //----------FIM DA LÓGICA DA APP ANDROID--------------------
             
-            //RETIREI ESCOLHA DO VIN AQUI
             try
             {
                 await mqttService.ConnectAsync();
@@ -331,17 +328,17 @@ namespace Simulador
 
                             if (arg == "stop")
                             {
-                                // Pára o cenário balístico (routePedroX)
+                                //Pára o cenário balístico (routePedroX)
                                 scenarioRunner.Stop();
                             }
                             else if (arg.StartsWith("routepedro"))
                             {
-                                // Inicia o cenário determinístico da tese
+                                //Inicia o cenário determinístico
                                 _ = Task.Run(() => scenarioRunner.RunAsync(arg));
                             }
                             else
                             {
-                                // Lança o cenário automático antigo (rota1, rota2, etc)
+                                //Lança o cenário automático antigo (rota1, rota2, etc)
                                 _ = Task.Run(() => backgroundUpdated.AutoSimulateAsync(arg));
                             }
                         }
@@ -351,6 +348,7 @@ namespace Simulador
                         }
                         break;
 
+                    //Inputs para testes de stress para cada um dos alertas
                     case "stress_fall":
                         _ = Task.Run(() => ExecutarTesteStress("FALL", canService.EnviarAlertaQueda));
                         break;
@@ -363,6 +361,7 @@ namespace Simulador
                     case "stress_theft":
                         _ = Task.Run(() => ExecutarTesteStress("THEFT", canService.EnviarAlertaRoubo));
                         break;
+
                     // Check if the motorcycle is on before processing other commands
                     case "battery":
                     case "speed":

@@ -7,7 +7,7 @@ using CustomBackend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. ABRIR DUAS PORTAS: 50051 (gRPC) e 5000 (SSE Web)
+//Abrir as portas 50051 (gRPC) e 5000 (SSE Web)
 builder.WebHost.ConfigureKestrel(options => {
     options.ListenAnyIP(50051, o => o.Protocols = HttpProtocols.Http2);
     options.ListenAnyIP(5000, o => o.Protocols = HttpProtocols.Http1AndHttp2);
@@ -16,7 +16,7 @@ builder.WebHost.ConfigureKestrel(options => {
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<MqttBridgeService>();
 
-// 2. PERMISSÕES DE REDE (CORS)
+//Permissões de rede (CORS)
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowWeb", policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
@@ -25,10 +25,10 @@ var app = builder.Build();
 
 app.UseCors("AllowWeb");
 
-// Mapeia o serviço gRPC (A classe MotorcycleGrpcService deve estar noutro ficheiro do teu projeto)
+//Mapeia o serviço gRPC
 app.MapGrpcService<MotorcycleGrpcService>();
 
-// 3. ENDPOINT SSE (Web) - AGORA LÊ O DICIONÁRIO FLEXÍVEL
+//ENDPOINT SSE (Web) - LÊ O DICIONÁRIO FLEXÍVEL
 app.MapGet("/api/stream", async (HttpContext context) => {
     context.Response.Headers["Content-Type"] = "text/event-stream";
     context.Response.Headers["Cache-Control"] = "no-cache";
@@ -54,7 +54,7 @@ app.MapGet("/api/stream", async (HttpContext context) => {
     }
 });
 
-// Força a inicialização do Singleton do MQTT no arranque
+//Força a inicialização do Singleton do MQTT no arranque
 app.Services.GetRequiredService<MqttBridgeService>();
 
 app.MapGet("/", () => "Backend C# Ativo: gRPC (50051) + SSE (5000)");
@@ -62,15 +62,13 @@ app.MapGet("/", () => "Backend C# Ativo: gRPC (50051) + SSE (5000)");
 app.Run();
 
 
-// ==========================================
-// PONTE MQTT - GESTÃO DE ESTADO DUAL
-// ==========================================
+//PONTE MQTT - GESTÃO DE ESTADO DUAL
 public class MqttBridgeService {
-    // ESTADO 1: Estrito para a App Android (gRPC - Não toca no .proto)
+    //ESTADO 1: Estrito para a App Android (gRPC - Não toca no .proto)
     public static TelemetriaData UltimoEstado = new TelemetriaData { Lat = 0, Lon = 0, Alert = "NONE" };
     public static event Action<TelemetriaData>? OnNovoEstado;
 
-    // ESTADO 2: Flexível para a Plataforma Web (SSE)
+    //ESTADO 2: Flexível para a Plataforma Web (SSE)
     public static Dictionary<string, object> WebEstado = new() {
         {"lat", 0.0}, {"lon", 0.0}, {"alert", "NONE"}, {"ign", false}, 
         {"r", 0.0}, {"spd", 0}, {"soc", 0}
@@ -85,7 +83,7 @@ public class MqttBridgeService {
         var mqttFactory = new MqttFactory();
         _mqttClient = mqttFactory.CreateMqttClient();
         
-        // Assegura-te que "mosquitto" é o hostname correto no teu Docker Compose. Se não for, usa o IP "127.0.0.1" ou da rede.
+        //Usa específicamente "mosquitto" para tratar da resolução de DNS
         var options = new MqttClientOptionsBuilder().WithTcpServer("mosquitto", 1883).Build();
 
         _mqttClient.ApplicationMessageReceivedAsync += e => {
@@ -94,7 +92,7 @@ public class MqttBridgeService {
             try {
                 var data = JsonDocument.Parse(payload).RootElement;
                 
-                // 1. Atualiza a memória rigorosa para o gRPC
+                //1 - Atualiza a memória rigorosa para o gRPC
                 lock(UltimoEstado) {
                     if (data.TryGetProperty("lat", out var lat)) UltimoEstado.Lat = lat.GetDouble();
                     if (data.TryGetProperty("lon", out var lon)) UltimoEstado.Lon = lon.GetDouble();
@@ -104,7 +102,7 @@ public class MqttBridgeService {
                 }
                 OnNovoEstado?.Invoke(UltimoEstado);
 
-                // 2. Atualiza a memória flexível para a Web (Incluindo Velocidade, Bateria e Inclinação)
+                //2 - Atualiza a memória flexível para a Web (Velocidade, Bateria e Inclinação)
                 lock(WebEstado) {
                     if (data.TryGetProperty("lat", out var p1)) WebEstado["lat"] = p1.GetDouble();
                     if (data.TryGetProperty("lon", out var p2)) WebEstado["lon"] = p2.GetDouble();
@@ -114,11 +112,11 @@ public class MqttBridgeService {
                     if (data.TryGetProperty("spd", out var p6)) WebEstado["spd"] = p6.GetDouble();
                     if (data.TryGetProperty("soc", out var p7)) WebEstado["soc"] = p7.GetInt32();
                     
-                    // Extra: Injetar FCW se existir no JSON original
+                    //Injeta FCW se existir no JSON original
                     if (data.TryGetProperty("fcw", out var fcw)) {
                         WebEstado["fcw"] = JsonSerializer.Deserialize<object>(fcw.GetRawText())!;
                     } else if (WebEstado.ContainsKey("fcw")) {
-                        WebEstado.Remove("fcw"); // Limpa o FCW se não vier no frame atual
+                        WebEstado.Remove("fcw"); //Limpa o FCW se não vier no frame atual
                     }
                 }
                 OnNovoEstadoWeb?.Invoke(WebEstado);
@@ -133,7 +131,7 @@ public class MqttBridgeService {
         await _mqttClient.SubscribeAsync("motos/AJP1RB5SXLB123456/telemetria");
     }
 
-    // O gRPC vai chamar isto para enviar o comando de volta para a CSVU
+    //O gRPC vai chamar isto para enviar o comando de volta para a CSVU
     public async Task PublicarComandoAsync(string topic, string payload) {
         if (_mqttClient != null && _mqttClient.IsConnected) {
             var msg = new MqttApplicationMessageBuilder()

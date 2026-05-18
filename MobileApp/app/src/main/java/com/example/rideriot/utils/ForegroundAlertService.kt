@@ -29,11 +29,11 @@ class ForegroundAlertService : Service() {
     private var lastLat: Double = 0.0
     private var lastLon: Double = 0.0
 
-    // Controlo de Anti-Spam
+    //Controlo de Anti-Spam
     private var ultimoAlertaRecebido = "NONE"
     private var ultimoTempoAlerta: Long = 0
 
-    // Scope para correr a Stream fora da Main Thread
+    //Scope para correr a Stream fora da Main Thread
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
@@ -45,7 +45,7 @@ class ForegroundAlertService : Service() {
             TimeSyncManager.sync()
         }
 
-        // Arranca a torneira gRPC
+        //Arranca a torneira gRPC
         iniciarStreamGrpc()
     }
 
@@ -93,7 +93,7 @@ class ForegroundAlertService : Service() {
     }
 
     private fun processarAlerta(alertType: String) {
-        // 1. Deteção explícita de "Perigo Resolvido" (Chuva parou)
+        //Deteção de "Chuva parou"
         if (alertType == "RAIN_CLEARED") {
             showResolvedRainNotification()
             AlertManager.resolveLastAlertOfType("RAIN")
@@ -102,17 +102,17 @@ class ForegroundAlertService : Service() {
             return
         }
 
-        // 2. Limpeza de estado vinda da CSVU
+        //Limpeza de estado vinda da CSVU
         if (alertType == "NONE") {
             ultimoAlertaRecebido = "NONE"
             return
         }
 
-        // REGISTO DE LATÊNCIA EXATO (Sem lixo de NONEs)
+        //REGISTO DE LATÊNCIA EXATO - para testes de stress
         val tsRececao = TimeSyncManager.getTrueTime()
         Log.e("ALERTA_$alertType", "$tsRececao")
 
-        // 3. Bloqueio Anti-Spam: MUDADO PARA 2 SEGUNDOS PARA OS TESTES!
+        //Bloqueio Anti-Spam: 2 segundos
         val tempoAtual = System.currentTimeMillis()
         if (alertType == ultimoAlertaRecebido && (tempoAtual - ultimoTempoAlerta) < 2000) {
             return
@@ -121,7 +121,7 @@ class ForegroundAlertService : Service() {
         ultimoAlertaRecebido = alertType
         ultimoTempoAlerta = tempoAtual
 
-        // Verifica definições do utilizador
+        //Verifica definições do utilizador
         val prefs = getSharedPreferences("RiderIotSettings", Context.MODE_PRIVATE)
         val isEnabled = when (alertType) {
             "FALL"  -> prefs.getBoolean("alert_fall", true)
@@ -199,7 +199,7 @@ class ForegroundAlertService : Service() {
     }
 
     private fun showEmergencyNotification(title: String, message: String, alertType: String) {
-        // CRÍTICO: ID 9999 fixo para a chuva para permitir sobrescrever no futuro
+        //ID 9999 fixo para a chuva para permitir sobrescrever no futuro
         val notificationId = if (alertType == "RAIN") 9999 else System.currentTimeMillis().toInt()
         val channelId = if (alertType in listOf("FCW", "FALL", "THEFT")) "rideriot_safety_channel" else "rideriot_env_channel"
 
@@ -220,7 +220,7 @@ class ForegroundAlertService : Service() {
         getSystemService(NotificationManager::class.java)?.notify(notificationId, notification)
     }
 
-    // NOVA FUNÇÃO: Substitui a notificação da Chuva em vez de criar uma nova
+    //Substitui a notificação da Chuva em vez de criar uma nova
     private fun showResolvedRainNotification() {
         val channelId = "rideriot_env_channel"
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -238,7 +238,7 @@ class ForegroundAlertService : Service() {
             .setAutoCancel(true)
             .build()
 
-        // Usar o ID 9999 substitui a caixa de alerta vermelha anterior sem fazer spam
+        //Usar o ID 9999 substitui a caixa de alerta vermelha anterior sem fazer spam
         getSystemService(NotificationManager::class.java)?.notify(9999, notification)
     }
 

@@ -39,7 +39,7 @@ namespace Simulador.Services
                         var settings = new I2cConnectionSettings(1, MPU6050_ADDR);
                         _i2cDevice = I2cDevice.Create(settings);
 
-                        //O MPU6050 arranca em Sleep Mode. Enviar 0x00 para o registo de energia (0x6B) acorda-o.
+                        //O MPU6050 arranca em Sleep Mode. Enviar 0x00 para o registo de energia (0x6B) acorda-o
                         _i2cDevice.Write(new byte[] { 0x6B, 0x00 });
                         _isSensorInitialized = true;
                         Program.WriteMessage("[IMU] Sensor ligado e ativo.");
@@ -94,7 +94,7 @@ namespace Simulador.Services
                             _canService.EnviarAlertaQueda();
                             SimulationState.HasCrashed = true;
 
-                            // Regista o tempo absoluto localmente
+                            //Regista o tempo absoluto localmente - para cálculos de latência
                             //long tsOrigem = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                             //Program.WriteMessage($"[TESTE-LATÊNCIA] Alerta injetado no CAN: {tsOrigem}");
 

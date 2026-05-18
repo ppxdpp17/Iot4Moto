@@ -38,7 +38,7 @@ class AlertsFragment : Fragment() {
         }
         recyclerView.adapter = adapter
 
-        // Ouve apenas Inserções novas (Super Leve)
+        //Ouve apenas Inserções novas (mais leve)
         AlertManager.onAlertAdded = {
             activity?.runOnUiThread {
                 adapter.notifyNewAlertAtTop()
@@ -47,7 +47,7 @@ class AlertsFragment : Fragment() {
             }
         }
 
-        // Ouve apenas Atualizações (Ex: A chuva parou)
+        //Ouve apenas atualizações (para quando a chuva para)
         AlertManager.onAlertUpdated = {
             activity?.runOnUiThread {
                 adapter.notifyDataSetChanged()
@@ -87,7 +87,7 @@ class AlertsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Garante que se o utilizador abriu a app após receber uma notificação e a lista reflete o estado mais atual da memória
+        //Garante que se o utilizador abriu a app após receber uma notificação e a lista reflete o estado mais atual da memória
         adapter.notifyDataSetChanged()
         checkEmptyState()
     }

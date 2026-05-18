@@ -38,7 +38,7 @@ namespace Simulador.Core
                 return;
             }
 
-            // Mapeia os teus comandos para ficheiros reais
+            //Mapeia os comandos para ficheiros reais
             string fileName = scenarioName.ToLower() switch
             {
                 "routepedro1" => "rota_hibrida_fall.csv",
@@ -60,7 +60,7 @@ namespace Simulador.Core
 
             try
             {
-                // Lê o ficheiro e ignora a primeira linha se for cabeçalho
+                //Lê o ficheiro e ignora a primeira linha (cabeçalho)
                 var lines = File.ReadAllLines(fileName).Where(l => !l.StartsWith("TempoEspera") && !string.IsNullOrWhiteSpace(l));
 
                 foreach (var line in lines)
@@ -70,7 +70,7 @@ namespace Simulador.Core
                     var parts = line.Split(',');
                     if (parts.Length < 7) continue;
 
-                    // 1. Extração
+                    //Extração de dados
                     int waitMs = int.Parse(parts[0]);
                     double lat = double.Parse(parts[1], CultureInfo.InvariantCulture);
                     double lon = double.Parse(parts[2], CultureInfo.InvariantCulture);
@@ -82,24 +82,23 @@ namespace Simulador.Core
 
                     if (SimulationState.HasCrashed)
                     {
-                        // Mota no chão: forçamos a velocidade a zero. 
-                        // Ignoramos o lat e lon do ficheiro CSV, o que congela a mota no mapa.
+                        //Mota caiu, logo forçamos a velocidade a zero e ignoramos o lat e lon do ficheiro CSV, o que congela a mota no mapa
                         SimulationState.Speed = 0;
-                        SimulationState.Battery = battery; // Bateria continua a drenar
+                        SimulationState.Battery = battery; //Bateria continua a baixar
                     }
                     else
                     {
-                        // Condução normal
+                        //Condução normal
                         SimulationState.Latitude = lat;
                         SimulationState.Longitude = lon;
                         SimulationState.Speed = speed;
                         SimulationState.Battery = battery;
                     }
 
-                    // 3. Injeção de alertas diretos para o cabo CAN
+                    //Injeção de alertas diretos para o cabo CAN
                     TriggerAlerts(alert);
 
-                    // 4. Espera exata antes de processar a próxima linha
+                    //Espera exata antes de processar a próxima linha
                     await Task.Delay(waitMs, _cts.Token);
                 }
 

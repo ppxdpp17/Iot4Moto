@@ -39,7 +39,7 @@ namespace CAN
                     SimulationState.Speed = 0;
                 }
                 Console.WriteLine($"[CAN RX] Ordem Remota recebida: Ignição {(ligar ? "ON" : "OFF")}");
-                return; // Já processou, pode sair
+                return;
             }
 
             if (msg.dlc < 4) return;
@@ -189,7 +189,7 @@ namespace CAN
             EnviarDadosSimulados(0x210, new byte[] { (byte)horas, (byte)minutos });
         }
 
-        public void EnviarIgnicaoStatus() { 
+        public void EnviarIgnicaoStatus() {     //Envio de Ignição
             EnviarDadosSimulados(0x106, new byte[] { (byte)(SimulationState.IsMotorcycleOn ? 1 : 0) });
         }
 
@@ -228,6 +228,7 @@ namespace CAN
             EnviarDadosSimulados(0x401, new byte[] { estado });
         }
 
+        //Envio do Alerta de Queda
         public void EnviarAlertaQueda()
         {
             EnviarDadosSimulados(0x402, new byte[] { 0x01 });
@@ -259,9 +260,6 @@ namespace CAN
             EnviarDadosSimulados(0x301, data);
         }
 
-
-
-
         //---O MOTOR DO SIMULADOR (HEARTBEAT)---
         public async Task StartHeartbeatAsync(CancellationToken ct)
         {
@@ -270,10 +268,10 @@ namespace CAN
 
             while (await timer.WaitForNextTickAsync(ct))
             {
-                // Guarda o estado localmente para esta iteração ser atómica
+                //Guarda o estado localmente para esta iteração ser atómica
                 bool isLigada = SimulationState.IsMotorcycleOn;
 
-                // Tenta forçar a variável global a zero para as outras threads lerem
+                //Tenta forçar a variável global a zero para as outras threads lerem
                 if (!isLigada)
                 {
                     SimulationState.Speed = 0;
@@ -282,15 +280,15 @@ namespace CAN
                 //---100ms---
                 if (tickCount % 100 == 0)
                 {
-                    // Força a mudança para Neutral se a mota for desligada
+                    //Força a mudança para Neutral se a mota for desligada
                     EnviarGear(isLigada ? SimulationState.Gear : "neutral"); 
                     EnviarModo(SimulationState.DriveMode);
                     EnviarLuzes(); 
                     EnviarAbs(SimulationState.Abs);
                     EnviarBrake(SimulationState.Brake);
                     
-                    // A MURALHA: Lê, avalia e envia na mesma instrução. 
-                    // Se a thread do GPS injetou 55 no milissegundo anterior, isto ignora e manda 0.
+                    //Lê, avalia e envia na mesma instrução 
+                    //Se a thread do GPS injetou 55 no milissegundo anterior, isto ignora e manda 0
                     EnviarVelocidade(isLigada ? SimulationState.Speed : 0);
                 }
 

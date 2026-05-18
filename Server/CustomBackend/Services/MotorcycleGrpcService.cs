@@ -8,7 +8,7 @@ namespace CustomBackend.Services
     {
         private readonly MqttBridgeService _mqttBridge;
 
-        // INJEÇÃO DE DEPENDÊNCIA CORRETA: O ASP.NET entrega o Singleton aqui.
+        //Injeção de dependência: O ASP.NET entrega o Singleton aqui
         public MotorcycleGrpcService(MqttBridgeService mqttBridge)
         {
             _mqttBridge = mqttBridge;
@@ -21,7 +21,7 @@ namespace CustomBackend.Services
                 var payload = JsonSerializer.Serialize(new { cmd = request.Action });
                 var topic = $"motos/{request.Vin}/comandos";
 
-                // Pede ao Singleton para enviar. Sem ligações fantasma.
+                //Pede ao Singleton para enviar
                 await _mqttBridge.PublicarComandoAsync(topic, payload);
                 Console.WriteLine($"[gRPC -> MQTT] Comando '{request.Action}' enviado para {request.Vin}.");
 
@@ -36,14 +36,14 @@ namespace CustomBackend.Services
 
         public override async Task StreamTelemetria(StreamRequest request, IServerStreamWriter<TelemetriaData> responseStream, ServerCallContext context) 
         {
-            // Substituímos o "while" primitivo pelo Tubo (Channel)
+            //Usa um Channel
             var channel = System.Threading.Channels.Channel.CreateUnbounded<TelemetriaData>();
 
             void AoReceberEstado(TelemetriaData novoEstado) {
                 channel.Writer.TryWrite(novoEstado);
             }
 
-            // Subscreve a campainha da Telemetria (não a do JSON)
+            //Subscreve a "campainha" da Telemetria
             MqttBridgeService.OnNovoEstado += AoReceberEstado;
 
             try 
@@ -54,7 +54,7 @@ namespace CustomBackend.Services
             }
             finally 
             {
-                // Limpeza crítica quando a App se desliga!
+                //Limpeza crítica quando a App se desliga
                 MqttBridgeService.OnNovoEstado -= AoReceberEstado;
             }
         }

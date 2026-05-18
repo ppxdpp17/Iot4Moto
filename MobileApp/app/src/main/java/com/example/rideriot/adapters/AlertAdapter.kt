@@ -34,7 +34,6 @@ class AlertAdapter(private val alerts: MutableList<Alert>, private val onItemCli
 
     override fun getItemCount() = alerts.size
 
-    // CORREÇÃO: O Manager já adicionou à lista. Nós só fazemos a animação visual.
     fun notifyNewAlertAtTop() {
         notifyItemInserted(0)
     }

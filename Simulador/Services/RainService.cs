@@ -13,7 +13,7 @@ namespace Simulador.Services
         private readonly CanService _canService;
         private GpioController _gpio;
         private bool _isRaining = false;
-        private bool _arranque = true; // Garante o silêncio no primeiro arranque
+        private bool _arranque = true; //Garante o silêncio no primeiro arranque
 
         public RainService(CanService canService)
         {
@@ -26,21 +26,21 @@ namespace Simulador.Services
         {
             while (!token.IsCancellationRequested)
             {
-                // A mota só avalia a chuva se estiver estacionada (desligada)
+                //A mota só avalia a chuva se estiver estacionada (desligada)
                 if (!SimulationState.IsMotorcycleOn)
                 {
                     var isWet = _gpio.Read(RAIN_PIN) == PinValue.High;
 
-                    // 1. Fase de Calibração Inicial: Absorve o estado atual sem enviar CAN
+                    //Fase de Calibração Inicial - absorve o estado atual sem enviar CAN
                     if (_arranque)
                     {
                         _isRaining = isWet;
                         _arranque = false;
                         await Task.Delay(2000, token);
-                        continue; // Salta para a próxima iteração
+                        continue; //Salta para a próxima iteração
                     }
 
-                    // 2. Deteção de Mudança de Estado (Edge Detection)
+                    //Deteção de mudança de estado
                     if (isWet && !_isRaining) 
                     {
                         _isRaining = true;
@@ -53,7 +53,7 @@ namespace Simulador.Services
                     }
                 }
                 
-                // Intervalo de 2 segundos de amostragem
+                //Intervalo de 2 segundos
                 await Task.Delay(2000, token); 
             }
         }

@@ -118,7 +118,7 @@ function switchMode(mode) {
     setTimeout(() => map.invalidateSize(), 100);
 }
 
-// Constrói um novo alerta na lista lateral.
+//Constrói um novo alerta na lista lateral.
 function logEvent(type, message) {
     const list = document.getElementById('alerts-list');
     const time = new Date().toLocaleTimeString();

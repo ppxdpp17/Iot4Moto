@@ -69,6 +69,8 @@ object MqttHelper {
                 subscribe("moto/total_kilometers")
                 subscribe("moto/danger-lights")
                 subscribe("moto/alarm")
+
+
             } catch (e: MqttException) {
                 e.printStackTrace()
             }

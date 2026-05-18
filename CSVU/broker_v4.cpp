@@ -51,14 +51,14 @@ struct MotoState {
 };
 
 MotoState currentState;
-std::mutex stateMutex; //Impede que a thread da Cloud leia a estrutura ao mesmo tempo que a thread do CAN a está a reescrever, evitando dados corrompidos.
+std::mutex stateMutex; //Impede que a thread da Cloud leia a estrutura ao mesmo tempo que a thread do CAN a está a reescrever (para evitar dados corrompidos)
 
 //THREAD DO CAN (Atualiza o Estado e o Broker Local)
 void* can_reader(void* arg) {
     auto* client = static_cast<mqtt::async_client*>(arg);
 
     //Configuração do Socket Raw CAN do Linux (SocketCAN)
-    //Permite interagir com o barramento do veículo como se fosse uma interface de rede normal.
+    //Permite interagir com o barramento do veículo como se fosse uma interface de rede normal
     int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     struct ifreq ifr{};
     strcpy(ifr.ifr_name, "can0");
@@ -68,7 +68,7 @@ void* can_reader(void* arg) {
     addr.can_ifindex = ifr.ifr_ifindex;
     bind(s, (struct sockaddr*)&addr, sizeof(addr));
 
-    auto last_fcw_alarm = std::chrono::steady_clock::now() - std::chrono::seconds(10);
+    auto last_fcw_alarm = std::chrono::steady_clock::now() - std::chrono::seconds(10);  //Para não mandar alertas constantemente
     
     std::cout << "[CAN] A ler dados do Raspberry em can0...\n";
 
@@ -133,18 +133,18 @@ void* can_reader(void* arg) {
             }
             client->publish("moto/alarm", "THEFT");
         }
-        else if (id == 0x402) { // Alerta de Queda (FALL)
+        else if (id == 0x402) { //Alerta de Queda (FALL)
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 currentState.alert = "FALL"; 
             }
-            client->publish("moto/alarm", "FALL"); // Tablet local
+            client->publish("moto/alarm", "FALL");
         }
         else if (id == 0x209) { //Total de Kilómetros Percorridos
             uint32_t km = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
             client->publish("moto/total_kilometers", std::to_string(km), 0, true);
         }
-        else if (id == 0x210) { //Tempo
+        else if (id == 0x210) { //Tempo (horas minutos)
             uint8_t horas = frame.data[0];
             uint8_t minutos = frame.data[1];
             char timeBuffer[6];
@@ -156,6 +156,7 @@ void* can_reader(void* arg) {
             int32_t lat_raw = frame.data[0] | (frame.data[1] << 8) | (frame.data[2] << 16) | (frame.data[3] << 24);
             int32_t lon_raw = frame.data[4] | (frame.data[5] << 8) | (frame.data[6] << 16) | (frame.data[7] << 24);
 
+            //Divide por 1.000.000 (porque do outro lado foi multiplicado por 1.000.000 porque não aceita doubles, apenas int)
             double lat = lat_raw / 1000000.0;
             double lon = lon_raw / 1000000.0;
 
@@ -172,7 +173,7 @@ void* can_reader(void* arg) {
             }
 
         }
-        else if (id == 0x302) { // Dados do Sensor Ultrassom (FCW)
+        else if (id == 0x302) { //Dados do Sensor Ultrassom (FCW)
             uint16_t dist_cm = frame.data[0] | (frame.data[1] << 8);
             uint8_t ttc_ds = frame.data[2];
             uint8_t type_byte = frame.data[3];
@@ -186,61 +187,58 @@ void* can_reader(void* arg) {
             fcwPayload["ttc"] = ttc_s;
             fcwPayload["type"] = type_str;
 
-            client->publish("moto/fcw", fcwPayload.dump()); // Tablet local
+            client->publish("moto/fcw", fcwPayload.dump());
 
-            // BLOQUEIO ÚNICO DE MEMÓRIA PARA ESTE EVENTO CAN
+            //BLOQUEIO ÚNICO DE MEMÓRIA PARA ESTE EVENTO CAN
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 
-                // Grava os valores contínuos
+                //Grava os valores contínuos de distância e time to collision
                 currentState.fcw_dist = dist_m;
                 currentState.fcw_ttc = ttc_s;
 
-                // Se houver perigo crítico, grava também o alerta
+                //Se houver perigo crítico, grava também o alerta
                 if (type_byte == 2) {
                     auto now = std::chrono::steady_clock::now();
                     if (std::chrono::duration_cast<std::chrono::seconds>(now - last_fcw_alarm).count() >= 5) {
                         last_fcw_alarm = now;
-                        client->publish("moto/alarm", "FCW"); // Tablet
+                        client->publish("moto/alarm", "FCW");
                         
-                        currentState.alert = "FCW"; // Atualizado sem criar outro lock
+                        currentState.alert = "FCW"; //Atualizado sem criar outro lock
                     }
                 }
             }
         }
         else if (id == 0x303) { //IMU - Ângulo de Inclinação (Roll)
-            // Lemos 2 bytes como um inteiro com sinal (int16_t) para permitir ângulos negativos
+            //Lemos 2 bytes como um inteiro com sinal (int16_t) para permitir ângulos negativos
             int16_t raw_roll = frame.data[0] | (frame.data[1] << 8);
 
-            // Divide por 100.0 para restaurar as casas decimais
+            //Divide por 100.0 para restaurar as casas decimais
             double roll_deg = raw_roll / 100.0;
 
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
                 currentState.roll = roll_deg;
             }
-            
-
-            // Opcional: Publicar localmente se tiveres o broker a alimentar um ecrã físico na mota
             client->publish("moto/roll", std::to_string(roll_deg));
         }
         else if (id == 0x401) { //Alerta de Chuva
             if (frame.data[0] == 0x01) {
-                client->publish("moto/alarm", "RAIN"); // Tablet local
+                client->publish("moto/alarm", "RAIN"); //Tablet local
                 
-                // CRÍTICO: Guardar na memória para a Cloud ler!
+                //Guarda na memória para a Cloud ler
                 std::lock_guard<std::mutex> lock(stateMutex);
                 currentState.alert = "RAIN";
             } 
             else if (frame.data[0] == 0x00) {
-                client->publish("moto/alarm", "RAIN_CLEARED"); // Tablet local
+                client->publish("moto/alarm", "RAIN_CLEARED"); //Tablet local
                 
-                // CRÍTICO: Atualizar a memória para a Cloud avisar que parou
+                //Atualiza a memória para a Cloud avisar que parou
                 std::lock_guard<std::mutex> lock(stateMutex);
                 currentState.alert = "RAIN_CLEARED";
             }
         }
-        else if (id == 0x106) { // Estado Real da Ignição
+        else if (id == 0x106) { //Estado da Ignição
             bool motorLigado = (frame.data[0] == 0x01);
             {
                 std::lock_guard<std::mutex> lock(stateMutex);
@@ -265,7 +263,7 @@ void* cloud_worker(void* arg) {
     mqtt::connect_options connOpts;
     connOpts.set_clean_session(true);
 
-    //ABRE SOCKET CAN EXCLUSIVO PARA ESCRITA (DOWNLINK)
+    //ABRE SOCKET CAN EXCLUSIVO PARA ESCRITA
     int s_write = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     struct ifreq ifr{};
     strcpy(ifr.ifr_name, "can0");
@@ -276,7 +274,7 @@ void* cloud_worker(void* arg) {
     bind(s_write, (struct sockaddr*)&addr, sizeof(addr));
     
     
-    // CALLBACK DE RECEÇÃO DE COMANDOS DO SERVIDOR
+    //CALLBACK DE RECEÇÃO DE COMANDOS DO SERVIDOR
     cloudClient.set_message_callback([s_write](mqtt::const_message_ptr msg) {
         std::string payload = msg->get_payload_str();
         std::cout << "[DOWNLINK] Comando recebido do Servidor: " << payload << "\n";
@@ -286,20 +284,20 @@ void* cloud_worker(void* arg) {
             if (cmdJson.contains("cmd")) {
                 std::string action = cmdJson["cmd"];
                 
-                // Constrói frame CAN para a VCU arrancar/desligar
+                //Constrói frame CAN para a VCU arrancar/desligar
                 struct can_frame tx_frame{};
                 tx_frame.can_id = 0x105; 
                 tx_frame.can_dlc = 1;
 
                 if (action == "ign_on") {
                     tx_frame.data[0] = 0x01;
-                    // Atualiza o estado interno com bloqueio de memória
+                    //Atualiza o estado interno com bloqueio de memória
                     std::lock_guard<std::mutex> lock(stateMutex);
                     currentState.ignition = true;
                 }
                 else if (action == "ign_off") {
                     tx_frame.data[0] = 0x00;
-                    // Atualiza o estado interno com bloqueio de memória
+                    //Atualiza o estado interno com bloqueio de memória
                     std::lock_guard<std::mutex> lock(stateMutex);
                     currentState.ignition = false;
                     currentState.speed = 0;
@@ -338,7 +336,7 @@ void* cloud_worker(void* arg) {
 
             json payload;
 
-            // DADOS RÁPIDOS: Enviados sempre (5x por segundo / 200ms)
+            //DADOS RÁPIDOS: Enviados sempre (5x por segundo / 200ms)
             payload["ts"] = std::time(nullptr);
             payload["spd"] = snapshot.speed;
             payload["r"] = snapshot.roll;
@@ -350,12 +348,12 @@ void* cloud_worker(void* arg) {
             payload["lon"] = snapshot.lon;
             
             
-            // Força o envio do alerta imediatamente se houver um
+            //Força o envio do alerta imediatamente se houver um
             if (snapshot.alert != "NONE") {
                 payload["alr"] = snapshot.alert;
             }
 
-            // DADOS LENTOS: Enviados apenas a cada 5 ticks (1 segundo)
+            //DADOS LENTOS: Enviados apenas a cada 5 ticks (1 segundo)
             if (tick % 5 == 0) {
                 payload["soc"] = snapshot.soc;
                 payload["rng"] = snapshot.range;

@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var permissionManager: PermissionManager
 
-    // Infraestrutura gRPC persistente para evitar desperdício de recursos
+    //Infraestrutura gRPC persistente para evitar desperdício de recursos
     private var grpcChannel: ManagedChannel? = null
     private var grpcStub: MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub? = null
 
@@ -30,14 +30,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Inicializa o canal gRPC uma única vez (Reutilização de infraestrutura)
+        //Inicia o canal gRPC uma única vez
         setupGrpc()
 
-        // 2. Gestão de permissões
+        //Gestão de permissões
         permissionManager = PermissionManager(this)
         permissionManager.checkAndRequest()
 
-        // 3. Lançamento do serviço de vigilância em segundo plano
+        //Lançamento do serviço de vigilância em segundo plano
         val serviceIntent = Intent(this, ForegroundAlertService::class.java)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
             startService(serviceIntent)
         }
 
-        // 4. Configuração da Navegação (Fragments)
+        //Configuração da navegação entre Fragments
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNav.setOnItemSelectedListener { item ->
             val selectedFragment = when (item.itemId) {
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // 5. Tratamento de navegação vinda de Notificações
+        //Tratamento de navegação vinda de notificações
         if (savedInstanceState == null) {
             val targetFragment = intent.getStringExtra("TARGET_FRAGMENT")
             when (targetFragment) {
@@ -76,9 +76,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupGrpc() {
-        // O SERVER_IP é injetado aqui via local.properties através do Gradle
+        //O SERVER_IP é injetado aqui via local.properties através do Gradle
         grpcChannel = ManagedChannelBuilder.forAddress(BuildConfig.SERVER_IP, 50051)
-            .usePlaintext() // Nota: Em ambiente real, substituir por TLS/SSL
+            .usePlaintext() //Nota: Em ambiente real, substituir por TLS/SSL
             .build()
 
         grpcStub = MotorcycleServiceGrpcKt.MotorcycleServiceCoroutineStub(grpcChannel!!)
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                     .setAction(actionCmd)
                     .build()
 
-                // Reutiliza o stub já existente, eliminando o delay de handshake
+                //Reutiliza o stub já existente, eliminando o delay de handshake
                 val response = grpcStub?.sendCommand(request)
 
                 if (response?.success == true) {
@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Encerra o canal de rede quando a atividade é destruída
+        //Encerra o canal de rede quando a activity é destruída
         if (grpcChannel != null && !grpcChannel!!.isShutdown) {
             grpcChannel!!.shutdownNow()
         }
