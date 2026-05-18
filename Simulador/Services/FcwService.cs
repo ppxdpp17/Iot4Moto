@@ -107,17 +107,17 @@ namespace Simulador.Services
             double ttc = 999.0;
             string type = "INFO"; 
 
-            // Converte a velocidade do simulador de km/h para metros por segundo
+            //Converte a velocidade do simulador de km/h para metros por segundo
             double speedMetersPerSecond = SimulationState.Speed / 3.6;
 
-            // Se a mota estiver parada ou a andar muito devagar, não há colisão iminente
+            //Se a mota estiver parada ou a andar muito devagar, não há colisão iminente
             if (speedMetersPerSecond > 0.1) 
             {
-                // TTC = Distância / Velocidade
+                //TTC = Distância / Velocidade
                 ttc = currentDistance / speedMetersPerSecond;
             }
 
-            // Mantém a tua regra de negócio: só avisa acima de 30 km/h
+            //Só avisa acima de 30 km/h
             if (SimulationState.Speed >= 30)
             {
                 if (ttc < 1.0)
