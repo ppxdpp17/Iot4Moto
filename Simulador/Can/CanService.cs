@@ -144,7 +144,7 @@ namespace CAN
         }
 
         //Métodos de atalho para envio
-        public void EnviarVelocidade(int speed) => //Envio da Velocidade
+        public void EnviarVelocidade(int speed) => //Transformação da velocidade (inteiro) em bytes raw
             EnviarDadosSimulados(0x200, new byte[] { (byte)(speed & 0xFF), (byte)((speed >> 8) & 0xFF) });
 
         public void EnviarBateria(int battery) =>   //Envio da Bateria
@@ -295,6 +295,11 @@ namespace CAN
                 //---500ms---
                 if (tickCount % 500 == 0)
                 {
+                    EnviarLuzes(); 
+                    EnviarAbs(SimulationState.Abs);
+                    //Força a mudança para Neutral se a mota for desligada
+                    EnviarGear(isLigada ? SimulationState.Gear : "neutral"); 
+                    EnviarModo(SimulationState.DriveMode);
                     EnviarIgnicaoStatus();
                     EnviarBateria(SimulationState.Battery);
                     EnviarTemperatura(SimulationState.Temperature);
