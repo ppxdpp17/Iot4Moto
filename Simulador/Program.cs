@@ -45,8 +45,8 @@ namespace Simulador
         private static int MaxMessageLines = 5;
         private static int messageLineCounter = 0;
 
-        
-
+        //Para o expositor
+        private static CancellationTokenSource? _expositorCts;
 
         // Object for synchronizing access to the console
         private static readonly object _consoleLock = new object();
@@ -328,23 +328,26 @@ namespace Simulador
 
                             if (arg == "stop")
                             {
-                                //Pára o cenário balístico (routePedroX)
-                                scenarioRunner.Stop();
+                                _expositorCts?.Cancel(); 
+                                Program.WriteMessage("[AUTO] Simulações automáticas e Playback de rotas parados.");
                             }
-                            else if (arg.StartsWith("routepedro"))
+                            else if (arg == "rotasexpositor")
                             {
-                                //Inicia o cenário determinístico
-                                _ = Task.Run(() => scenarioRunner.RunAsync(arg));
+                                _expositorCts?.Cancel(); // Evita loops duplicados em memória
+                                _expositorCts = new CancellationTokenSource();
+                                
+                                // Dispara o Playback CAN direto da classe que gerencia o estado
+                                _ = Task.Run(() => backgroundUpdated.ExecutarPlaybackExpositorAsync(_expositorCts.Token));
                             }
                             else
                             {
-                                //Lança o cenário automático antigo (rota1, rota2, etc)
+                                // Teu comportamento antigo para as rotas normais
                                 _ = Task.Run(() => backgroundUpdated.AutoSimulateAsync(arg));
                             }
                         }
                         else
                         {
-                            Program.WriteMessage("Usage: auto <route1|route2|routepedro1...> ou 'auto stop'");
+                            Program.WriteMessage("Usage: auto <route1|rotasexpositor> ou 'auto stop'");
                         }
                         break;
 
@@ -604,6 +607,42 @@ namespace Simulador
                 }
             }
             Program.WriteMessage($"[STRESS] {tipoAlerta} concluído! Ficheiro: {ficheiro}");
+        }
+
+        public static async Task ExecutarModoExpositorAsync(BackgroundUpdated backgroundUpdated, CancellationToken token)
+        {
+            string[] rotas = { "rota1", "rota2", "rota3", "rota4", "rota5", "rota6" };
+            int i = 0;
+
+            //Program.WriteMessage("[EXPOSITOR] Modo contínuo iniciado. O ecossistema vai ciclar pelas 6 rotas indefinidamente.");
+
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    string rotaAtual = rotas[i];
+                     Program.WriteMessage($"[EXPOSITOR] A começar {rotaAtual}...");
+
+                    //O "true" significa: "Não desliguar a mota no final do JSON"
+                    await backgroundUpdated.AutoSimulateAsync(rotaAtual, isExpositorMode: true);
+
+                    //Se o utilizador mandou parar enquanto o JSON corria sai
+                    if (token.IsCancellationRequested) break;
+
+                    Program.WriteMessage($"[EXPOSITOR] {rotaAtual} finalizada...");
+                    await Task.Delay(3000, token);
+
+                    i = (i + 1) % rotas.Length;
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                Program.WriteMessage("[EXPOSITOR] Parado com sucesso pelo user.");
+            }
+            catch (Exception ex)
+            {
+                Program.WriteMessage($"[EXPOSITOR] Erro Crítico: {ex.Message}");
+            }
         }
 
     }

@@ -36,7 +36,7 @@ namespace Simulador.Core
             _routes = routes;
         }
 
-        public async Task AutoSimulateAsync(string routeName)
+        public async Task AutoSimulateAsync(string routeName, bool isExpositorMode = false)
         {
             _loggingService.Clear();
 
@@ -173,10 +173,12 @@ namespace Simulador.Core
                 Program.WriteMessage("[Auto] Route finished. Switching to standard mode and turning the motorcycle off...");
                 await _updateMethods.UpdateModeAsync("standard");
 
-                if (SimulationState.IsMotorcycleOn) // Avoid shutting down if the motorcycle is still active
+                if (SimulationState.IsMotorcycleOn && !isExpositorMode) //SÓ DESLIGA SE NÃO FOR EXPOSITOR
                 {
+                    Program.WriteMessage("[Auto] Turning the motorcycle off...");
                     await _startAndUpdate.StopMotorcycleAsync();
                 }
+
                 await _routes.StopRouteAsync();
 
                 // Save the last motorcycle state in the log
@@ -428,6 +430,104 @@ namespace Simulador.Core
                 TotalKilometers = SimulationState.TotalKilometers,
                 Autonomy = SimulationState.Autonomy
             };
+        }
+
+        public async Task ExecutarPlaybackExpositorAsync(CancellationToken token)
+        {
+            // Limpa logs anteriores
+            _loggingService.Clear();
+
+            // Procura os ficheiros na pasta onde o simulador está a correr
+            string[] ficheiros = Directory.GetFiles(Directory.GetCurrentDirectory(), "Log_*.json");
+
+            if (ficheiros.Length == 0)
+            {
+                Program.WriteMessage("[ERRO] Nenhum ficheiro 'Log_*.json' encontrado para o expositor.");
+                return;
+            }
+
+            Program.WriteMessage($"[PLAYBACK] Modo Expositor Ativo. Encontrados {ficheiros.Length} ficheiros de rota.");
+
+            // Força a mota a ligar no estado do simulador
+            SimulationState.IsMotorcycleOn = true;
+
+            // LIGA A THREAD QUE ENVIA OS DADOS LOGADOS PARA O CAN BUS CONTINUAMENTE
+            _ = Task.Run(() => _updateMethods.UpdateDashboardContinuouslyAsync(token));
+
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    foreach (var ficheiro in ficheiros)
+                    {
+                        Program.WriteMessage($"\n[PLAYBACK] A injetar no CAN: {Path.GetFileName(ficheiro)}");
+
+                        string json = await File.ReadAllTextAsync(ficheiro, token);
+                        var logs = System.Text.Json.JsonSerializer.Deserialize<List<LogPlaybackEntry>>(json);
+
+                        if (logs == null || logs.Count == 0) continue;
+
+                        foreach (var entry in logs)
+                        {
+                            if (token.IsCancellationRequested) break;
+
+                            // Atualiza o estado global. A thread do CAN vai ler isto instantaneamente e despachar
+                            SimulationState.Speed = entry.Speed;
+                            SimulationState.Battery = entry.Battery;
+                            SimulationState.Temperature = entry.Temperature;
+                            SimulationState.Gear = entry.Gear;
+                            SimulationState.Lights = entry.Lights;
+                            SimulationState.Abs = entry.Abs;
+                            SimulationState.IndicatorLeft = entry.IndicatorLeft;
+                            SimulationState.IndicatorRight = entry.IndicatorRight;
+                            SimulationState.DriveMode = entry.DriveMode;
+                            SimulationState.MaxLights = entry.MaxLights;
+                            SimulationState.DangerLights = entry.DangerLights;
+                            SimulationState.TotalKilometers = entry.TotalKilometers;
+                            SimulationState.Autonomy = entry.Autonomy;
+
+                            // Renderiza o painel local da consola se necessário
+                            _dashboard.DisplayDashboard();
+
+                            // Frequência com que despejas as linhas do JSON (500ms bate certo com o teu standard)
+                            await Task.Delay(500, token);
+                        }
+
+                        if (token.IsCancellationRequested) break;
+
+                        Program.WriteMessage($"[PLAYBACK] Ficheiro {Path.GetFileName(ficheiro)} concluído. Transição em 3s...");
+                        await Task.Delay(3000, token);
+                    }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                Program.WriteMessage("[PLAYBACK] Modo Expositor cancelado. A limpar barramento...");
+                SimulationState.IsMotorcycleOn = false;
+                _dashboard.DisplayDashboard();
+            }
+            catch (Exception ex)
+            {
+                Program.WriteMessage($"[PLAYBACK] Erro na leitura dos ficheiros: {ex.Message}");
+            }
+        }
+
+        public class LogPlaybackEntry
+        {
+            public DateTime Timestamp { get; set; }
+            public int Battery { get; set; }
+            public int Speed { get; set; }
+            public int Temperature { get; set; }
+            public string Gear { get; set; }
+            public bool Lights { get; set; }
+            public bool Abs { get; set; }
+            public bool IndicatorLeft { get; set; }
+            public bool IndicatorRight { get; set; }
+            public string DriveMode { get; set; }
+            public bool MaxLights { get; set; }
+            public bool DangerLights { get; set; }
+            public double TotalKilometers { get; set; }
+            public double Autonomy { get; set; }
         }
     }
 }
