@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object  WeatherAPICaller {
 
-    private val apiWeatherKey = "4110624eb1fb4e97cc1250082d059c2f" // chave pessoal da API da meteorologia
+    private val apiWeatherKey = "" // chave pessoal da API da meteorologia
 
      fun fetchWeather(city: String, callback: (Int, String) -> Unit) {
         // Instanciar o Retrofit
